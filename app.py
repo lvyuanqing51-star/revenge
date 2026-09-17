@@ -189,10 +189,21 @@ with st.sidebar:
         mime="application/json",
     )
 
-  if st.button("🗑️ 清空所有数据与原图", type="primary"):
-    reset_all_records()
-    st.toast("已清空所有历史数据和截图！", icon="🧹")
-    st.rerun()
+ with st.expander("🔒 管理员功能（危险操作）"):
+      admin_pwd = st.text_input(
+          "输入管理密码",
+          type="password",
+          key="admin_pwd",
+          help="防止他人误清空数据",
+      )
+      # 把这里的 666888 改成你自己的专属管理密码！
+      if admin_pwd == "200151":
+        if st.button("🗑️ 确认清空所有数据与原图", type="primary"):
+          reset_all_records()
+          st.toast("已清空所有历史数据和截图！", icon="🧹")
+          st.rerun()
+      elif admin_pwd:
+        st.error("密码错误，无法清空")
 
 
 # ---------------- 5. 榜单渲染（含自动合名逻辑） ----------------
