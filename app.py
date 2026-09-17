@@ -10,9 +10,8 @@ from PIL import Image
 import streamlit as st
 
 DATA_FILE = "records.json"
-IMAGE_DIR = "saved_images"  # 专门存放历史战绩原图的目录
+IMAGE_DIR = "saved_images"
 
-# 自动创建图片存储文件夹
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 st.set_page_config(
@@ -24,7 +23,26 @@ st.set_page_config(
 st.title("🎮 英雄联盟对局结算智能统计看板")
 
 
-# 1. 持久化存储函数
+# ---------------- 核心：玩家名字防呆与纠错映射 ----------------
+# 以后如果还有其他字被 AI 认错，直接在这里仿照格式加一行即可！
+NAME_FIX_MAP = {
+    "千秋种我一粟卿": "千秋种我一栗卿",
+}
+
+
+def clean_player_name(raw_name: str) -> str:
+  name = raw_name.strip()
+  # 自动替换常见的形近字识别错误
+  name = name.replace("一粟卿", "一栗卿")
+
+  # 查字典精确替换
+  for wrong, right in NAME_FIX_MAP.items():
+    if wrong in name:
+      name = name.replace(wrong, right)
+  return name
+
+
+# ---------------- 1. 持久化存储函数 ----------------
 def load_all_records():
   if os.path.exists(DATA_FILE):
     try:
@@ -43,10 +61,8 @@ def save_record(new_record):
 
 
 def reset_all_records():
-  # 清理 JSON 数据
   if os.path.exists(DATA_FILE):
     os.remove(DATA_FILE)
-  # 清理所有保存的截图
   if os.path.exists(IMAGE_DIR):
     for f in os.listdir(IMAGE_DIR):
       file_path = os.path.join(IMAGE_DIR, f)
@@ -54,7 +70,7 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# 2. 识别 Schema
+# ---------------- 2. 识别 Schema ----------------
 lol_schema = {
     "type": "OBJECT",
     "properties": {
@@ -105,19 +121,20 @@ lol_schema = {
 }
 
 
-# 3. 带自动重试机制的 AI 识别
+# ---------------- 3. 带自动重试机制的 AI 识别 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
   client = genai.Client(api_key=key)
   prompt = (
       "这是一张英雄联盟的战绩结算界面截图。"
-      "请精准识别所有玩家名称（包括中英文符号）、所选英雄、阵营（蓝方/红方）、"
+      "请精准识别所有玩家名称（包括中英文符号，注意区分'栗'与'粟'等形近字）、所选英雄、阵营（蓝方/红方）、"
       "击杀/死亡/助攻（K/D/A）以及整场胜负。严格按照 JSON Schema 格式输出。"
   )
 
   for attempt in range(max_retries):
     try:
+      # 自动调用推荐模型
       response = client.models.generate_content(
-          model="gemini-3.6-flash",
+          model="gemini-2.0-flash",
           contents=[
               types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
               prompt,
@@ -141,7 +158,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
       raise e
 
 
-# 4. 侧边栏配置
+# ---------------- 4. 侧边栏配置 ----------------
 with st.sidebar:
   st.header("⚙️ 核心设置")
   default_key = (
@@ -178,7 +195,7 @@ with st.sidebar:
     st.rerun()
 
 
-# 5. 榜单渲染
+# ---------------- 5. 榜单渲染（含自动合名逻辑） ----------------
 def render_leaderboard(records):
   if not records:
     st.info("💡 暂无历史对局数据。请在下方上传截图开始统计！")
@@ -187,9 +204,13 @@ def render_leaderboard(records):
   player_stats = {}
   for record in records:
     for p in record.get("players", []):
-      name = p.get("player_name", "").strip()
+      raw_name = p.get("player_name", "")
+      # 这里自动把“粟”清洗合并为“栗”
+      name = clean_player_name(raw_name)
+
       if not name:
         continue
+
       if name not in player_stats:
         player_stats[name] = {
             "总场次": 0,
@@ -224,7 +245,7 @@ def render_leaderboard(records):
   st.dataframe(df, use_container_width=True)
 
 
-# 6. 上传与主功能区
+# ---------------- 6. 主界面上传与即时刷新 ----------------
 uploaded_files = st.file_uploader(
     "📤 上传结算截图（支持单张或批量拖入）",
     type=["png", "jpg", "jpeg"],
@@ -244,12 +265,13 @@ if uploaded_files:
         with st.spinner(f"正在识别 ({idx + 1}/{total}): {file.name}..."):
           try:
             img_bytes = file.read()
-            # 1. AI 识别并持久化战绩
             result = analyze_screenshot(img_bytes, api_key)
             save_record(result)
 
-            # 2. 自动保存原始图片到本地文件夹
-            save_path = os.path.join(IMAGE_DIR, f"{int(time.time())}_{file.name}")
+            # 保存原图
+            save_path = os.path.join(
+                IMAGE_DIR, f"{int(time.time())}_{file.name}"
+            )
             with open(save_path, "wb") as img_file:
               img_file.write(img_bytes)
 
@@ -273,18 +295,21 @@ all_saved_imgs = [
     for f in os.listdir(IMAGE_DIR)
     if f.lower().endswith((".png", ".jpg", ".jpeg"))
 ]
-all_saved_imgs.sort(reverse=True)  # 最新上传的显示在最前
+all_saved_imgs.sort(reverse=True)
 
-with st.expander(f"🖼️ 查看已上传的历史战绩截图（共 {len(all_saved_imgs)} 张）"):
+with st.expander(
+    f"🖼️ 查看已上传的历史战绩截图（共 {len(all_saved_imgs)} 张）"
+):
   if not all_saved_imgs:
     st.caption("暂无归档截图")
   else:
-    # 采用 3 列网格排版平铺展示图片
     cols = st.columns(3)
     for index, img_name in enumerate(all_saved_imgs):
       col = cols[index % 3]
       img_path = os.path.join(IMAGE_DIR, img_name)
       with col:
         st.image(
-            img_path, caption=img_name.split("_", 1)[-1], use_container_width=True
+            img_path,
+            caption=img_name.split("_", 1)[-1],
+            use_container_width=True,
         )
