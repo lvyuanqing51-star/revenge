@@ -134,7 +134,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
     try:
       # 自动调用推荐模型
       response = client.models.generate_content(
-          model="gemini-2.0-flash",
+          model="gemini-3.6-flash",
           contents=[
               types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
               prompt,
