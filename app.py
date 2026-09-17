@@ -10,6 +10,10 @@ from PIL import Image
 import streamlit as st
 
 DATA_FILE = "records.json"
+IMAGE_DIR = "saved_images"  # 专门存放历史战绩原图的目录
+
+# 自动创建图片存储文件夹
+os.makedirs(IMAGE_DIR, exist_ok=True)
 
 st.set_page_config(
     page_title="LOL 内战战绩看板",
@@ -39,8 +43,15 @@ def save_record(new_record):
 
 
 def reset_all_records():
+  # 清理 JSON 数据
   if os.path.exists(DATA_FILE):
     os.remove(DATA_FILE)
+  # 清理所有保存的截图
+  if os.path.exists(IMAGE_DIR):
+    for f in os.listdir(IMAGE_DIR):
+      file_path = os.path.join(IMAGE_DIR, f)
+      if os.path.isfile(file_path):
+        os.remove(file_path)
 
 
 # 2. 识别 Schema
@@ -94,7 +105,7 @@ lol_schema = {
 }
 
 
-# 3. 带自动重试机制的 AI 识别（解决 503 报错）
+# 3. 带自动重试机制的 AI 识别
 def analyze_screenshot(image_bytes, key, max_retries=3):
   client = genai.Client(api_key=key)
   prompt = (
@@ -143,27 +154,34 @@ with st.sidebar:
   st.markdown("---")
   st.header("📂 历史数据管理")
   current_records = load_all_records()
-  st.metric("已永久累计对局", f"{len(current_records)} 局")
+  saved_images = [
+      f
+      for f in os.listdir(IMAGE_DIR)
+      if f.lower().endswith((".png", ".jpg", ".jpeg"))
+  ]
+
+  st.metric("已累计对局", f"{len(current_records)} 局")
+  st.metric("已归档截图", f"{len(saved_images)} 张")
 
   if current_records:
     json_data = json.dumps(current_records, ensure_ascii=False, indent=2)
     st.download_button(
-        label="💾 导出历史战绩备份",
+        label="💾 导出战绩 JSON",
         data=json_data,
         file_name="lol_match_history.json",
         mime="application/json",
     )
 
-  if st.button("🗑️ 清空所有历史数据", type="primary"):
+  if st.button("🗑️ 清空所有数据与原图", type="primary"):
     reset_all_records()
-    st.toast("已清空所有历史对局！", icon="🧹")
+    st.toast("已清空所有历史数据和截图！", icon="🧹")
     st.rerun()
 
 
 # 5. 榜单渲染
 def render_leaderboard(records):
   if not records:
-    st.info("💡 暂无历史对局数据。请在上方上传截图开始累计！")
+    st.info("💡 暂无历史对局数据。请在下方上传截图开始统计！")
     return
 
   player_stats = {}
@@ -206,9 +224,9 @@ def render_leaderboard(records):
   st.dataframe(df, use_container_width=True)
 
 
-# 6. 主界面交互
+# 6. 上传与主功能区
 uploaded_files = st.file_uploader(
-    "📤 上传结算截图（支持单张或批量多选）",
+    "📤 上传结算截图（支持单张或批量拖入）",
     type=["png", "jpg", "jpeg"],
     accept_multiple_files=True,
 )
@@ -226,8 +244,15 @@ if uploaded_files:
         with st.spinner(f"正在识别 ({idx + 1}/{total}): {file.name}..."):
           try:
             img_bytes = file.read()
+            # 1. AI 识别并持久化战绩
             result = analyze_screenshot(img_bytes, api_key)
             save_record(result)
+
+            # 2. 自动保存原始图片到本地文件夹
+            save_path = os.path.join(IMAGE_DIR, f"{int(time.time())}_{file.name}")
+            with open(save_path, "wb") as img_file:
+              img_file.write(img_bytes)
+
             success_count += 1
             time.sleep(1)
           except Exception as e:
@@ -235,8 +260,31 @@ if uploaded_files:
         progress_bar.progress((idx + 1) / total)
 
       if success_count > 0:
-        st.success(f"🎉 成功录入 {success_count} 局战绩！")
+        st.success(f"🎉 成功录入 {success_count} 局战绩并归档原图！")
         st.rerun()
 
 st.markdown("---")
 render_leaderboard(load_all_records())
+
+# ---------------- 7. 历史截图展示区 ----------------
+st.markdown("---")
+all_saved_imgs = [
+    f
+    for f in os.listdir(IMAGE_DIR)
+    if f.lower().endswith((".png", ".jpg", ".jpeg"))
+]
+all_saved_imgs.sort(reverse=True)  # 最新上传的显示在最前
+
+with st.expander(f"🖼️ 查看已上传的历史战绩截图（共 {len(all_saved_imgs)} 张）"):
+  if not all_saved_imgs:
+    st.caption("暂无归档截图")
+  else:
+    # 采用 3 列网格排版平铺展示图片
+    cols = st.columns(3)
+    for index, img_name in enumerate(all_saved_imgs):
+      col = cols[index % 3]
+      img_path = os.path.join(IMAGE_DIR, img_name)
+      with col:
+        st.image(
+            img_path, caption=img_name.split("_", 1)[-1], use_container_width=True
+        )
