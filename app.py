@@ -555,7 +555,7 @@ with st.sidebar:
             st.error("❌ 密码错误")
 
 # ---------------- 主界面 1：标题与连麦作战室直达 ----------------
-st.title("⚔️ 峡谷内战控制台")
+st.title("⚔️ 海克斯内战")
 
 cfg = load_config()
 c1, c2, c3 = st.columns(3)
