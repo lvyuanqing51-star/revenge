@@ -21,299 +21,298 @@ st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layou
 
 # ---------------- 高级深海蓝微光 + 侧边栏按钮彻底修复 CSS ----------------
 st.markdown("""
-    <style>
-    /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
-    .stApp {
-        background: radial-gradient(circle at 50% 5%, #1d3e63 0%, #122841 50%, #0a192b 100%) !important;
-        color: #e2e8f0 !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
+<style>
+/* 全局背景：明朗高级的深海宝石蓝流光渐变 */
+.stApp {
+    background: radial-gradient(circle at 50% 5%, #1d3e63 0%, #122841 50%, #0a192b 100%) !important;
+    color: #e2e8f0 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 
-    /* 顶部主标题 */
-    h1 {
-        background: linear-gradient(90deg, #ffffff 0%, #a5f3fc 50%, #fef08a 100%) !important;
-        -webkit-background-clip: text !important;
-        -webkit-text-fill-color: transparent !important;
-        font-weight: 800 !important;
-        letter-spacing: 1.5px !important;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
-    }
-    h2, h3 {
-        color: #f8fafc !important;
-        letter-spacing: 0.8px;
-    }
+/* 顶部主标题 */
+h1 {
+    background: linear-gradient(90deg, #ffffff 0%, #a5f3fc 50%, #fef08a 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 800 !important;
+    letter-spacing: 1.5px !important;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+h2, h3 {
+    color: #f8fafc !important;
+    letter-spacing: 0.8px;
+}
 
-    /* 侧边栏底色 */
-    section[data-testid="stSidebar"] {
-        background-color: #0b1726 !important;
-        border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
-    }
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] h4 {
-        color: #fef08a !important;
-    }
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span {
-        color: #f1f5f9 !important;
-    }
+/* 侧边栏底色 */
+section[data-testid="stSidebar"] {
+    background-color: #0b1726 !important;
+    border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
+}
+section[data-testid="stSidebar"] h1, 
+section[data-testid="stSidebar"] h2, 
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] h4 {
+    color: #fef08a !important;
+}
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color: #f1f5f9 !important;
+}
 
-    /* 侧边栏交互输入框与下拉框全套深蓝黑一体化 */
-    section[data-testid="stSidebar"] input {
-        background-color: #132438 !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        border-radius: 6px !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="input"],
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
-        background-color: #132438 !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        border-radius: 8px !important;
-        overflow: hidden !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
-        background-color: transparent !important;
-        color: #ffffff !important;
-        border: none !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
-        background-color: transparent !important;
-        border: none !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
-        fill: #38bdf8 !important;
-        color: #38bdf8 !important;
-    }
+/* 侧边栏交互输入框与下拉框全套深蓝黑一体化 */
+section[data-testid="stSidebar"] input {
+    background-color: #132438 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 6px !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="input"],
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
+    background-color: #132438 !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
+    background-color: transparent !important;
+    border: none !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
+    fill: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
 
-    /* 下拉选框 */
-    section[data-testid="stSidebar"] div[data-baseweb="select"],
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
-        background-color: #132438 !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        border-radius: 8px !important;
-        color: #ffffff !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] button,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] [role="button"] {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
-        fill: #38bdf8 !important;
-        color: #38bdf8 !important;
-        width: 18px !important;
-        height: 18px !important;
-    }
+/* 下拉选框 */
+section[data-testid="stSidebar"] div[data-baseweb="select"],
+section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+    background-color: #132438 !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="select"] button,
+section[data-testid="stSidebar"] div[data-baseweb="select"] [role="button"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
+    fill: #38bdf8 !important;
+    color: #38bdf8 !important;
+    width: 18px !important;
+    height: 18px !important;
+}
 
-    /* ================= 核心修复：彻底消灭侧边栏下载按钮与所有按钮的白底 ================= */
-    section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button,
-    section[data-testid="stSidebar"] div.stDownloadButton button,
-    section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"],
-    section[data-testid="stSidebar"] button {
-        background: #152b45 !important;
-        background-color: #152b45 !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(56, 189, 248, 0.6) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
-    }
-    /* 强制按钮内每一层文字/图标变亮白，绝不允许隐形 */
-    section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button *,
-    section[data-testid="stSidebar"] button * {
-        color: #ffffff !important;
-        fill: #ffffff !important;
-        font-weight: 700 !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-    }
-    section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover,
-    section[data-testid="stSidebar"] button:hover {
-        background: #1e3d63 !important;
-        background-color: #1e3d63 !important;
-        border-color: #38bdf8 !important;
-        box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
-    }
+/* 核心修复：彻底消灭侧边栏下载按钮与所有按钮的白底 */
+section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button,
+section[data-testid="stSidebar"] div.stDownloadButton button,
+section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"],
+section[data-testid="stSidebar"] button {
+    background: #152b45 !important;
+    background-color: #152b45 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(56, 189, 248, 0.6) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+}
+section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button *,
+section[data-testid="stSidebar"] button * {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover,
+section[data-testid="stSidebar"] button:hover {
+    background: #1e3d63 !important;
+    background-color: #1e3d63 !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+}
 
-    /* 侧边栏折叠面板 (Expander) */
-    section[data-testid="stSidebar"] details {
-        background-color: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 8px !important;
-    }
-    section[data-testid="stSidebar"] summary {
-        color: #fef08a !important;
-    }
+/* 侧边栏折叠面板 (Expander) */
+section[data-testid="stSidebar"] details {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 8px !important;
+}
+section[data-testid="stSidebar"] summary {
+    color: #fef08a !important;
+}
 
-    /* 语音作战室三大专属微光按钮 */
-    div[data-testid="stLinkButton"] a {
-        border-radius: 10px !important;
-        font-weight: 700 !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        backdrop-filter: blur(12px) !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    div[data-testid="stLinkButton"] a:hover {
-        transform: translateY(-2px);
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(202, 138, 4, 0.15)) !important;
-        border: 1px solid rgba(253, 224, 71, 0.5) !important;
-        box-shadow: 0 4px 15px rgba(234, 179, 8, 0.2) !important;
-        color: #fef9c3 !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.2)) !important;
-        border: 1px solid rgba(56, 189, 248, 0.7) !important;
-        box-shadow: 0 4px 18px rgba(14, 165, 233, 0.35) !important;
-        color: #f0f9ff !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6) !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.2)) !important;
-        border: 1px solid rgba(251, 113, 133, 0.7) !important;
-        box-shadow: 0 4px 18px rgba(244, 63, 94, 0.3) !important;
-        color: #fff1f2 !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 24px rgba(251, 113, 133, 0.55) !important;
-    }
+/* 语音作战室三大专属微光按钮 */
+div[data-testid="stLinkButton"] a {
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    backdrop-filter: blur(12px) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+div[data-testid="stLinkButton"] a:hover {
+    transform: translateY(-2px);
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(202, 138, 4, 0.15)) !important;
+    border: 1px solid rgba(253, 224, 71, 0.5) !important;
+    box-shadow: 0 4px 15px rgba(234, 179, 8, 0.2) !important;
+    color: #fef9c3 !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.2)) !important;
+    border: 1px solid rgba(56, 189, 248, 0.7) !important;
+    box-shadow: 0 4px 18px rgba(14, 165, 233, 0.35) !important;
+    color: #f0f9ff !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.2)) !important;
+    border: 1px solid rgba(251, 113, 133, 0.7) !important;
+    box-shadow: 0 4px 18px rgba(244, 63, 94, 0.3) !important;
+    color: #fff1f2 !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 24px rgba(251, 113, 133, 0.55) !important;
+}
 
-    /* 独立电竞磨砂卡片系统 */
-    .esport-card {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        border-radius: 12px;
-        padding: 14px 18px;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        margin-bottom: 12px;
-    }
-    .esport-card:hover {
-        transform: translateY(-3px);
-        background: rgba(255, 255, 255, 0.13);
-        border-color: rgba(56, 189, 248, 0.6);
-        box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25);
-    }
-    .esport-card-title {
-        font-size: 0.92rem;
-        font-weight: 800;
-        color: #ffffff;
-        text-shadow: 0 0 10px #eab308, 0 0 18px rgba(234, 179, 8, 0.6), 1px 1px 2px #000000;
-        letter-spacing: 0.8px;
-        margin-bottom: 6px;
-    }
-    .esport-card-player {
-        font-size: 1.22rem;
-        font-weight: 800;
-        color: #ffffff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 6px;
-    }
-    .esport-card-delta {
-        font-size: 0.82rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 6px;
-        display: inline-block;
-        width: fit-content;
-    }
-    .delta-cyan {
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
-        border: 1px solid rgba(56, 189, 248, 0.3);
-    }
-    .delta-gold {
-        background: rgba(254, 240, 138, 0.15);
-        color: #fef08a;
-        border: 1px solid rgba(254, 240, 138, 0.3);
-    }
-    .delta-red {
-        background: rgba(251, 113, 133, 0.15);
-        color: #fb7185;
-        border: 1px solid rgba(251, 113, 133, 0.3);
-    }
+/* 独立电竞磨砂卡片系统 */
+.esport-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 12px;
+    padding: 14px 18px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.esport-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(56, 189, 248, 0.6);
+    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25);
+}
+.esport-card-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 0 0 10px #eab308, 0 0 18px rgba(234, 179, 8, 0.6), 1px 1px 2px #000000;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+}
+.esport-card-player {
+    font-size: 1.22rem;
+    font-weight: 800;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+.esport-card-delta {
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    width: fit-content;
+}
+.delta-cyan {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.delta-gold {
+    background: rgba(254, 240, 138, 0.15);
+    color: #fef08a;
+    border: 1px solid rgba(254, 240, 138, 0.3);
+}
+.delta-red {
+    background: rgba(251, 113, 133, 0.15);
+    color: #fb7185;
+    border: 1px solid rgba(251, 113, 133, 0.3);
+}
 
-    /* 亮感磨砂电竞表格容器 */
-    .hextech-table-container {
-        width: 100%;
-        overflow-x: auto;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 12px;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        margin-top: 10px;
-        margin-bottom: 25px;
-    }
-    .hextech-table {
-        width: 100%;
-        border-collapse: collapse;
-        color: #f1f5f9;
-        font-size: 0.95rem;
-        text-align: center;
-    }
-    .hextech-table th {
-        background: rgba(23, 49, 77, 0.8);
-        color: #fef08a;
-        font-weight: 700;
-        letter-spacing: 0.6px;
-        padding: 14px 10px;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.15);
-    }
-    .hextech-table td {
-        padding: 13px 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        transition: background 0.2s;
-    }
-    .hextech-table tr:hover td {
-        background: rgba(56, 189, 248, 0.12) !important;
-    }
-    .hextech-table tr:nth-child(even) {
-        background: rgba(255, 255, 255, 0.03);
-    }
-    .hextech-badge-win {
-        color: #38bdf8;
-        font-weight: 700;
-        text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-    }
-    .hextech-badge-loss {
-        color: #fb7185;
-        font-weight: 700;
-    }
-    .hextech-player-name {
-        text-align: left;
-        padding-left: 20px !important;
-        font-weight: 600;
-        color: #ffffff;
-    }
+/* 亮感磨砂电竞表格容器 */
+.hextech-table-container {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    margin-top: 10px;
+    margin-bottom: 25px;
+}
+.hextech-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #f1f5f9;
+    font-size: 0.95rem;
+    text-align: center;
+}
+.hextech-table th {
+    background: rgba(23, 49, 77, 0.8);
+    color: #fef08a;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    padding: 14px 10px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+}
+.hextech-table td {
+    padding: 13px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background 0.2s;
+}
+.hextech-table tr:hover td {
+    background: rgba(56, 189, 248, 0.12) !important;
+}
+.hextech-table tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+}
+.hextech-badge-win {
+    color: #38bdf8;
+    font-weight: 700;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+.hextech-badge-loss {
+    color: #fb7185;
+    font-weight: 700;
+}
+.hextech-player-name {
+    text-align: left;
+    padding-left: 20px !important;
+    font-weight: 600;
+    color: #ffffff;
+}
 
-    /* 底部上传框磨砂优化 */
-    div[data-testid="stFileUploader"] {
-        background: rgba(255, 255, 255, 0.06) !important;
-        border-radius: 10px !important;
-        border: 1px dashed rgba(255, 255, 255, 0.3) !important;
-        backdrop-filter: blur(12px) !important;
-        padding: 12px !important;
-    }
-    </style>
+/* 底部上传框磨砂优化 */
+div[data-testid="stFileUploader"] {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-radius: 10px !important;
+    border: 1px dashed rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(12px) !important;
+    padding: 12px !important;
+}
+</style>
 """, unsafe_allow_html=True)
 
 
@@ -594,7 +593,10 @@ else:
         "击杀": 0, "死亡": 0, "助攻": 0
     })
 
+    # 同队搭档统计
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
+    # 宿敌对战统计（分属蓝红两队正面交手）
+    nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
     for r in records:
         blue_team = []
@@ -622,6 +624,7 @@ else:
             elif team_side == "RED":
                 red_team.append((fname, is_win))
 
+        # 1. 统计同队搭档
         for t in [blue_team, red_team]:
             team_members = list({item[0]: item[1] for item in t}.items())
             if len(team_members) >= 2:
@@ -632,6 +635,20 @@ else:
                         synergy_stats[pair_key]["胜场"] += 1
                     else:
                         synergy_stats[pair_key]["负场"] += 1
+
+        # 2. 统计对手宿敌（蓝方成员 vs 红方成员）
+        blue_unique = list({item[0]: item[1] for item in blue_team}.items())
+        red_unique = list({item[0]: item[1] for item in red_team}.items())
+        for (pb, b_win) in blue_unique:
+            for (pr, _) in red_unique:
+                if pb == pr:
+                    continue
+                p1, p2 = sorted([pb, pr])
+                nemesis_stats[(p1, p2)]["交手场次"] += 1
+                if (pb == p1 and b_win) or (pr == p1 and not b_win):
+                    nemesis_stats[(p1, p2)]["p1_wins"] += 1
+                else:
+                    nemesis_stats[(p1, p2)]["p2_wins"] += 1
 
     df = pd.DataFrame.from_dict(stats, orient="index")
 
@@ -684,8 +701,8 @@ else:
                 </div>
             """, unsafe_allow_html=True)
 
-        # 2. 双人羁绊
-        if synergy_stats:
+        # 2. 羁绊看板（黄金搭档 / 难兄难弟 / 一生之敌，3列对齐）
+        if synergy_stats or nemesis_stats:
             syn_list = []
             for (p1, p2), v in synergy_stats.items():
                 t_games = int(v["同队场次"])
@@ -701,17 +718,51 @@ else:
                 })
             
             syn_df = pd.DataFrame(syn_list)
+            best_pair, worst_pair = None, None
             if not syn_df.empty:
                 syn_candidates = syn_df[syn_df["games"] >= 2]
                 if syn_candidates.empty:
                     syn_candidates = syn_df
-                
                 best_pair = syn_candidates.sort_values(by=["win_rate", "games"], ascending=[False, False]).iloc[0]
                 worst_pair = syn_candidates.sort_values(by=["win_rate", "games"], ascending=[True, False]).iloc[0]
 
-                st.write("")
-                col_syn1, col_syn2 = st.columns(2)
-                with col_syn1:
+            # 计算一生之敌（交手胜率差最大，单方面压制力最强）
+            nem_list = []
+            for (p1, p2), v in nemesis_stats.items():
+                t_games = int(v["交手场次"])
+                p1_w = int(v["p1_wins"])
+                p2_w = int(v["p2_wins"])
+                if t_games > 0:
+                    if p1_w >= p2_w:
+                        winner, loser = p1, p2
+                        w_cnt, l_cnt = p1_w, p2_w
+                    else:
+                        winner, loser = p2, p1
+                        w_cnt, l_cnt = p2_w, p1_w
+                    
+                    dom_rate = w_cnt / t_games
+                    diff = abs(p1_w - p2_w)
+                    nem_list.append({
+                        "display_name": f"{short_name(winner)} ➔ {short_name(loser)}",
+                        "games": t_games,
+                        "wins": w_cnt,
+                        "losses": l_cnt,
+                        "dom_rate": dom_rate,
+                        "diff": diff
+                    })
+
+            nem_df = pd.DataFrame(nem_list)
+            rival_pair = None
+            if not nem_df.empty:
+                nem_candidates = nem_df[nem_df["games"] >= 2]
+                if nem_candidates.empty:
+                    nem_candidates = nem_df
+                rival_pair = nem_candidates.sort_values(by=["dom_rate", "diff", "games"], ascending=[False, False, False]).iloc[0]
+
+            st.write("")
+            col_syn1, col_syn2, col_syn3 = st.columns(3)
+            with col_syn1:
+                if best_pair is not None:
                     st.markdown(f"""
                         <div class="esport-card">
                             <div class="esport-card-title">黄金搭档</div>
@@ -719,12 +770,22 @@ else:
                             <div class="esport-card-delta delta-cyan">{int(best_pair['wins'])}胜{int(best_pair['losses'])}负 ({round(best_pair['win_rate']*100, 1)}%)</div>
                         </div>
                     """, unsafe_allow_html=True)
-                with col_syn2:
+            with col_syn2:
+                if worst_pair is not None:
                     st.markdown(f"""
                         <div class="esport-card">
                             <div class="esport-card-title">难兄难弟</div>
                             <div class="esport-card-player">{worst_pair['pair_name']}</div>
                             <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+            with col_syn3:
+                if rival_pair is not None:
+                    st.markdown(f"""
+                        <div class="esport-card">
+                            <div class="esport-card-title">一生之敌</div>
+                            <div class="esport-card-player">{rival_pair['display_name']}</div>
+                            <div class="esport-card-delta delta-gold">{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负 ({round(rival_pair['dom_rate']*100, 1)}%压制)</div>
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -734,7 +795,7 @@ else:
         # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 亮感磨砂电竞表格拼接
+        # 亮感磨砂电竞表格拼接（严格保持行首无多余空格缩进，避免 Markdown 代码块白底陷阱）
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
@@ -830,3 +891,4 @@ if submit_btn:
             st.success(f"🎉 成功录入 {added} 局战绩！")
             time.sleep(0.8)
             st.rerun()
+            
