@@ -91,26 +91,29 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. 纯净稳健文字识别（不识英雄，准确率最高） ----------------
+# ---------------- 2. 通义千问 Qwen-VL 视觉文字识别 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
-  client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
+  # 使用通义千问官方兼容 OpenAI 的 Base URL
+  client = OpenAI(
+      api_key=key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+  )
   b64_img = base64.b64encode(image_bytes).decode("utf-8")
 
   prompt = """这是手机端【掌上英雄联盟 App】或客户端的对局结算截图。
 请精准识别整局胜负（蓝方/红方，或上方/下方队伍），以及所有选手的ID和击杀/死亡/助攻(K/D/A)。
 请勿识别英雄。注意区分'栗'与'粟'等形近字。
 
-严格输出纯 JSON 对象：
+严格输出纯 JSON 对象，格式必须如下：
 {
-  "winning_team": "BLUE" 或 "RED",
+  "winning_team": "BLUE",
   "players": [
     {
       "player_name": "玩家游戏ID",
-      "team": "BLUE" 或 "RED",
+      "team": "BLUE",
       "kills": 0,
       "deaths": 0,
       "assists": 0,
-      "is_winner": true 或 false
+      "is_winner": true
     }
   ]
 }
@@ -119,7 +122,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
   for attempt in range(max_retries):
     try:
       response = client.chat.completions.create(
-          model="deepseek-chat",
+          model="qwen-vl-max",  # 通义千问视觉大模型主力版本，文字识别极准
           messages=[{
               "role": "user",
               "content": [
@@ -145,7 +148,16 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
         content = content[:-3]
       content = content.strip()
 
-      return json.loads(content)
+      data = json.loads(content)
+
+      # 防御性转换：确保数值字段统一为 int 类型，避免计算时报错
+      for p in data.get("players", []):
+        p["kills"] = int(p.get("kills", 0))
+        p["deaths"] = int(p.get("deaths", 0))
+        p["assists"] = int(p.get("assists", 0))
+        p["is_winner"] = bool(p.get("is_winner", False))
+
+      return data
     except Exception as e:
       if attempt < max_retries - 1:
         time.sleep((attempt + 1) * 2)
@@ -157,15 +169,15 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
 with st.sidebar:
   st.title("⚙️ 控制面板")
   default_key = (
-      st.secrets.get("DEEPSEEK_API_KEY", "")
-      if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets
+      st.secrets.get("DASHSCOPE_API_KEY", "")
+      if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets
       else ""
   )
   api_key = st.text_input(
-      "DeepSeek API Key",
+      "通义千问 API Key (DashScope)",
       value=default_key,
       type="password",
-      help="以 sk- 开头的密钥",
+      help="在阿里云百炼控制台获取的以 sk- 开头的密钥",
   )
 
   st.markdown("---")
@@ -212,9 +224,7 @@ with st.sidebar:
           time.sleep(0.8)
           st.rerun()
 
-        corr_options = {
-            i: f"第 {i + 1} 局" for i in range(len(current_records))
-        }
+        corr_options = {i: f"第 {i + 1} 局" for i in range(len(current_records))}
         sel_del_idx = st.selectbox(
             "选择要删除的对局",
             options=list(reversed(list(corr_options.keys()))),
@@ -228,133 +238,4 @@ with st.sidebar:
           st.rerun()
 
       if st.button("💣 清空所有历史数据", type="primary"):
-        reset_all_records()
-        st.rerun()
-    elif admin_pwd:
-      st.error("密码错误")
-
-# ---------------- 4. 截图上传区 ----------------
-uploaded_files = st.file_uploader(
-    "📤 上传对局战绩截图（支持多张全选拖入，或直接上传 .zip 文件夹）",
-    type=["png", "jpg", "jpeg", "zip"],
-    accept_multiple_files=True,
-)
-
-if uploaded_files:
-  if not api_key:
-    st.warning("⚠️ 请先在左侧侧边栏填入 DeepSeek API Key！")
-  else:
-    if st.button("🚀 开始解析并计入胜率", type="primary"):
-      images_to_process = []
-      for file in uploaded_files:
-        file_bytes = file.read()
-        if file.name.lower().endswith(".zip"):
-          try:
-            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
-              for zip_info in z.infolist():
-                if not zip_info.is_dir() and zip_info.filename.lower().endswith(
-                    (".png", ".jpg", ".jpeg")
-                ):
-                  img_data = z.read(zip_info.filename)
-                  if "__MACOSX" not in zip_info.filename:
-                    images_to_process.append(
-                        (os.path.basename(zip_info.filename), img_data)
-                    )
-          except Exception as e:
-            st.error(f"❌ 读取压缩包 {file.name} 失败: {e}")
-        else:
-          images_to_process.append((file.name, file_bytes))
-
-      success_count = 0
-      skip_count = 0
-      existing_records = load_all_records()
-      existing_hashes = {
-          r.get("image_hash") for r in existing_records if "image_hash" in r
-      }
-      pbar = st.progress(0)
-      total = len(images_to_process)
-
-      for idx, (img_name, img_bytes) in enumerate(images_to_process):
-        img_hash = calculate_md5(img_bytes)
-
-        if img_hash in existing_hashes:
-          st.warning(f"⚠️ {img_name} 此前已录入，已自动跳过！")
-          skip_count += 1
-          pbar.progress((idx + 1) / total)
-          continue
-
-        with st.spinner(f"正在录入 ({idx + 1}/{total}): {img_name}..."):
-          try:
-            result = analyze_screenshot(img_bytes, api_key)
-            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
-            with open(os.path.join(IMAGE_DIR, saved_file_name), "wb") as f:
-              f.write(img_bytes)
-
-            result["image_hash"] = img_hash
-            result["image_file"] = saved_file_name
-            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
-
-            save_record(result)
-            existing_hashes.add(img_hash)
-            success_count += 1
-            time.sleep(0.3)
-          except Exception as e:
-            st.error(f"❌ {img_name} 录入失败: {e}")
-        pbar.progress((idx + 1) / total)
-
-      if success_count > 0:
-        st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
-        time.sleep(1)
-        st.rerun()
-
-st.markdown("---")
-
-# ---------------- 5. 核心：纯净胜率总榜展示 ----------------
-records = load_all_records()
-
-st.subheader("📊 玩家胜率与战绩总榜")
-
-if not records:
-  st.info("💡 暂无历史对局数据。请在上方上传截图开始统计！")
-else:
-  player_stats = defaultdict(
-      lambda: {
-          "总场次": 0,
-          "胜场": 0,
-          "负场": 0,
-          "总击杀": 0,
-          "总死亡": 0,
-          "总助攻": 0,
-      }
-  )
-
-  for r in records:
-    for p in r.get("players", []):
-      name = clean_player_name(p.get("player_name", ""))
-      if not name:
-        continue
-      player_stats[name]["总场次"] += 1
-      if p.get("is_winner"):
-        player_stats[name]["胜场"] += 1
-      else:
-        player_stats[name]["负场"] += 1
-      player_stats[name]["总击杀"] += p.get("kills", 0)
-      player_stats[name]["总死亡"] += p.get("deaths", 0)
-      player_stats[name]["总助攻"] += p.get("assists", 0)
-
-  df = pd.DataFrame.from_dict(player_stats, orient="index")
-  df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-  df["K/D"] = (df["总击杀"] / df["总死亡"].replace(0, 1)).round(2)
-  df["KDA"] = (
-      (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
-  ).round(2)
-
-  # 按胜率第一、场次第二、KDA 第三降序排序
-  df["win_rate_num"] = df["胜场"] / df["总场次"]
-  df = df.sort_values(
-      by=["win_rate_num", "总场次", "KDA"], ascending=[False, False, False]
-  )
-  df = df.drop(columns=["win_rate_num"])
-
-  # 纯净展示胜率核心大表
-  st.dataframe(df, use_container_width=True)
+        reset
