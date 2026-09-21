@@ -17,23 +17,118 @@ DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
-st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
+st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
+# ---------------- 注入电竞微光暗黑风 CSS ----------------
 st.markdown(
     """
     <style>
-    div[data-testid="stMetricValue"] > div {
-        font-size: 1.15rem !important;
+    /* 全局背景与字体 */
+    .stApp {
+        background: radial-gradient(circle at 50% 10%, #0f1923 0%, #080d12 100%) !important;
+        color: #e1e7eb !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* 顶部主标题美化 */
+    h1 {
+        background: linear-gradient(90deg, #c8aa6e 0%, #f0e6d2 50%, #c8aa6e 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800 !important;
+        letter-spacing: 1.5px;
+        text-shadow: 0 0 20px rgba(200, 170, 110, 0.2);
+    }
+
+    /* 语音作战室三大按钮定制 */
+    div[data-testid="stLinkButton"] a {
+        border-radius: 8px !important;
         font-weight: 600 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    div[data-testid="stLinkButton"] a:hover {
+        transform: translateY(-2px);
+    }
+    /* 蓝方按钮霓虹微光 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
+        background: linear-gradient(135deg, rgba(10, 50, 90, 0.8), rgba(0, 150, 255, 0.4)) !important;
+        border-color: #0ac8b9 !important;
+        box-shadow: 0 0 15px rgba(10, 200, 185, 0.25) !important;
+        color: #e0f7fa !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
+        box-shadow: 0 0 25px rgba(10, 200, 185, 0.5) !important;
+    }
+    /* 红方按钮微光 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
+        background: linear-gradient(135deg, rgba(90, 20, 30, 0.8), rgba(230, 50, 70, 0.4)) !important;
+        border-color: #e84057 !important;
+        box-shadow: 0 0 15px rgba(232, 64, 87, 0.25) !important;
+        color: #ffebee !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
+        box-shadow: 0 0 25px rgba(232, 64, 87, 0.5) !important;
+    }
+    /* 大厅按钮暗金光 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
+        background: linear-gradient(135deg, rgba(60, 50, 30, 0.8), rgba(200, 170, 110, 0.4)) !important;
+        border-color: #c8aa6e !important;
+        box-shadow: 0 0 15px rgba(200, 170, 110, 0.2) !important;
+        color: #f0e6d2 !important;
+    }
+
+    /* 指标卡片（Metric）：海克斯毛玻璃面板 */
+    div[data-testid="stMetric"] {
+        background: rgba(16, 26, 35, 0.7) !important;
+        border: 1px solid rgba(200, 170, 110, 0.25) !important;
+        border-radius: 10px !important;
+        padding: 14px 16px !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-3px) !important;
+        border-color: rgba(200, 170, 110, 0.6) !important;
+        box-shadow: 0 6px 25px rgba(200, 170, 110, 0.15) !important;
+    }
+    div[data-testid="stMetricLabel"] p {
+        font-size: 0.82rem !important;
+        color: #a09b8c !important;
+        font-weight: 500 !important;
+        letter-spacing: 0.5px;
+    }
+    div[data-testid="stMetricValue"] > div {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: #f0e6d2 !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
-    div[data-testid="stMetricLabel"] p {
-        font-size: 0.85rem !important;
+
+    /* 上传框暗色优化 */
+    div[data-testid="stFileUploader"] {
+        background: rgba(16, 26, 35, 0.5) !important;
+        border-radius: 8px !important;
+        border: 1px dashed rgba(200, 170, 110, 0.3) !important;
+        padding: 10px !important;
     }
-    div[data-testid="stMetricDelta"] {
-        font-size: 0.8rem !important;
+
+    /* 侧边栏深色适配 */
+    section[data-testid="stSidebar"] {
+        background-color: #0a0e13 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* 表格容器微光衬底 */
+    div[data-testid="stDataFrame"] {
+        border-radius: 10px !important;
+        border: 1px solid rgba(200, 170, 110, 0.2) !important;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5) !important;
+        overflow: hidden !important;
     }
     </style>
 """,
@@ -64,17 +159,20 @@ def save_config(cfg):
 def compress_image_to_b64(img_bytes, max_w=720):
   try:
     img = Image.open(BytesIO(img_bytes))
-    if img.mode in ("RGBA", "P"):
+    if img.mode != "RGB":
       img = img.convert("RGB")
-    ratio = max_w / float(img.size[0])
-    if ratio < 1.0:
-      new_h = int(float(img.size[1]) * ratio)
+    w, h = img.size
+    if w > max_w:
+      new_h = int(h * (max_w / float(w)))
       img = img.resize((max_w, new_h), Image.Resampling.LANCZOS)
     buf = BytesIO()
-    img.save(buf, format="JPEG", quality=75)
+    img.save(buf, format="JPEG", quality=80)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
   except Exception:
-    return ""
+    try:
+      return base64.b64encode(img_bytes).decode("utf-8")
+    except Exception:
+      return ""
 
 
 # ---------------- 1. 名字清洗与归一 ----------------
@@ -158,7 +256,6 @@ def analyze_image(img_bytes, api_key):
   )
   b64 = base64.b64encode(img_bytes).decode("utf-8")
 
-  # 回归纯净 Prompt：只识别胜负、ID 与 KDA，专注核心战绩
   prompt = (
       "这是英雄联盟掌盟战绩结算截图。\n"
       "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID与KDA数值。\n"
@@ -213,7 +310,7 @@ with st.sidebar:
   records = load_records()
   st.metric("总计收录对局", f"{len(records)} 局")
 
-  # --- 逐局图文核对与删除 ---
+  # 逐局图文核对
   if records:
     st.markdown("---")
     st.subheader("🔍 对局图文核对")
@@ -259,7 +356,7 @@ with st.sidebar:
       time.sleep(0.5)
       st.rerun()
 
-  # --- 语音房设置 ---
+  # 语音房设置
   with st.expander("🎙️ 配置内战语音房链接"):
     cfg = load_config()
     new_main = st.text_input("大厅主语音链接", value=cfg.get("main_voice", ""))
@@ -309,18 +406,29 @@ with st.sidebar:
         st.error(f"读取文件失败: {err}")
 
   st.markdown("---")
+  admin_pwd = (
+      st.secrets.get("ADMIN_PASSWORD", "666888")
+      if hasattr(st, "secrets") and "ADMIN_PASSWORD" in st.secrets
+      else "666888"
+  )
   pwd = st.text_input("管理密码", type="password")
-  if pwd == "666888":
-    if records and st.button("🗑️ 删除最近一局"):
-      records.pop()
-      save_records(records)
-      st.rerun()
-    if st.button("💣 清空所有对局"):
-      save_records([])
-      st.rerun()
+  if pwd:
+    input_hash = hashlib.sha256(pwd.encode("utf-8")).hexdigest()
+    target_hash = hashlib.sha256(admin_pwd.encode("utf-8")).hexdigest()
+    if input_hash == target_hash:
+      st.success("🔓 管理员身份已验证")
+      if records and st.button("🗑️ 删除最近一局"):
+        records.pop()
+        save_records(records)
+        st.rerun()
+      if st.button("💣 清空所有对局"):
+        save_records([])
+        st.rerun()
+    else:
+      st.error("❌ 密码错误")
 
-# ---------------- 主界面 1：标题与连麦语音直达 ----------------
-st.title("内战")
+# ---------------- 主界面 1：标题与连麦作战室直达 ----------------
+st.title("⚔️ 峡谷内战控制台")
 
 cfg = load_config()
 c1, c2, c3 = st.columns(3)
