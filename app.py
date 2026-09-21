@@ -1,5 +1,6 @@
 import base64
 from collections import defaultdict
+import difflib
 import hashlib
 import json
 import os
@@ -10,61 +11,75 @@ import pandas as pd
 import streamlit as st
 
 DATA_FILE = "records.json"
-ALIAS_FILE = "name_aliases.json"  # 专门存放合并映射规则
-
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
 
-# ---------------- 1. 别名映射与清洗 ----------------
-def load_aliases():
-  """读取别名映射字典 { 识别错的别名: 正确的标准名字 }"""
-  if os.path.exists(ALIAS_FILE):
-    try:
-      with open(ALIAS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-    except Exception:
-      return {}
-  return {}
-
-
-def save_aliases(aliases):
-  with open(ALIAS_FILE, "w", encoding="utf-8") as f:
-    json.dump(aliases, f, ensure_ascii=False, indent=2)
-
-
-def clean_name(name):
+# ---------------- 自动名字强力归一与聚类 ----------------
+def normalize_name_skeleton(name: str) -> str:
+  """骨架化名字：去空格、统一番号、去除常见混淆标点（丶、顿号、横杠等）"""
   if not name:
     return ""
-
-  # 1. 过滤空格、长破折号与全角符号
   s = str(name).strip()
+  # 去除所有不可见空白
   s = re.sub(r"[\s\u200b\ufeff\u3000]+", "", s)
-  s = s.replace("＃", "#").replace("—", "-").replace("一粟卿", "一栗卿")
-
-  # 2. 默认规则：千秋系列无条件锁死
-  if "千秋" in s:
-    return "千秋种我一栗卿#52652"
-
-  # 3. 动态别名池替换
-  aliases = load_aliases()
-  # 优先全词匹配
-  if s in aliases:
-    return aliases[s]
-
+  # 统一全角井号
+  s = s.replace("＃", "#")
+  # 统一横杠类
+  s = s.replace("—", "-").replace("–", "-")
+  # 统一各种'点'和'顿号'为无，解决 大原丶 与 大原、 的分裂
+  s = s.replace("丶", "").replace("、", "").replace(",", "")
+  # 统一千秋字形
+  s = s.replace("一粟卿", "一栗卿")
   return s
+
+
+def build_canonical_name_map(all_raw_names: list) -> dict:
+  """根据所有出现的原始名字，自动聚类合并相似度超 85% 或骨架相同的名字"""
+  mapping = {}
+  unique_clusters = []  # 存放标准名称
+
+  for raw in all_raw_names:
+    if not raw:
+      continue
+    skel = normalize_name_skeleton(raw)
+
+    # 优先强规则：千秋系列
+    if "千秋" in raw:
+      mapping[raw] = "千秋种我一栗卿#52652"
+      continue
+
+    # 检查是否与已有聚类高度相似
+    matched_target = None
+    for cluster in unique_clusters:
+      cluster_skel = normalize_name_skeleton(cluster)
+      # 骨架完全一致（如 大原丶娜娜子#64291 和 大原、娜娜子#64291）
+      if skel == cluster_skel:
+        matched_target = cluster
+        break
+      # 或者相似度大于 88%
+      ratio = difflib.SequenceMatcher(None, skel, cluster_skel).ratio()
+      if ratio >= 0.88:
+        matched_target = cluster
+        break
+
+    if matched_target:
+      mapping[raw] = matched_target
+    else:
+      unique_clusters.append(raw)
+      mapping[raw] = raw
+
+  return mapping
 
 
 def get_md5(data):
   return hashlib.md5(data).hexdigest()
 
 
-# ---------------- 2. 数据读写 ----------------
 def load_records():
   if os.path.exists(DATA_FILE):
     try:
       with open(DATA_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        return data if isinstance(data, list) else []
+        return json.load(f)
     except Exception:
       return []
   return []
@@ -86,7 +101,7 @@ def analyze_image(img_bytes, api_key):
   prompt = (
       "这是英雄联盟掌盟战绩结算截图。\n"
       "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID与KDA数值。\n"
-      "不要识别英雄。仔细识别完整游戏ID（含#后缀）。\n"
+      "不要识别英雄。\n"
       "请严格输出合法JSON：\n"
       '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team":'
       ' "BLUE", "kills": 0, "deaths": 0, "assists": 0, "is_winner": true}]}'
@@ -115,9 +130,8 @@ def analyze_image(img_bytes, api_key):
   return json.loads(content.strip())
 
 
-# ---------------- 侧边栏：配置与名字合并修正 ----------------
+# ---------------- 侧边栏 ----------------
 with st.sidebar:
-  st.header("⚙️ 设置与维护")
   default_key = (
       st.secrets.get("DASHSCOPE_API_KEY", "")
       if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets
@@ -132,42 +146,6 @@ with st.sidebar:
 
   records = load_records()
   st.caption(f"已录入对局: {len(records)} 局")
-
-  # --- 核心功能：玩家名字可视化合并工具 ---
-  with st.expander("🔗 修正重复玩家（合并名字）"):
-    st.write("把误识别的分裂名字合并为一个：")
-    # 获取目前数据库里出现过的全部原始名字
-    raw_names = set()
-    for r in records:
-      for p in r.get("players", []):
-        raw_names.add(p.get("player_name", "").strip())
-    raw_names = sorted([n for n in raw_names if n])
-
-    if raw_names:
-      source_name = st.selectbox("选择【识别错的名字】(被合并):", raw_names)
-      target_name = st.selectbox(
-          "合并到【正确的标准名字】:", raw_names, index=0
-      )
-
-      if st.button("⚡ 确认合并这两个人"):
-        if source_name != target_name:
-          # 1. 记录进持久化别名表
-          aliases = load_aliases()
-          aliases[source_name] = target_name
-          save_aliases(aliases)
-
-          # 2. 批量将历史对局中的该名字全部替换为标准名字
-          for r in records:
-            for p in r.get("players", []):
-              if p.get("player_name", "").strip() == source_name:
-                p["player_name"] = target_name
-          save_records(records)
-
-          st.success(f"已成功将【{source_name}】合并至【{target_name}】！")
-          time.sleep(0.8)
-          st.rerun()
-        else:
-          st.warning("两个名字不能相同！")
 
   pwd = st.text_input("管理密码", type="password")
   if pwd == "666888":
@@ -216,9 +194,6 @@ if submit_btn:
         try:
           result = analyze_image(img_data, key)
           result["md5"] = h
-          # 保存前用清洗规则（含别名规则）规整
-          for p in result.get("players", []):
-            p["player_name"] = clean_name(p.get("player_name", ""))
           records.append(result)
           seen_hashes.add(h)
           added += 1
@@ -236,13 +211,24 @@ if submit_btn:
 
 st.markdown("---")
 
-# ---------------- 主界面 3：胜率榜单 ----------------
+# ---------------- 主界面 3：胜率榜单（自动模糊聚合） ----------------
 st.subheader("胜率榜单")
 
 records = load_records()
 if not records:
   st.info("💡 暂无战绩数据，请在上方上传截图。")
 else:
+  # 1. 先收集库中所有出现的全部原始玩家名
+  all_raw = []
+  for r in records:
+    for p in r.get("players", []):
+      pname = p.get("player_name", "").strip()
+      if pname:
+        all_raw.append(pname)
+
+  # 2. 自动生成聚类映射字典（彻底合并微小标点差异如 丶 与 、）
+  name_mapping = build_canonical_name_map(list(set(all_raw)))
+
   stats = defaultdict(
       lambda: {
           "总场次": 0,
@@ -256,17 +242,20 @@ else:
 
   for r in records:
     for p in r.get("players", []):
-      name = clean_name(p.get("player_name", ""))
-      if not name:
+      raw_pname = p.get("player_name", "").strip()
+      if not raw_pname:
         continue
-      stats[name]["总场次"] += 1
+      # 使用自动聚类后的统一名字
+      final_name = name_mapping.get(raw_pname, raw_pname)
+
+      stats[final_name]["总场次"] += 1
       if p.get("is_winner"):
-        stats[name]["胜场"] += 1
+        stats[final_name]["胜场"] += 1
       else:
-        stats[name]["负场"] += 1
-      stats[name]["击杀"] += p.get("kills", 0)
-      stats[name]["死亡"] += p.get("deaths", 0)
-      stats[name]["助攻"] += p.get("assists", 0)
+        stats[final_name]["负场"] += 1
+      stats[final_name]["击杀"] += p.get("kills", 0)
+      stats[final_name]["死亡"] += p.get("deaths", 0)
+      stats[final_name]["助攻"] += p.get("assists", 0)
 
   df = pd.DataFrame.from_dict(stats, orient="index")
   df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
