@@ -19,19 +19,19 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
-# ---------------- 亮面磨砂科技微光 CSS ----------------
+# ---------------- 高级明朗深海蓝微光 CSS ----------------
 st.markdown("""
     <style>
-    /* 全局背景：通透亮感的深邃蓝灰微光渐变，彻底告别死黑 */
+    /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
     .stApp {
-        background: radial-gradient(circle at 50% -10%, #20344d 0%, #152332 50%, #0e1823 100%) !important;
+        background: radial-gradient(circle at 50% 5%, #1d3e63 0%, #122841 50%, #0a192b 100%) !important;
         color: #e2e8f0 !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    /* 顶部标题：明亮白金流光 */
+    /* 顶部主标题 */
     h1 {
-        background: linear-gradient(90deg, #f3e8c9 0%, #ffffff 50%, #e2c98d 100%) !important;
+        background: linear-gradient(90deg, #ffffff 0%, #a5f3fc 50%, #fef08a 100%) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         font-weight: 800 !important;
@@ -43,7 +43,7 @@ st.markdown("""
         letter-spacing: 0.8px;
     }
 
-    /* 语音作战室三大发光按钮（亮感半透磨砂） */
+    /* 语音作战室三大专属微光按钮 */
     div[data-testid="stLinkButton"] a {
         border-radius: 10px !important;
         font-weight: 700 !important;
@@ -54,60 +54,68 @@ st.markdown("""
     div[data-testid="stLinkButton"] a:hover {
         transform: translateY(-2px);
     }
-    /* 大厅主语音：磨砂暖金 */
+    /* 大厅主语音：磨砂琥珀金 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(217, 180, 100, 0.25), rgba(180, 130, 60, 0.2)) !important;
-        border: 1px solid rgba(245, 210, 140, 0.5) !important;
-        box-shadow: 0 4px 15px rgba(217, 180, 100, 0.2) !important;
-        color: #fff4d1 !important;
+        background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(202, 138, 4, 0.15)) !important;
+        border: 1px solid rgba(253, 224, 71, 0.5) !important;
+        box-shadow: 0 4px 15px rgba(234, 179, 8, 0.2) !important;
+        color: #fef9c3 !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 20px rgba(217, 180, 100, 0.4) !important;
+        box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
     }
-    /* 蓝方作战室：亮澈海克斯霓虹蓝 */
+    /* 蓝方作战室：明朗极光霓虹蓝 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(37, 99, 235, 0.25)) !important;
-        border: 1px solid rgba(56, 189, 248, 0.6) !important;
-        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25) !important;
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.2)) !important;
+        border: 1px solid rgba(56, 189, 248, 0.7) !important;
+        box-shadow: 0 4px 18px rgba(14, 165, 233, 0.35) !important;
         color: #f0f9ff !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5) !important;
+        box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6) !important;
     }
-    /* 红方作战室：明艳熔岩红 */
+    /* 红方作战室：绯红熔岩光 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(244, 63, 94, 0.3), rgba(225, 29, 72, 0.25)) !important;
-        border: 1px solid rgba(251, 113, 133, 0.6) !important;
-        box-shadow: 0 4px 15px rgba(244, 63, 94, 0.25) !important;
+        background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.2)) !important;
+        border: 1px solid rgba(251, 113, 133, 0.7) !important;
+        box-shadow: 0 4px 18px rgba(244, 63, 94, 0.3) !important;
         color: #fff1f2 !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 20px rgba(251, 113, 133, 0.5) !important;
+        box-shadow: 0 6px 24px rgba(251, 113, 133, 0.55) !important;
     }
 
-    /* 指标卡片：清爽亮面磨砂毛玻璃 */
+    /* 指标卡片：彻底修复头衔文字消失 */
     div[data-testid="stMetric"] {
-        background: rgba(255, 255, 255, 0.07) !important;
-        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.22) !important;
         border-radius: 12px !important;
         padding: 14px 18px !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
         transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
     }
     div[data-testid="stMetric"]:hover {
         transform: translateY(-3px) !important;
-        background: rgba(255, 255, 255, 0.11) !important;
-        border-color: rgba(255, 255, 255, 0.35) !important;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35) !important;
+        background: rgba(255, 255, 255, 0.13) !important;
+        border-color: rgba(56, 189, 248, 0.6) !important;
+        box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25) !important;
     }
-    div[data-testid="stMetricLabel"] p {
-        font-size: 0.85rem !important;
-        color: #cbd5e1 !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.5px;
+
+    /* 重点修复：强制显现头衔标题 */
+    div[data-testid="stMetricLabel"], 
+    div[data-testid="stMetricLabel"] * {
+        font-size: 0.88rem !important;
+        color: #fde047 !important; /* 明朗浅金，清晰夺目 */
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
+        opacity: 1 !important;
+        display: block !important;
+        visibility: visible !important;
     }
+
+    /* 玩家名称 */
     div[data-testid="stMetricValue"] > div {
         font-size: 1.25rem !important;
         font-weight: 800 !important;
@@ -115,31 +123,30 @@ st.markdown("""
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
+        margin-top: 2px !important;
     }
 
-    /* 上传框磨砂处理 */
+    /* 侧边栏与上传框 */
     div[data-testid="stFileUploader"] {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.06) !important;
         border-radius: 10px !important;
-        border: 1px dashed rgba(255, 255, 255, 0.25) !important;
+        border: 1px dashed rgba(255, 255, 255, 0.3) !important;
         backdrop-filter: blur(12px) !important;
         padding: 12px !important;
     }
-
-    /* 侧边栏通透蓝灰底色 */
     section[data-testid="stSidebar"] {
-        background-color: rgba(14, 23, 34, 0.95) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(10, 24, 40, 0.95) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
     }
 
     /* 亮感磨砂电竞表格容器 */
     .hextech-table-container {
         width: 100%;
         overflow-x: auto;
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         border-radius: 12px;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
         margin-top: 10px;
@@ -148,12 +155,12 @@ st.markdown("""
     .hextech-table {
         width: 100%;
         border-collapse: collapse;
-        color: #e2e8f0;
+        color: #f1f5f9;
         font-size: 0.95rem;
         text-align: center;
     }
     .hextech-table th {
-        background: rgba(30, 48, 68, 0.7);
+        background: rgba(23, 49, 77, 0.8);
         color: #fef08a;
         font-weight: 700;
         letter-spacing: 0.6px;
@@ -166,10 +173,10 @@ st.markdown("""
         transition: background 0.2s;
     }
     .hextech-table tr:hover td {
-        background: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(56, 189, 248, 0.12) !important;
     }
     .hextech-table tr:nth-child(even) {
-        background: rgba(255, 255, 255, 0.025);
+        background: rgba(255, 255, 255, 0.03);
     }
     .hextech-badge-win {
         color: #38bdf8;
@@ -644,7 +651,7 @@ else:
         # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 亮面磨砂电竞表格拼接
+        # 亮感磨砂电竞表格拼接
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
