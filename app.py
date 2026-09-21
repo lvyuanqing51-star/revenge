@@ -248,6 +248,11 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     color: #fb7185;
     border: 1px solid rgba(251, 113, 133, 0.3);
 }
+.delta-gray {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
 
 /* 亮感磨砂电竞表格容器 */
 .hextech-table-container {
@@ -657,7 +662,7 @@ else:
         df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
 
-        # 1. 4 大单人头衔
+        # 1. 4 大单人头衔（至少2局）
         kda_candidates = df[df["总场次"] >= 2]
         if kda_candidates.empty:
             kda_candidates = df
@@ -701,93 +706,116 @@ else:
                 </div>
             """, unsafe_allow_html=True)
 
-        # 2. 羁绊看板（黄金搭档 / 难兄难弟 / 一生之敌，3列对齐）
-        if synergy_stats or nemesis_stats:
-            syn_list = []
-            for (p1, p2), v in synergy_stats.items():
-                t_games = int(v["同队场次"])
-                w_games = int(v["胜场"])
-                l_games = int(v["负场"])
-                wr = (w_games / t_games) if t_games > 0 else 0
-                syn_list.append({
-                    "pair_name": f"{short_name(p1)} & {short_name(p2)}",
-                    "games": t_games,
-                    "wins": w_games,
-                    "losses": l_games,
-                    "win_rate": wr
-                })
-            
-            syn_df = pd.DataFrame(syn_list)
-            best_pair, worst_pair = None, None
-            if not syn_df.empty:
-                syn_candidates = syn_df[syn_df["games"] >= 2]
-                if syn_candidates.empty:
-                    syn_candidates = syn_df
+        # 2. 羁绊看板（黄金搭档 / 难兄难弟 / 一生之敌，严格 >= 5 局门槛）
+        syn_list = []
+        for (p1, p2), v in synergy_stats.items():
+            t_games = int(v["同队场次"])
+            w_games = int(v["胜场"])
+            l_games = int(v["负场"])
+            wr = (w_games / t_games) if t_games > 0 else 0
+            syn_list.append({
+                "pair_name": f"{short_name(p1)} & {short_name(p2)}",
+                "games": t_games,
+                "wins": w_games,
+                "losses": l_games,
+                "win_rate": wr
+            })
+        
+        syn_df = pd.DataFrame(syn_list)
+        best_pair, worst_pair = None, None
+        if not syn_df.empty:
+            # 严格筛选：同队满 5 局以上
+            syn_candidates = syn_df[syn_df["games"] >= 5]
+            if not syn_candidates.empty:
                 best_pair = syn_candidates.sort_values(by=["win_rate", "games"], ascending=[False, False]).iloc[0]
                 worst_pair = syn_candidates.sort_values(by=["win_rate", "games"], ascending=[True, False]).iloc[0]
 
-            # 计算一生之敌（交手胜率差最大，单方面压制力最强）
-            nem_list = []
-            for (p1, p2), v in nemesis_stats.items():
-                t_games = int(v["交手场次"])
-                p1_w = int(v["p1_wins"])
-                p2_w = int(v["p2_wins"])
-                if t_games > 0:
-                    if p1_w >= p2_w:
-                        winner, loser = p1, p2
-                        w_cnt, l_cnt = p1_w, p2_w
-                    else:
-                        winner, loser = p2, p1
-                        w_cnt, l_cnt = p2_w, p1_w
-                    
-                    dom_rate = w_cnt / t_games
-                    diff = abs(p1_w - p2_w)
-                    nem_list.append({
-                        "display_name": f"{short_name(winner)} ➔ {short_name(loser)}",
-                        "games": t_games,
-                        "wins": w_cnt,
-                        "losses": l_cnt,
-                        "dom_rate": dom_rate,
-                        "diff": diff
-                    })
+        # 计算一生之敌（严格筛选：对抗满 5 局以上，单方面压制力最强）
+        nem_list = []
+        for (p1, p2), v in nemesis_stats.items():
+            t_games = int(v["交手场次"])
+            p1_w = int(v["p1_wins"])
+            p2_w = int(v["p2_wins"])
+            if t_games > 0:
+                if p1_w >= p2_w:
+                    winner, loser = p1, p2
+                    w_cnt, l_cnt = p1_w, p2_w
+                else:
+                    winner, loser = p2, p1
+                    w_cnt, l_cnt = p2_w, p1_w
+                
+                dom_rate = w_cnt / t_games
+                diff = abs(p1_w - p2_w)
+                nem_list.append({
+                    "display_name": f"{short_name(winner)} ➔ {short_name(loser)}",
+                    "games": t_games,
+                    "wins": w_cnt,
+                    "losses": l_cnt,
+                    "dom_rate": dom_rate,
+                    "diff": diff
+                })
 
-            nem_df = pd.DataFrame(nem_list)
-            rival_pair = None
-            if not nem_df.empty:
-                nem_candidates = nem_df[nem_df["games"] >= 2]
-                if nem_candidates.empty:
-                    nem_candidates = nem_df
+        nem_df = pd.DataFrame(nem_list)
+        rival_pair = None
+        if not nem_df.empty:
+            # 严格筛选：正面交手满 5 局以上
+            nem_candidates = nem_df[nem_df["games"] >= 5]
+            if not nem_candidates.empty:
                 rival_pair = nem_candidates.sort_values(by=["dom_rate", "diff", "games"], ascending=[False, False, False]).iloc[0]
 
-            st.write("")
-            col_syn1, col_syn2, col_syn3 = st.columns(3)
-            with col_syn1:
-                if best_pair is not None:
-                    st.markdown(f"""
-                        <div class="esport-card">
-                            <div class="esport-card-title">黄金搭档</div>
-                            <div class="esport-card-player">{best_pair['pair_name']}</div>
-                            <div class="esport-card-delta delta-cyan">{int(best_pair['wins'])}胜{int(best_pair['losses'])}负 ({round(best_pair['win_rate']*100, 1)}%)</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-            with col_syn2:
-                if worst_pair is not None:
-                    st.markdown(f"""
-                        <div class="esport-card">
-                            <div class="esport-card-title">难兄难弟</div>
-                            <div class="esport-card-player">{worst_pair['pair_name']}</div>
-                            <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-            with col_syn3:
-                if rival_pair is not None:
-                    st.markdown(f"""
-                        <div class="esport-card">
-                            <div class="esport-card-title">一生之敌</div>
-                            <div class="esport-card-player">{rival_pair['display_name']}</div>
-                            <div class="esport-card-delta delta-gold">{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负 ({round(rival_pair['dom_rate']*100, 1)}%压制)</div>
-                        </div>
-                    """, unsafe_allow_html=True)
+        st.write("")
+        col_syn1, col_syn2, col_syn3 = st.columns(3)
+        with col_syn1:
+            if best_pair is not None:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">黄金搭档 (≥5局)</div>
+                        <div class="esport-card-player">{best_pair['pair_name']}</div>
+                        <div class="esport-card-delta delta-cyan">{int(best_pair['wins'])}胜{int(best_pair['losses'])}负 ({round(best_pair['win_rate']*100, 1)}%)</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">黄金搭档 (≥5局)</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">暂无同队满 5 局的搭档</div>
+                    </div>
+                """, unsafe_allow_html=True)
+        with col_syn2:
+            if worst_pair is not None:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">难兄难弟 (≥5局)</div>
+                        <div class="esport-card-player">{worst_pair['pair_name']}</div>
+                        <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">难兄难弟 (≥5局)</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">暂无同队满 5 局的搭档</div>
+                    </div>
+                """, unsafe_allow_html=True)
+        with col_syn3:
+            if rival_pair is not None:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">一生之敌 (≥5局)</div>
+                        <div class="esport-card-player">{rival_pair['display_name']}</div>
+                        <div class="esport-card-delta delta-gold">{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负 ({round(rival_pair['dom_rate']*100, 1)}%压制)</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">一生之敌 (≥5局)</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">暂无交手满 5 局的宿敌</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
         st.markdown("---")
         st.subheader("📊 胜率总榜")
@@ -891,4 +919,3 @@ if submit_btn:
             st.success(f"🎉 成功录入 {added} 局战绩！")
             time.sleep(0.8)
             st.rerun()
-            
