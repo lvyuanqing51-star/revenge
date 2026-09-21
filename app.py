@@ -12,9 +12,10 @@ import pandas as pd
 import streamlit as st
 
 DATA_FILE = "records.json"
+CONFIG_FILE = "config.json"
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
-# 自定义紧凑字号样式，让名字展示整齐且不被省略截断
+# 自定义紧凑字号样式
 st.markdown(
     """
     <style>
@@ -37,6 +38,26 @@ st.markdown(
 )
 
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
+
+
+# ---------------- 0. 语音房配置管理 ----------------
+def load_config():
+  if os.path.exists(CONFIG_FILE):
+    try:
+      with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+    except Exception:
+      pass
+  return {
+      "main_voice": "https://kook.top/",  # 默认主频道
+      "blue_voice": "https://kook.top/",  # 默认蓝方语音
+      "red_voice": "https://kook.top/",  # 默认红方语音
+  }
+
+
+def save_config(cfg):
+  with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+    json.dump(cfg, f, ensure_ascii=False, indent=2)
 
 
 # ---------------- 自动名字强力归一与聚类 ----------------
@@ -147,324 +168,4 @@ def analyze_image(img_bytes, api_key):
   )
   content = resp.choices[0].message.content.strip()
   if content.startswith("```"):
-    content = content.split("```")[1]
-    if content.startswith("json"):
-      content = content[4:]
-  return json.loads(content.strip())
-
-
-def short_name(full_name):
-  return full_name.split("#")[0]
-
-
-# ---------------- 侧边栏 ----------------
-with st.sidebar:
-  st.header("⚙️ 系统管理")
-  default_key = (
-      st.secrets.get("DASHSCOPE_API_KEY", "")
-      if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets
-      else ""
-  )
-  key = st.text_input(
-      "DashScope API Key",
-      value=default_key,
-      type="password",
-      help="sk- 开头的密钥",
-  )
-
-  records = load_records()
-  st.metric("总计收录对局", f"{len(records)} 局")
-
-  st.markdown("---")
-  st.subheader("📦 数据备份与恢复")
-
-  if records:
-    json_bytes = json.dumps(records, ensure_ascii=False, indent=2).encode(
-        "utf-8"
-    )
-    st.download_button(
-        label="💾 导出战绩备份 (JSON)",
-        data=json_bytes,
-        file_name="lol_records_backup.json",
-        mime="application/json",
-        help="点击下载备份文件到本地",
-    )
-
-  with st.expander("📥 导入恢复历史数据"):
-    uploaded_backup = st.file_uploader(
-        "选择已备份的 JSON 文件",
-        type=["json"],
-        key="backup_uploader",
-    )
-    if uploaded_backup is not None:
-      try:
-        imported_data = json.load(uploaded_backup)
-        if isinstance(imported_data, list):
-          if st.button("⚡ 确认导入并覆盖", type="primary"):
-            save_records(imported_data)
-            st.success("恢复成功！正在刷新...")
-            time.sleep(0.8)
-            st.rerun()
-        else:
-          st.error("备份文件格式不符合要求！")
-      except Exception as err:
-        st.error(f"读取备份失败: {err}")
-
-  st.markdown("---")
-  pwd = st.text_input("管理密码", type="password")
-  if pwd == "666888":
-    if records and st.button("🗑️ 删除最近一局"):
-      records.pop()
-      save_records(records)
-      st.rerun()
-    if st.button("💣 清空所有对局"):
-      save_records([])
-      st.rerun()
-
-# ---------------- 主界面 1：一行大字“内战” ----------------
-st.title("内战")
-
-# ---------------- 主界面 2：战绩上传窗口 ----------------
-with st.form("upload_form", clear_on_submit=False):
-  files = st.file_uploader(
-      "上传掌盟战绩截图",
-      type=["png", "jpg", "jpeg"],
-      accept_multiple_files=True,
-      label_visibility="collapsed",
-  )
-  submit_btn = st.form_submit_button("🚀 开始录入战绩", type="primary")
-
-if submit_btn:
-  if not files:
-    st.warning("⚠️ 请先选择或拖入战绩截图！")
-  elif not key:
-    st.warning("⚠️ 请在左侧输入 DashScope API Key！")
-  else:
-    records = load_records()
-    seen_hashes = {r.get("md5") for r in records if "md5" in r}
-    added = 0
-
-    bar = st.progress(0)
-    status_box = st.empty()
-
-    for idx, file in enumerate(files):
-      status_box.info(f"⏳ 正在分析第 {idx + 1}/{len(files)} 张: {file.name}")
-      img_data = file.read()
-      h = get_md5(img_data)
-
-      if h in seen_hashes:
-        st.warning(f"⚠️ {file.name} 已录入过，已自动跳过。")
-      else:
-        try:
-          result = analyze_image(img_data, key)
-          result["md5"] = h
-          for p in result.get("players", []):
-            p["player_name"] = clean_player_name_strict(
-                p.get("player_name", "")
-            )
-          records.append(result)
-          seen_hashes.add(h)
-          added += 1
-          save_records(records)
-        except Exception as e:
-          st.error(f"❌ {file.name} 录入失败: {e}")
-
-      bar.progress((idx + 1) / len(files))
-
-    status_box.empty()
-    if added > 0:
-      st.success(f"🎉 成功录入 {added} 局战绩！")
-      time.sleep(0.8)
-      st.rerun()
-
-st.markdown("---")
-
-# ---------------- 主界面 3：趣味头衔与双人羁绊 ----------------
-records = load_records()
-if not records:
-  st.info("💡 暂无战绩数据，请在上方上传截图。")
-else:
-  all_raw = []
-  for r in records:
-    for p in r.get("players", []):
-      raw_pname = p.get("player_name", "")
-      if raw_pname:
-        all_raw.append(raw_pname)
-
-  name_mapping = build_canonical_name_map(list(set(all_raw)))
-
-  def get_final_name(pname):
-    strict_name = clean_player_name_strict(pname)
-    fname = name_mapping.get(pname, strict_name)
-    if strict_name == TARGET_QIANQIU or "千秋" in fname:
-      return TARGET_QIANQIU
-    return fname
-
-  stats = defaultdict(
-      lambda: {
-          "总场次": 0,
-          "胜场": 0,
-          "负场": 0,
-          "击杀": 0,
-          "死亡": 0,
-          "助攻": 0,
-      }
-  )
-
-  # 双人羁绊统计字典: key 为排序后的 (玩家A, 玩家B)
-  synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
-
-  for r in records:
-    blue_team = []
-    red_team = []
-
-    for p in r.get("players", []):
-      raw_pname = p.get("player_name", "")
-      if not raw_pname:
-        continue
-      fname = get_final_name(raw_pname)
-
-      stats[fname]["总场次"] += 1
-      is_win = bool(p.get("is_winner"))
-      if is_win:
-        stats[fname]["胜场"] += 1
-      else:
-        stats[fname]["负场"] += 1
-      stats[fname]["击杀"] += p.get("kills", 0)
-      stats[fname]["死亡"] += p.get("deaths", 0)
-      stats[fname]["助攻"] += p.get("assists", 0)
-
-      # 归队用于双人搭档计算
-      team_side = str(p.get("team", "")).upper()
-      if team_side == "BLUE":
-        blue_team.append((fname, is_win))
-      elif team_side == "RED":
-        red_team.append((fname, is_win))
-
-    # 计算蓝队所有双人组合
-    for t in [blue_team, red_team]:
-      # 去重同一队伍的同名玩家（防止极端识别情况）
-      team_members = list({item[0]: item[1] for item in t}.items())
-      if len(team_members) >= 2:
-        for (p1, win1), (p2, _) in combinations(team_members, 2):
-          pair_key = tuple(sorted([p1, p2]))
-          synergy_stats[pair_key]["同队场次"] += 1
-          if win1:
-            synergy_stats[pair_key]["胜场"] += 1
-          else:
-            synergy_stats[pair_key]["负场"] += 1
-
-  df = pd.DataFrame.from_dict(stats, orient="index")
-  df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-  df["KDA_num"] = (
-      (df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)
-  ).round(2)
-  df["KDA"] = df["KDA_num"].astype(str)
-
-  # ---------- 1. 单人趣味头衔计算 ----------
-  kda_candidates = df[df["总场次"] >= 2]
-  if kda_candidates.empty:
-    kda_candidates = df
-
-  top_kda_name = kda_candidates.sort_values(
-      by="KDA_num", ascending=False
-  ).index[0]
-  top_kill_name = df.sort_values(by="击杀", ascending=False).index[0]
-  top_death_name = df.sort_values(by="死亡", ascending=False).index[0]
-  top_assist_name = df.sort_values(by="助攻", ascending=False).index[0]
-
-  col1, col2, col3, col4 = st.columns(4)
-  with col1:
-    st.metric(
-        label="(KDA王)",
-        value=short_name(top_kda_name),
-        delta=f"KDA {df.loc[top_kda_name, 'KDA']}",
-    )
-  with col2:
-    st.metric(
-        label="(击杀王)",
-        value=short_name(top_kill_name),
-        delta=f"{df.loc[top_kill_name, '击杀']} 杀",
-    )
-  with col3:
-    st.metric(
-        label="(白给王)",
-        value=short_name(top_death_name),
-        delta=f"{df.loc[top_death_name, '死亡']} 阵亡",
-        delta_color="inverse",
-    )
-  with col4:
-    st.metric(
-        label="(助攻王)",
-        value=short_name(top_assist_name),
-        delta=f"{df.loc[top_assist_name, '助攻']} 助攻",
-    )
-
-  # ---------- 2. 双人羁绊计算（黄金搭档 vs 难兄难弟） ----------
-  if synergy_stats:
-    syn_list = []
-    for (p1, p2), v in synergy_stats.items():
-      t_games = v["同队场次"]
-      w_games = v["胜场"]
-      l_games = v["负场"]
-      wr = w_games / t_games if t_games > 0 else 0
-      syn_list.append({
-          "p1": p1,
-          "p2": p2,
-          "pair_name": f"{short_name(p1)} & {short_name(p2)}",
-          "games": t_games,
-          "wins": w_games,
-          "losses": l_games,
-          "win_rate": wr,
-      })
-
-    syn_df = pd.DataFrame(syn_list)
-
-    # 优先筛选同队 >= 2 场的搭档，如果不足则取全部
-    syn_candidates = syn_df[syn_df["games"] >= 2]
-    if syn_candidates.empty:
-      syn_candidates = syn_df
-
-    # 黄金搭档：胜率最高，同胜率按总场次多者优先
-    best_pair = syn_candidates.sort_values(
-        by=["win_rate", "games"], ascending=[False, False]
-    ).iloc[0]
-    # 难兄难弟：胜率最低，同胜率按总场次多者优先
-    worst_pair = syn_candidates.sort_values(
-        by=["win_rate", "games"], ascending=[True, False]
-    ).iloc[0]
-
-    st.write("")  # 微小间距
-    col_syn1, col_syn2 = st.columns(2)
-    with col_syn1:
-      st.metric(
-          label="🏆 黄金搭档 (同队胜率最高)",
-          value=best_pair["pair_name"],
-          delta=(
-              f"{best_pair['wins']}胜{best_pair['losses']}负"
-              f" ({round(best_pair['win_rate'] * 100, 1)}%)"
-          ),
-      )
-    with col_syn2:
-      st.metric(
-          label="💥 难兄难弟 (同队翻车最多)",
-          value=worst_pair["pair_name"],
-          delta=(
-              f"{worst_pair['wins']}胜{worst_pair['losses']}负"
-              f" ({round(worst_pair['win_rate'] * 100, 1)}%)"
-          ),
-          delta_color="inverse",
-      )
-
-  st.markdown("---")
-  st.subheader("胜率榜单")
-
-  df["sort_key"] = df["胜场"] / df["总场次"]
-  df = (
-      df.sort_values(
-          by=["sort_key", "总场次", "KDA_num"], ascending=[False, False, False]
-      )
-      .drop(columns=["sort_key", "KDA_num"])
-  )
-
-  st.dataframe(df, use_container_width=True)
+    content = content.split("
