@@ -46,7 +46,7 @@ NAME_FIX_MAP = {
 def clean_player_name(raw_name: str) -> str:
   name = str(raw_name).strip()
 
-  # 1. 强特征前缀拦截（只要是以 "千秋种我" 开头，无论中间被 OCR 识成什么字，直接归一）
+  # 1. 强特征前缀拦截（只要是以 "千秋种我" 开头，无论中间被认成什么，直接归一）
   if name.startswith("千秋种我") and (name.endswith("卿") or len(name) >= 6):
     return "千秋种我一栗卿"
 
@@ -293,75 +293,3 @@ with st.sidebar:
           st.toast("已撤回最新对局！", icon="🗑️")
           time.sleep(0.8)
           st.rerun()
-
-        corr_options = {i: f"第 {i + 1} 局" for i in range(len(current_records))}
-        sel_del_idx = st.selectbox(
-            "选择要删除的对局",
-            options=list(reversed(list(corr_options.keys()))),
-            format_func=lambda x: corr_options[x],
-            key="select_del_game",
-        )
-        if st.button("❌ 确认删除该局", key="btn_del_single"):
-          delete_record_by_index(sel_del_idx)
-          st.toast("已删除该局！", icon="🗑️")
-          time.sleep(0.8)
-          st.rerun()
-
-      if st.button("💣 清空所有历史数据", type="primary", key="btn_reset_all"):
-        reset_all_records()
-        st.rerun()
-    elif admin_pwd:
-      st.error("密码错误")
-
-# ---------------- 4. 主页面：Tabs 多功能展示 ----------------
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["📊 战绩与胜率榜", "🤝 羁绊与宿敌", "📜 历史对局详情", "📤 上传战绩截图"]
-)
-
-# ===== TAB 1: 胜率总榜与趣味勋章 =====
-with tab1:
-  records = load_all_records()
-  if not records:
-    st.info("💡 暂无历史对局数据。请切换到【📤 上传战绩截图】页面录入！")
-  else:
-    player_stats = defaultdict(
-        lambda: {
-            "总场次": 0,
-            "胜场": 0,
-            "负场": 0,
-            "总击杀": 0,
-            "总死亡": 0,
-            "总助攻": 0,
-            "零死对局数": 0,
-        }
-    )
-
-    for r in records:
-      for p in r.get("players", []):
-        name = clean_player_name(p.get("player_name", ""))
-        if not name:
-          continue
-        player_stats[name]["总场次"] += 1
-        if p.get("is_winner"):
-          player_stats[name]["胜场"] += 1
-        else:
-          player_stats[name]["负场"] += 1
-
-        k = int(p.get("kills", 0))
-        d = int(p.get("deaths", 0))
-        a = int(p.get("assists", 0))
-
-        player_stats[name]["总击杀"] += k
-        player_stats[name]["总死亡"] += d
-        player_stats[name]["总助攻"] += a
-        if d == 0:
-          player_stats[name]["零死对局数"] += 1
-
-    df = pd.DataFrame.from_dict(player_stats, orient="index")
-    df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-    df["K/D"] = (df["总击杀"] / df["总死亡"].replace(0, 1)).round(2)
-    df["KDA"] = (
-        (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
-    ).round(2)
-    df["场均击杀"] = (df["总击杀"] / df["总场次"]).round(1)
-    df["场均死亡"] = (df["总死亡"] / df["总场次"]).round(
