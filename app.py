@@ -30,7 +30,6 @@ st.set_page_config(
 
 st.title("🏆 英雄联盟内战战绩与羁绊看板")
 
-# ---------------- 核心：名字纠错与模糊匹配 ----------------
 KNOWN_PLAYERS = ["千秋种我一栗卿"]
 
 NAME_FIX_MAP = {
@@ -56,7 +55,6 @@ def clean_player_name(raw_name: str) -> str:
 def calculate_md5(data: bytes) -> str:
     return hashlib.md5(data).hexdigest()
 
-# ---------------- 1. 数据持久化 ----------------
 def load_all_records():
     if not os.path.exists(DATA_FILE):
         return []
@@ -128,17 +126,16 @@ def sanitize_database():
         overwrite_all_records(records)
     return modified
 
-# ---------------- 2. Qwen-VL 识别 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
     client = OpenAI(
         api_key=key,
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
     b64_img = base64.b64encode(image_bytes).decode("utf-8")
-    prompt = """这是掌上英雄联盟App或客户端结算截图。
-请精准识别整局胜负（蓝方/红方），以及所有选手ID和击杀/死亡/助攻(K/D/A)。
-注意：选手名字有“千秋种我一栗卿”，是“栗”不是“粟”或“卵”。
-输出纯JSON：
+    prompt = """这是手机端【掌上英雄联盟 App】或客户端结算截图。
+请精准识别整局胜负（蓝方/红方），以及所有选手的ID和击杀/死亡/助攻(K/D/A)。
+请勿识别英雄。注意：选手名字有“千秋种我一栗卿”，是“栗”不是“粟”或“卵”。
+输出严格纯JSON对象：
 {
   "winning_team": "BLUE",
   "players": [
@@ -161,7 +158,12 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}}
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{b64_img}"
+                            }
+                        }
                     ]
                 }],
                 response_format={"type": "json_object"},
@@ -189,7 +191,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
                 continue
             raise e
 
-# ---------------- 3. 控制面板 ----------------
+# ---------------- 侧边栏 ----------------
 with st.sidebar:
     st.title("⚙️ 控制面板")
     default_key = ""
@@ -199,17 +201,30 @@ with st.sidebar:
     except Exception:
         pass
 
-    api_key = st.text_input("通义千问 API Key", value=default_key, type="password")
+    api_key = st.text_input(
+        "通义千问 API Key",
+        value=default_key,
+        type="password"
+    )
     current_records = load_all_records()
-    st.metric("收录对局", f"{len(current_records)} 局")
+    st.metric("总计收录对局", f"{len(current_records)} 局")
 
     if current_records:
         json_data = json.dumps(current_records, ensure_ascii=False, indent=2)
-        st.download_button("💾 导出备份", data=json_data, file_name="lol_backup.json", mime="application/json")
+        st.download_button(
+            label="💾 导出战绩备份",
+            data=json_data,
+            file_name="lol_match_backup.json",
+            mime="application/json"
+        )
 
-    with st.expander("📥 导入备份"):
-        backup_file = st.file_uploader("选择备份文件", type=["json"], key="up_backup")
-        if backup_file and st.button("确认导入", key="btn_restore"):
+    with st.expander("📥 导入战绩备份"):
+        backup_file = st.file_uploader(
+            "选择备份文件",
+            type=["json"],
+            key="backup_uploader"
+        )
+        if backup_file and st.button("⚡ 确认导入恢复", key="btn_restore"):
             try:
                 imp = json.load(backup_file)
                 if isinstance(imp, list):
@@ -218,10 +233,14 @@ with st.sidebar:
                     time.sleep(1)
                     st.rerun()
             except Exception as err:
-                st.error(f"导入失败: {err}")
+                st.error(f"读取失败: {err}")
 
-    with st.expander("🔒 管理员"):
-        admin_pwd = st.text_input("管理员密码", type="password", key="inp_pwd")
+    with st.expander("🔒 管理员功能"):
+        admin_pwd = st.text_input(
+            "输入管理员密码",
+            type="password",
+            key="admin_pwd_input"
+        )
         admin_target = "666888"
         try:
             if hasattr(st, "secrets") and "ADMIN_PWD" in st.secrets:
@@ -230,34 +249,38 @@ with st.sidebar:
             pass
 
         if admin_pwd == admin_target:
-            if st.button("🧹 清洗别字", key="btn_clean"):
+            if st.button("🧹 一键清洗历史别字", key="btn_sanitize"):
                 if sanitize_database():
-                    st.toast("清洗完成！", icon="✨")
+                    st.toast("已清洗所有别字！", icon="✨")
                     time.sleep(0.8)
                     st.rerun()
                 else:
                     st.info("数据正常，无别字。")
 
             if current_records:
-                if st.button("⏪ 撤回最近一局", key="btn_undo"):
+                if st.button("⏪ 撤回最近对局", key="btn_undo"):
                     delete_record_by_index(len(current_records) - 1)
                     st.toast("已撤回！")
                     time.sleep(0.8)
                     st.rerun()
 
                 opts = {i: f"第 {i+1} 局" for i in range(len(current_records))}
-                sel_idx = st.selectbox("删除对局", options=list(reversed(list(opts.keys()))), format_func=lambda x: opts[x])
-                if st.button("❌ 确认删除", key="btn_del"):
+                sel_idx = st.selectbox(
+                    "选择删除对局",
+                    options=list(reversed(list(opts.keys()))),
+                    format_func=lambda x: opts[x]
+                )
+                if st.button("❌ 确认删除", key="btn_del_single"):
                     delete_record_by_index(sel_idx)
                     st.toast("已删除！")
                     time.sleep(0.8)
                     st.rerun()
 
-            if st.button("💣 清空数据", type="primary", key="btn_clear"):
+            if st.button("💣 清空历史数据", type="primary", key="btn_reset_all"):
                 reset_all_records()
                 st.rerun()
 
-# ==================== 顶部：折叠上传区 ====================
+# ==================== 顶部：可折叠上传区 ====================
 if "staging_records" not in st.session_state:
     st.session_state.staging_records = []
 
@@ -268,25 +291,25 @@ with st.expander("📤 录入新对局（点击展开）", expanded=expand_uploa
         "选择截图或压缩包：",
         type=["png", "jpg", "jpeg", "zip"],
         accept_multiple_files=True,
-        key="main_uploader"
+        key="main_file_uploader"
     )
 
     if uploaded_files:
         if not api_key:
             st.warning("⚠️ 请先在侧边栏填入 API Key！")
         else:
-            btn_start = st.button("🚀 开始解析", type="primary", key="btn_ai_run")
-            if btn_start:
+            if st.button("🚀 开始 AI 解析", type="primary", key="btn_start_ai"):
                 images_to_process = []
                 for f in uploaded_files:
                     file_bytes = f.getvalue()
                     if f.name.lower().endswith(".zip"):
                         try:
                             with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
-                                for zip_info in z.infolist():
-                                    if not zip_info.is_dir() and zip_info.filename.lower().endswith(('.png', '.jpg', '.jpeg')) and "__MACOSX" not in zip_info.filename:
-                                        img_data = z.read(zip_info.filename)
-                                        images_to_process.append((os.path.basename(zip_info.filename), img_data))
+                                for info in z.infolist():
+                                    fname = info.filename.lower()
+                                    if not info.is_dir() and fname.endswith(('.png', '.jpg', '.jpeg')) and "__MACOSX" not in info.filename:
+                                        img_data = z.read(info.filename)
+                                        images_to_process.append((os.path.basename(info.filename), img_data))
                         except Exception as err:
                             st.error(f"解压失败: {err}")
                     else:
@@ -296,8 +319,8 @@ with st.expander("📤 录入新对局（点击展开）", expanded=expand_uploa
                 existing_hashes = {r.get("image_hash") for r in existing_records if "image_hash" in r}
 
                 st.session_state.staging_records = []
-                pbar = st.progress(0)
                 total = len(images_to_process) if images_to_process else 1
+                pbar = st.progress(0)
 
                 for idx, (img_name, img_bytes) in enumerate(images_to_process):
                     img_hash = calculate_md5(img_bytes)
@@ -305,29 +328,3 @@ with st.expander("📤 录入新对局（点击展开）", expanded=expand_uploa
                         st.warning(f"⚠️ {img_name} 已存在，跳过！")
                         pbar.progress((idx + 1) / total)
                         continue
-
-                    with st.spinner(f"解析中 ({idx + 1}/{total}): {img_name}"):
-                        try:
-                            result = analyze_screenshot(img_bytes, api_key)
-                            item_data = {
-                                "filename": img_name,
-                                "image_bytes": img_bytes,
-                                "image_hash": img_hash,
-                                "winning_team": result.get("winning_team", "BLUE"),
-                                "players": result.get("players", [])
-                            }
-                            st.session_state.staging_records.append(item_data)
-                        except Exception as e:
-                            st.error(f"❌ {img_name} 出错: {e}")
-                    pbar.progress((idx + 1) / total)
-
-                if st.session_state.staging_records:
-                    st.success(f"🎉 成功解析 {len(st.session_state.staging_records)} 局！")
-                    time.sleep(0.5)
-                    st.rerun()
-
-    # 复核交互表格
-    if st.session_state.staging_records:
-        st.markdown("---")
-        st.markdown("#### 🔍 识别结果复核与修改")
-        for i, item in enumerate(st.session_state.staging_records):
