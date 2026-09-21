@@ -5,7 +5,6 @@ import io
 import itertools
 import json
 import os
-import re
 import time
 import zipfile
 from openai import OpenAI
@@ -101,7 +100,7 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. 针对掌盟 App 左列头像的专属切片识别 ----------------
+# ---------------- 2. 针对掌盟 App 左列头像的切片识别 ----------------
 def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
   client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
 
@@ -111,7 +110,7 @@ def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
 
   w, h = pil_img.size
 
-  # 掌盟专属图像增强
+  # 图像锐度与对比度增强
   enhancer = ImageEnhance.Sharpness(pil_img)
   pil_img = enhancer.enhance(1.3)
   enhancer_c = ImageEnhance.Contrast(pil_img)
@@ -124,8 +123,10 @@ def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
 
   full_b64 = to_b64(pil_img)
 
-  # 掌盟专属裁剪：左侧 0% ~ 28% 区域，正是从上到下整齐排列的 10 个英雄头像列！
-  left_avatar_strip = pil_img.crop((0, int(h * 0.12), int(w * 0.28), int(h * 0.95)))
+  # 裁切掌盟左侧头像竖列
+  left_avatar_strip = pil_img.crop(
+      (0, int(h * 0.12), int(w * 0.28), int(h * 0.95))
+  )
   strip_b64 = to_b64(left_avatar_strip)
 
   prompt = f"""这是手机端【掌上英雄联盟 App】的对局结算详情页截图。
@@ -176,5 +177,200 @@ def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
           temperature=0.1,
       )
       content = response.choices[0].message.content.strip()
-      content = re.sub(r"^```json\s*", "", content)
-      content = re.sub(r"\s*
+
+      # 安全清理 markdown 标记，避免因反引号导致的语法错误
+      if content.startswith("```json"):
+        content = content[7:]
+      elif content.startswith("```"):
+        content = content[3:]
+      if content.endswith("```"):
+        content = content[:-3]
+      content = content.strip()
+
+      return json.loads(content)
+    except Exception as e:
+      if attempt < max_retries - 1:
+        time.sleep((attempt + 1) * 2)
+        continue
+      raise e
+
+
+# ---------------- 3. 侧边栏与管理功能 ----------------
+with st.sidebar:
+  st.title("🎮 控制台")
+  default_key = (
+      st.secrets.get("DEEPSEEK_API_KEY", "")
+      if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets
+      else ""
+  )
+  api_key = st.text_input(
+      "DeepSeek API Key",
+      value=default_key,
+      type="password",
+      help="sk- 开头的密钥",
+  )
+
+  st.markdown("---")
+  current_records = load_all_records()
+  st.metric("总计已战", f"{len(current_records)} 局")
+
+  if current_records:
+    json_data = json.dumps(current_records, ensure_ascii=False, indent=2)
+    st.download_button(
+        label="💾 导出战绩备份 (JSON)",
+        data=json_data,
+        file_name="lol_match_backup.json",
+        mime="application/json",
+        help="定期备份，防止云端重启",
+    )
+
+  with st.expander("📥 导入战绩备份"):
+    backup_file = st.file_uploader("选择 JSON 备份文件", type=["json"])
+    if backup_file is not None:
+      try:
+        imported_data = json.load(backup_file)
+        if isinstance(imported_data, list):
+          if st.button("⚡ 确认导入覆写", type="primary"):
+            overwrite_all_records(imported_data)
+            st.success("恢复成功！")
+            time.sleep(1)
+            st.rerun()
+      except Exception as err:
+        st.error(f"读取失败: {err}")
+
+  st.markdown("---")
+  with st.expander("🔒 管理员控制台（数据校准/删除）"):
+    admin_pwd = st.text_input("管理员密码", type="password", key="admin_pwd_input")
+    if admin_pwd == "666888":
+      if current_records:
+        st.markdown("##### ✏️ 英雄手动校准")
+        corr_options = {i: f"第 {i + 1} 局" for i in range(len(current_records))}
+        sel_corr_idx = st.selectbox(
+            "选择对局",
+            options=list(reversed(list(corr_options.keys()))),
+            format_func=lambda x: corr_options[x],
+            key="select_corr_game",
+        )
+
+        target_rec = current_records[sel_corr_idx]
+        p_names = [
+            clean_player_name(p.get("player_name", f"选手{k}"))
+            for k, p in enumerate(target_rec.get("players", []))
+        ]
+        sel_p_idx = st.selectbox(
+            "选择选手",
+            options=list(range(len(p_names))),
+            format_func=lambda x: p_names[x],
+        )
+
+        curr_champ = target_rec.get("players", [])[sel_p_idx].get("champion", "")
+        st.caption(f"当前识别为：**{curr_champ}**")
+
+        new_champ = st.text_input("修正为正确英雄", value=curr_champ)
+        if st.button("💾 保存英雄修改"):
+          current_records[sel_corr_idx]["players"][sel_p_idx]["champion"] = new_champ.strip()
+          overwrite_all_records(current_records)
+          st.toast(f"已更新为 {new_champ}！", icon="✅")
+          time.sleep(0.8)
+          st.rerun()
+
+        st.divider()
+
+        if st.button("⏪ 撤回最近的一局"):
+          delete_record_by_index(len(current_records) - 1)
+          st.toast("已撤回最新对局！", icon="🗑️")
+          time.sleep(0.8)
+          st.rerun()
+
+        sel_del_idx = st.selectbox(
+            "选择要删除的对局",
+            options=list(reversed(list(corr_options.keys()))),
+            format_func=lambda x: corr_options[x],
+            key="select_del_game",
+        )
+        if st.button("❌ 确认删除该局"):
+          delete_record_by_index(sel_del_idx)
+          st.toast("已删除该局！", icon="🗑️")
+          time.sleep(0.8)
+          st.rerun()
+
+      if st.button("💣 清空所有历史数据", type="primary"):
+        reset_all_records()
+        st.rerun()
+    elif admin_pwd:
+      st.error("密码错误")
+
+# ---------------- 4. 上传与解析 ----------------
+st.header("📱 LOL 内战战绩中心 (掌盟截图版)")
+
+uploaded_files = st.file_uploader(
+    "📤 上传掌盟战绩截图（支持多图全选拖入，或直接上传 .zip 文件夹）",
+    type=["png", "jpg", "jpeg", "zip"],
+    accept_multiple_files=True,
+)
+
+if uploaded_files:
+  if not api_key:
+    st.warning("请先在左侧侧边栏填入 DeepSeek API Key！")
+  else:
+    if st.button("🚀 开始解析录入", type="primary"):
+      images_to_process = []
+      for file in uploaded_files:
+        file_bytes = file.read()
+        if file.name.lower().endswith(".zip"):
+          try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+              for zip_info in z.infolist():
+                if not zip_info.is_dir() and zip_info.filename.lower().endswith(
+                    (".png", ".jpg", ".jpeg")
+                ):
+                  img_data = z.read(zip_info.filename)
+                  if "__MACOSX" not in zip_info.filename:
+                    images_to_process.append(
+                        (os.path.basename(zip_info.filename), img_data)
+                    )
+          except Exception as e:
+            st.error(f"❌ 读取压缩包 {file.name} 失败: {e}")
+        else:
+          images_to_process.append((file.name, file_bytes))
+
+      success_count = 0
+      skip_count = 0
+      existing_records = load_all_records()
+      existing_hashes = {
+          r.get("image_hash") for r in existing_records if "image_hash" in r
+      }
+      pbar = st.progress(0)
+      total = len(images_to_process)
+
+      for idx, (img_name, img_bytes) in enumerate(images_to_process):
+        img_hash = calculate_md5(img_bytes)
+
+        if img_hash in existing_hashes:
+          st.warning(f"⚠️ {img_name} 此前已录入，自动跳过！")
+          skip_count += 1
+          pbar.progress((idx + 1) / total)
+          continue
+
+        with st.spinner(f"正在分析掌盟截图 ({idx + 1}/{total}): {img_name}..."):
+          try:
+            result = analyze_screenshot_for_app(img_bytes, api_key)
+            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
+            with open(os.path.join(IMAGE_DIR, saved_file_name), "wb") as f:
+              f.write(img_bytes)
+
+            result["image_hash"] = img_hash
+            result["image_file"] = saved_file_name
+            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            save_record(result)
+            existing_hashes.add(img_hash)
+            success_count += 1
+            time.sleep(0.5)
+          except Exception as e:
+            st.error(f"❌ {img_name} 识别失败: {e}")
+        pbar.progress((idx + 1) / total)
+
+      if success_count > 0:
+        st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
+        time.sleep(1)
