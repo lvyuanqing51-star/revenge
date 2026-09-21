@@ -1,10 +1,10 @@
+import base64
 import io
 import json
 import os
+import re
 import time
-from google import genai
-from google.genai import errors
-from google.genai import types
+from openai import OpenAI
 import pandas as pd
 from PIL import Image
 import streamlit as st
@@ -20,7 +20,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-st.title("🎮 英雄联盟对局结算智能统计看板")
+st.title("🎮 英雄联盟对局结算智能统计看板 (DeepSeek 版)")
 
 # ---------------- 核心：玩家名字防呆与纠错映射 ----------------
 NAME_FIX_MAP = {
@@ -56,7 +56,7 @@ def save_record(new_record):
 
 
 def overwrite_all_records(records_list):
-  """用于导入备份时完整恢复数据"""
+  """导入备份时一键覆写恢复"""
   with open(DATA_FILE, "w", encoding="utf-8") as f:
     json.dump(records_list, f, ensure_ascii=False, indent=2)
 
@@ -71,102 +71,75 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. 识别 Schema ----------------
-lol_schema = {
-    "type": "OBJECT",
-    "properties": {
-        "winning_team": {
-            "type": "STRING",
-            "enum": ["BLUE", "RED", "UNKNOWN"],
-            "description": "胜利方队伍",
-        },
-        "players": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "properties": {
-                    "player_name": {
-                        "type": "STRING",
-                        "description": "玩家ID/游戏名称",
-                    },
-                    "champion": {
-                        "type": "STRING",
-                        "description": "英雄名称",
-                    },
-                    "team": {
-                        "type": "STRING",
-                        "enum": ["BLUE", "RED"],
-                        "description": "所属阵营",
-                    },
-                    "kills": {"type": "INTEGER", "description": "击杀数"},
-                    "deaths": {"type": "INTEGER", "description": "死亡数"},
-                    "assists": {"type": "INTEGER", "description": "助攻数"},
-                    "is_winner": {
-                        "type": "BOOLEAN",
-                        "description": "该玩家是否获胜",
-                    },
-                },
-                "required": [
-                    "player_name",
-                    "champion",
-                    "team",
-                    "kills",
-                    "deaths",
-                    "assists",
-                    "is_winner",
-                ],
-            },
-        },
-    },
-    "required": ["winning_team", "players"],
-}
-
-
-# ---------------- 3. AI 识别函数 ----------------
+# ---------------- 2. DeepSeek API 识图核心 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
-  client = genai.Client(api_key=key)
-  prompt = (
-      "这是一张英雄联盟的战绩结算界面截图。"
-      "请精准识别所有玩家名称（包括中英文符号，注意仔细区分'栗'与'粟'等形近字）、"
-      "所选英雄、阵营（蓝方/红方）、击杀/死亡/助攻（K/D/A）以及整场胜负。严格按照 JSON"
-      " Schema 格式输出。"
-  )
+  client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
+  b64_img = base64.b64encode(image_bytes).decode("utf-8")
+
+  prompt = """这是一张英雄联盟战绩结算界面截图。
+请精准识别整局胜负（蓝方/红方）以及所有玩家的对局数据。
+请直接输出纯 JSON 对象，不要输出任何额外的 markdown 标记或解释文字。格式如下：
+{
+  "winning_team": "BLUE" 或 "RED",
+  "players": [
+    {
+      "player_name": "玩家游戏ID",
+      "champion": "所选英雄",
+      "team": "BLUE" 或 "RED",
+      "kills": 0,
+      "deaths": 0,
+      "assists": 0,
+      "is_winner": true 或 false
+    }
+  ]
+}
+注意：请仔细区分"栗"与"粟"等形近字。
+"""
 
   for attempt in range(max_retries):
     try:
-      response = client.models.generate_content(
-          model="gemini-3.6-flash",
-          contents=[
-              types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-              prompt,
-          ],
-          config=types.GenerateContentConfig(
-              response_mime_type="application/json",
-              response_schema=lol_schema,
-          ),
+      response = client.chat.completions.create(
+          model="deepseek-flash",  # 调用 DeepSeek 官方支持视觉的多模态模型
+          messages=[{
+              "role": "user",
+              "content": [
+                  {"type": "text", "text": prompt},
+                  {
+                      "type": "image_url",
+                      "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
+                  },
+              ],
+          }],
+          response_format={"type": "json_object"},
+          temperature=0.1,
       )
-      return json.loads(response.text)
-    except errors.APIError as e:
-      if e.code in [503, 429] and attempt < max_retries - 1:
-        time.sleep((attempt + 1) * 2)
-        continue
-      raise e
+
+      content = response.choices[0].message.content.strip()
+      content = re.sub(r"^```json\s*", "", content)
+      content = re.sub(r"\s*```$", "", content)
+      return json.loads(content)
+
     except Exception as e:
-      if "503" in str(e) and attempt < max_retries - 1:
+      if attempt < max_retries - 1:
         time.sleep((attempt + 1) * 2)
         continue
       raise e
 
 
-# ---------------- 4. 侧边栏配置（含导入与备份） ----------------
+# ---------------- 3. 侧边栏配置（含导入与备份） ----------------
 with st.sidebar:
   st.header("⚙️ 核心设置")
   default_key = (
-      st.secrets.get("GEMINI_API_KEY", "")
-      if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets
+      st.secrets.get("DEEPSEEK_API_KEY", "")
+      if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets
       else ""
   )
-  api_key = st.text_input("Gemini API Key", value=default_key, type="password")
+  api_key = st.text_input(
+      "DeepSeek API Key",
+      value=default_key,
+      type="password",
+      help="以 sk- 开头的 DeepSeek 密钥",
+  )
 
   st.markdown("---")
   st.header("📂 历史数据管理")
@@ -188,7 +161,7 @@ with st.sidebar:
         data=json_data,
         file_name="lol_match_backup.json",
         mime="application/json",
-        help="建议定期下载备份到本地，防止云端容器重启导致数据重置",
+        help="建议定期下载备份到本地，防止云端容器休眠重启导致数据重置",
     )
 
   # 2. 导入恢复备份功能
@@ -211,7 +184,7 @@ with st.sidebar:
         st.error(f"读取备份文件失败: {err}")
 
   st.markdown("---")
-  # 3. 管理员安全清空
+  # 3. 管理员安全清空（密码 666888）
   with st.expander("🔒 管理员功能（危险操作）"):
     admin_pwd = st.text_input(
         "输入管理密码",
@@ -228,7 +201,7 @@ with st.sidebar:
       st.error("密码错误，无法清空")
 
 
-# ---------------- 5. 榜单渲染 ----------------
+# ---------------- 4. 榜单渲染 ----------------
 def render_leaderboard(records):
   if not records:
     st.info("💡 暂无历史对局数据。请在下方上传截图开始统计！")
@@ -277,7 +250,7 @@ def render_leaderboard(records):
   st.dataframe(df, use_container_width=True)
 
 
-# ---------------- 6. 主界面上传与即时刷新 ----------------
+# ---------------- 5. 主界面上传与即时刷新 ----------------
 uploaded_files = st.file_uploader(
     "📤 上传结算截图（支持单张或批量拖入）",
     type=["png", "jpg", "jpeg"],
@@ -286,7 +259,7 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
   if not api_key:
-    st.warning("⚠️ 请先在左侧输入你的 Gemini API Key！")
+    st.warning("⚠️ 请先在左侧输入你的 DeepSeek API Key！")
   else:
     if st.button("🚀 开始解析并录入", type="primary"):
       success_count = 0
@@ -294,7 +267,7 @@ if uploaded_files:
       total = len(uploaded_files)
 
       for idx, file in enumerate(uploaded_files):
-        with st.spinner(f"正在识别 ({idx + 1}/{total}): {file.name}..."):
+        with st.spinner(f"正在使用 DeepSeek 识别 ({idx + 1}/{total}): {file.name}..."):
           try:
             img_bytes = file.read()
             result = analyze_screenshot(img_bytes, api_key)
@@ -307,7 +280,7 @@ if uploaded_files:
               img_file.write(img_bytes)
 
             success_count += 1
-            time.sleep(1)
+            time.sleep(0.5)
           except Exception as e:
             st.error(f"❌ 解析 {file.name} 失败: {str(e)}")
         progress_bar.progress((idx + 1) / total)
@@ -319,7 +292,7 @@ if uploaded_files:
 st.markdown("---")
 render_leaderboard(load_all_records())
 
-# ---------------- 7. 历史截图展示区 ----------------
+# ---------------- 6. 历史截图展示区 ----------------
 st.markdown("---")
 all_saved_imgs = [
     f
