@@ -67,14 +67,35 @@ st.markdown("""
         border: 1px solid rgba(56, 189, 248, 0.4) !important;
         border-radius: 6px !important;
     }
+    section[data-testid="stSidebar"] div[data-baseweb="input"],
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
+        background-color: #132438 !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
+        fill: #38bdf8 !important;
+        color: #38bdf8 !important;
+    }
+
+    /* 下拉选框 */
     section[data-testid="stSidebar"] div[data-baseweb="select"],
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
         background-color: #132438 !important;
-        border-color: rgba(56, 189, 248, 0.4) !important;
-        border-radius: 6px !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        border-radius: 8px !important;
+        color: #ffffff !important;
     }
-
-    /* 消除下拉箭头粉色底，图标改为醒目霓虹蓝金 */
     section[data-testid="stSidebar"] div[data-baseweb="select"] button,
     section[data-testid="stSidebar"] div[data-baseweb="select"] [role="button"] {
         background: transparent !important;
@@ -88,31 +109,34 @@ st.markdown("""
         height: 18px !important;
     }
 
-    /* 侧边栏独立操作按钮上色 */
-    section[data-testid="stSidebar"] div.stButton > button {
-        background: rgba(239, 68, 68, 0.2) !important;
+    /* ================= 核心修复：彻底消灭侧边栏下载按钮与所有按钮的白底 ================= */
+    section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button,
+    section[data-testid="stSidebar"] div.stDownloadButton button,
+    section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"],
+    section[data-testid="stSidebar"] button {
+        background: #152b45 !important;
+        background-color: #152b45 !important;
         color: #ffffff !important;
-        border: 1px solid rgba(239, 68, 68, 0.6) !important;
+        border: 1px solid rgba(56, 189, 248, 0.6) !important;
         border-radius: 8px !important;
-        font-weight: 700 !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
-        transition: all 0.2s ease !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
     }
-    section[data-testid="stSidebar"] div.stButton > button:hover {
-        background: rgba(239, 68, 68, 0.45) !important;
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
-    }
-
-    /* 侧边栏下载备份按钮（清爽科技蓝） */
-    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] > button {
-        background: rgba(56, 189, 248, 0.2) !important;
-        border: 1px solid rgba(56, 189, 248, 0.5) !important;
+    /* 强制按钮内每一层文字/图标变亮白，绝不允许隐形 */
+    section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button *,
+    section[data-testid="stSidebar"] button * {
         color: #ffffff !important;
+        fill: #ffffff !important;
+        font-weight: 700 !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+        opacity: 1 !important;
+        visibility: visible !important;
     }
-    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] > button:hover {
-        background: rgba(56, 189, 248, 0.4) !important;
-        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+    section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover,
+    section[data-testid="stSidebar"] button:hover {
+        background: #1e3d63 !important;
+        background-color: #1e3d63 !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
     }
 
     /* 侧边栏折叠面板 (Expander) */
