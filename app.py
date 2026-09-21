@@ -10,7 +10,7 @@ import time
 import zipfile
 from openai import OpenAI
 import pandas as pd
-from PIL import Image
+from PIL import Image, ImageEnhance
 import streamlit as st
 
 DATA_FILE = "records.json"
@@ -91,20 +91,49 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. DeepSeek 视觉解析 ----------------
+# ---------------- 2. DeepSeek 视觉解析（带清晰度增强与防皮肤混淆） ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
   client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
-  b64_img = base64.b64encode(image_bytes).decode("utf-8")
 
-  prompt = """这是一张英雄联盟战绩结算界面截图。
-请精准识别整局胜负（蓝方/红方）以及所有玩家的对局数据。
-请直接输出纯 JSON 对象，格式如下：
+  # 图像轻度增强：提升对比度和边缘锐度，让头像特征更分明
+  try:
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode != "RGB":
+      img = img.convert("RGB")
+    enhancer = ImageEnhance.Contrast(img)
+    img = enhancer.enhance(1.15)
+    enhancer_sharp = ImageEnhance.Sharpness(img)
+    img = enhancer_sharp.enhance(1.2)
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG", quality=95)
+    processed_bytes = buffer.getvalue()
+  except Exception:
+    processed_bytes = image_bytes
+
+  b64_img = base64.b64encode(processed_bytes).decode("utf-8")
+
+  prompt = """这是一张《英雄联盟》(League of Legends) 的对局结算界面截图。
+请精准提取整局胜负结果（蓝方/红方）以及全部 10 位玩家的对局战绩。
+
+【英雄识别关键指导原则（极其重要，避免皮肤混淆）】：
+1. 英雄圆形头像常带有皮肤或炫彩，切勿仅凭金黄、深蓝、白发、暗黑等主色调粗暴猜测！
+2. 请仔细比对英雄的面部五官、标志性发型、特征饰品或武器构图：
+   - 严加区分易混淆英雄：如亚索与永恩、卡莎与阿狸/伊芙琳、锤石与派克/泰坦、伊泽瑞尔与拉克丝等。
+3. 英雄互斥约束：正常对局中，全局 10 位玩家所使用的英雄各不相同，若识别出重复英雄，请务必核实修正。
+4. 英雄名称请输出标准规范的中文常用名（如：亚索、卡莎、李青、锤石、阿狸、瑟提、维克托等）。
+
+【信息精度要求】：
+1. 玩家昵称请准确提取，特别区分'栗'与'粟'等形近字。
+2. 击杀/死亡/助攻 (K/D/A) 必须精准对应。
+
+严格输出合法的纯 JSON 对象，格式如下：
 {
   "winning_team": "BLUE" 或 "RED",
   "players": [
     {
       "player_name": "玩家游戏ID",
-      "champion": "所选英雄",
+      "champion": "所选英雄规范名称",
       "team": "BLUE" 或 "RED",
       "kills": 0,
       "deaths": 0,
@@ -113,7 +142,6 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
     }
   ]
 }
-注意仔细区分'栗'与'粟'等形近字。
 """
 
   for attempt in range(max_retries):
@@ -126,7 +154,9 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
                   {"type": "text", "text": prompt},
                   {
                       "type": "image_url",
-                      "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
+                      "image_url": {
+                          "url": f"data:image/jpeg;base64,{b64_img}"
+                      },
                   },
               ],
           }],
@@ -171,6 +201,7 @@ with st.sidebar:
         data=json_data,
         file_name="lol_match_backup.json",
         mime="application/json",
+        help="定期下载备份，防止 Streamlit 休眠清空数据",
     )
 
   with st.expander("📥 导入战绩备份"):
@@ -188,13 +219,13 @@ with st.sidebar:
         st.error(f"读取失败: {err}")
 
   st.markdown("---")
-  with st.expander("🔒 管理员功能"):
+  with st.expander("🔒 管理员控制台"):
     admin_pwd = st.text_input("管理员密码", type="password")
     if admin_pwd == "666888":
       if current_records:
         if st.button("⏪ 撤回最近的一局"):
           delete_record_by_index(len(current_records) - 1)
-          st.toast("已撤回！", icon="🗑️")
+          st.toast("已撤回最新对局！", icon="🗑️")
           time.sleep(0.8)
           st.rerun()
 
@@ -222,11 +253,11 @@ with st.sidebar:
     elif admin_pwd:
       st.error("密码错误")
 
-# ---------------- 4. 上传区（支持图片与 ZIP 文件夹压缩包） ----------------
+# ---------------- 4. 上传与解析模块（支持直接传 ZIP 文件夹） ----------------
 st.header("⚔️ 英雄联盟内战战绩中心")
 
 uploaded_files = st.file_uploader(
-    "📤 上传结算截图（支持多张图片全选拖入，或直接把整个文件夹打包为 .zip 上传）",
+    "📤 上传结算截图（支持多张图片全选拖入，或直接把整个图片文件夹打包为 .zip 上传）",
     type=["png", "jpg", "jpeg", "zip"],
     accept_multiple_files=True,
 )
@@ -236,12 +267,10 @@ if uploaded_files:
     st.warning("请先在左侧侧边栏填入 DeepSeek API Key！")
   else:
     if st.button("🚀 开始解析录入", type="primary"):
-      # 收集待处理的所有图片 (名字, bytes)
       images_to_process = []
       for file in uploaded_files:
         file_bytes = file.read()
         if file.name.lower().endswith(".zip"):
-          # 如果用户上传的是打包的文件夹压缩包，自动解压读取里面的所有图片
           try:
             with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
               for zip_info in z.infolist():
@@ -249,7 +278,6 @@ if uploaded_files:
                     (".png", ".jpg", ".jpeg")
                 ):
                   img_data = z.read(zip_info.filename)
-                  # 过滤 macOS 自动生成的 __MACOSX 隐藏缓存文件
                   if "__MACOSX" not in zip_info.filename:
                     images_to_process.append(
                         (os.path.basename(zip_info.filename), img_data)
@@ -277,7 +305,7 @@ if uploaded_files:
           pbar.progress((idx + 1) / total)
           continue
 
-        with st.spinner(f"正在识别 ({idx + 1}/{total}): {img_name}..."):
+        with st.spinner(f"正在精准解析 ({idx + 1}/{total}): {img_name}..."):
           try:
             result = analyze_screenshot(img_bytes, api_key)
             saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
@@ -303,13 +331,12 @@ if uploaded_files:
       elif skip_count > 0:
         st.info("所有图片此前均已录入，未增加任何重复数据。")
 
-# ---------------- 5. 核心功能展示区 ----------------
+# ---------------- 5. 核心数据呈现 ----------------
 records = load_all_records()
 
 if not records:
-  st.info("💡 暂无历史对局数据，请在上方上传截图开始对决统计！")
+  st.info("💡 暂无历史对局数据，请在上方上传截图开始统计！")
 else:
-  # 4 个精简纯粹的功能 Tab（去除了连胜）
   tab1, tab2, tab3, tab4, tab5 = st.tabs([
       "🏆 胜率风云榜",
       "⚔️ 每局对决卡片（查英雄/尽力局长）",
@@ -360,7 +387,7 @@ else:
 
   # ----- Tab 2: 每局对决卡片（查英雄、局长、卧底） -----
   with tab2:
-    st.caption("💡 汇总每局双方所选英雄与对决战况，自动计算大腿、局长与卧底！")
+    st.caption("💡 汇总每局双方所选英雄与对决战况，自动评定大腿、尽力局长与卧底！")
 
     for i, r in enumerate(reversed(records)):
       idx = len(records) - i
@@ -385,7 +412,6 @@ else:
           else []
       )
 
-      # 尽力局局长
       juzhang = None
       if loser_players:
         juzhang = max(
@@ -394,10 +420,8 @@ else:
             / max(x.get("deaths", 1), 1),
         )
 
-      # 白给王/卧底
       wodi = max(players, key=lambda x: x.get("deaths", 0)) if players else None
 
-      # 胜方大腿
       datui = (
           max(winner_players, key=lambda x: x.get("kills", 0))
           if winner_players
@@ -414,7 +438,7 @@ else:
         )
         st.markdown(
             f"### 第 {idx} 局对决 【{win_label}】  "
-            f"<small style='color: gray; font-size: 0.85em;'>时间:"
+            f"<small style='color: gray; font-size: 0.85em;'>录入时间:"
             f" {r.get('uploaded_time', '历史记录')}</small>",
             unsafe_allow_html=True,
         )
@@ -494,7 +518,7 @@ else:
 
   # ----- Tab 3: 羁绊与宿命死敌 -----
   with tab3:
-    st.subheader("🔗 组合羁绊（谁带飞了谁？还是表面兄弟？）")
+    st.subheader("🔗 组合羁绊（搭档与表面兄弟）")
 
     duo_stats = defaultdict(lambda: {"total": 0, "wins": 0})
     rival_stats = defaultdict(lambda: {"total": 0, "p1_wins": 0})
@@ -540,7 +564,7 @@ else:
 
     col_d1, col_d2 = st.columns(2)
     with col_d1:
-      st.markdown("#### 🌟 黄金搭档（胜率顶峰）")
+      st.markdown("#### 🌟 黄金搭档（胜率最高）")
       if duo_list:
         duo_df_top = pd.DataFrame(duo_list).sort_values(
             by=["wr_val", "同队场次"], ascending=[False, False]
@@ -549,20 +573,20 @@ else:
             duo_df_top.drop(columns=["wr_val"]).head(5), hide_index=True
         )
       else:
-        st.caption("数据积累中（需至少同队 2 局）...")
+        st.caption("暂无足够数据（需至少同队 2 局）...")
 
     with col_d2:
-      st.markdown("#### 💔 表面兄弟（灾难二人组）")
+      st.markdown("#### 💔 表面兄弟（翻车二人组）")
       if duo_list:
         duo_df_bot = pd.DataFrame(duo_list).sort_values(
             by=["wr_val", "同队场次"], ascending=[True, False]
         )
         st.dataframe(duo_df_bot.drop(columns=["wr_val"]).head(5), hide_index=True)
       else:
-        st.caption("数据积累中...")
+        st.caption("暂无足够数据...")
 
     st.markdown("---")
-    st.subheader("⚔️ 一生之敌（分立两边对抗时的血脉压制）")
+    st.subheader("⚔️ 一生之敌（对立阵营对抗时的胜率克制）")
     rival_list = []
     for (p1, p2), s in rival_stats.items():
       if s["total"] >= 2:
@@ -576,7 +600,7 @@ else:
     if rival_list:
       st.dataframe(pd.DataFrame(rival_list), hide_index=True)
     else:
-      st.caption("需双方对抗 2 局以上解锁...")
+      st.caption("双方交手 2 局以上解锁...")
 
   # ----- Tab 4: 选手个人黑历史档案 -----
   with tab4:
@@ -609,7 +633,7 @@ else:
         st.metric("单局最高击杀", f"{max_kill} 杀")
       with c_metric3:
         max_death = max([p.get("deaths", 0) for p in p_records], default=0)
-        st.metric("单局最高白给", f"{max_death} 阵亡")
+        st.metric("单局最高阵亡", f"{max_death} 阵亡")
 
       st.markdown(f"#### 🎭 **{target_player}** 的招牌英雄池")
       champ_list = []
@@ -630,7 +654,7 @@ else:
   # ----- Tab 5: 赛后战报长图 -----
   with tab5:
     st.subheader("📸 微信群一键发图战报")
-    st.caption("长按或右键截取下方信息卡片，直接丢进群里开撕！")
+    st.caption("长按或右键截取下方信息卡片，直接丢进微信群！")
 
     total_kills = sum(df["总击杀"])
     most_kill_p = df.sort_values(by="总击杀", ascending=False).index[0]
