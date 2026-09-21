@@ -85,7 +85,7 @@ st.markdown("""
         box-shadow: 0 6px 24px rgba(251, 113, 133, 0.55) !important;
     }
 
-    /* 独立手写电竞磨砂卡片系统（替代不稳定的 st.metric） */
+    /* 独立手写电竞磨砂卡片系统 */
     .esport-card {
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.22);
@@ -379,7 +379,7 @@ with st.sidebar:
             p_rows.append({
                 "阵营": p.get("team", ""),
                 "玩家ID": short_name(p.get("player_name", "")),
-                "K/D/A": f"{p.get('kills', 0)}/{p.get('deaths', 0)}/{p.get('assists', 0)}",
+                "K/D/A": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
                 "胜负": "胜" if p.get("is_winner") else "负"
             })
         if p_rows:
@@ -560,9 +560,9 @@ else:
                 stats[fname]["胜场"] += 1
             else:
                 stats[fname]["负场"] += 1
-            stats[fname]["击杀"] += p.get("kills", 0)
-            stats[fname]["死亡"] += p.get("deaths", 0)
-            stats[fname]["助攻"] += p.get("assists", 0)
+            stats[fname]["击杀"] += int(p.get("kills", 0))
+            stats[fname]["死亡"] += int(p.get("deaths", 0))
+            stats[fname]["助攻"] += int(p.get("assists", 0))
 
             team_side = str(p.get("team", "")).upper()
             if team_side == "BLUE":
@@ -588,7 +588,7 @@ else:
         df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
 
-        # 1. 单人趣味头衔
+        # 1. 精简纯粹的 4 个单人头衔
         kda_candidates = df[df["总场次"] >= 2]
         if kda_candidates.empty:
             kda_candidates = df
@@ -598,7 +598,6 @@ else:
         top_death_name = df.sort_values(by="死亡", ascending=False).index[0]
         top_assist_name = df.sort_values(by="助攻", ascending=False).index[0]
 
-        # 彻底采用纯原生磨砂卡片渲染，头衔白字金边 100% 显现
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.markdown(f"""
@@ -613,7 +612,7 @@ else:
                 <div class="esport-card">
                     <div class="esport-card-title">击杀王</div>
                     <div class="esport-card-player">{short_name(top_kill_name)}</div>
-                    <div class="esport-card-delta delta-gold">{df.loc[top_kill_name, '击杀']} 杀</div>
+                    <div class="esport-card-delta delta-gold">{int(df.loc[top_kill_name, '击杀'])} 杀</div>
                 </div>
             """, unsafe_allow_html=True)
         with col3:
@@ -621,7 +620,7 @@ else:
                 <div class="esport-card">
                     <div class="esport-card-title">白给王</div>
                     <div class="esport-card-player">{short_name(top_death_name)}</div>
-                    <div class="esport-card-delta delta-red">{df.loc[top_death_name, '死亡']} 阵亡</div>
+                    <div class="esport-card-delta delta-red">{int(df.loc[top_death_name, '死亡'])} 阵亡</div>
                 </div>
             """, unsafe_allow_html=True)
         with col4:
@@ -629,7 +628,7 @@ else:
                 <div class="esport-card">
                     <div class="esport-card-title">助攻王</div>
                     <div class="esport-card-player">{short_name(top_assist_name)}</div>
-                    <div class="esport-card-delta delta-cyan">{df.loc[top_assist_name, '助攻']} 助攻</div>
+                    <div class="esport-card-delta delta-cyan">{int(df.loc[top_assist_name, '助攻'])} 助攻</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -637,9 +636,9 @@ else:
         if synergy_stats:
             syn_list = []
             for (p1, p2), v in synergy_stats.items():
-                t_games = v["同队场次"]
-                w_games = v["胜场"]
-                l_games = v["负场"]
+                t_games = int(v["同队场次"])
+                w_games = int(v["胜场"])
+                l_games = int(v["负场"])
                 wr = (w_games / t_games) if t_games > 0 else 0
                 syn_list.append({
                     "pair_name": f"{short_name(p1)} & {short_name(p2)}",
@@ -665,7 +664,7 @@ else:
                         <div class="esport-card">
                             <div class="esport-card-title">黄金搭档</div>
                             <div class="esport-card-player">{best_pair['pair_name']}</div>
-                            <div class="esport-card-delta delta-cyan">{best_pair['wins']}胜{best_pair['losses']}负 ({round(best_pair['win_rate']*100, 1)}%)</div>
+                            <div class="esport-card-delta delta-cyan">{int(best_pair['wins'])}胜{int(best_pair['losses'])}负 ({round(best_pair['win_rate']*100, 1)}%)</div>
                         </div>
                     """, unsafe_allow_html=True)
                 with col_syn2:
@@ -673,7 +672,7 @@ else:
                         <div class="esport-card">
                             <div class="esport-card-title">难兄难弟</div>
                             <div class="esport-card-player">{worst_pair['pair_name']}</div>
-                            <div class="esport-card-delta delta-red">{worst_pair['wins']}胜{worst_pair['losses']}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
+                            <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -683,7 +682,7 @@ else:
         # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 亮感磨砂电竞表格拼接
+        # 亮感磨砂电竞表格拼接（全量整形字段强制转为 int，杜绝 13.0）
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
@@ -692,18 +691,25 @@ else:
             kda_str = f"{row['KDA_num']:.2f}"
             p_name = short_name(player_id)
 
+            total_games = int(row['总场次'])
+            wins = int(row['胜场'])
+            losses = int(row['负场'])
+            kills = int(row['击杀'])
+            deaths = int(row['死亡'])
+            assists = int(row['助攻'])
+
             row_html = (
                 f"<tr>"
                 f"<td class='hextech-player-name'>{p_name}</td>"
-                f"<td>{row['总场次']}</td>"
-                f"<td>{row['胜场']}</td>"
-                f"<td>{row['负场']}</td>"
+                f"<td>{total_games}</td>"
+                f"<td>{wins}</td>"
+                f"<td>{losses}</td>"
                 f"<td>{wr_badge}</td>"
                 f"<td style='color:#38bdf8;font-weight:700;'>{kd_str}</td>"
                 f"<td style='color:#fef08a;font-weight:700;'>{kda_str}</td>"
-                f"<td>{row['击杀']}</td>"
-                f"<td>{row['死亡']}</td>"
-                f"<td>{row['助攻']}</td>"
+                f"<td>{kills}</td>"
+                f"<td>{deaths}</td>"
+                f"<td>{assists}</td>"
                 f"</tr>"
             )
             table_rows.append(row_html)
