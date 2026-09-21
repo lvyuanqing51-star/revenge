@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------------- 常用英雄候选池（约束幻觉） ----------------
+# ---------------- 常用英雄候选池 ----------------
 ALL_CHAMPIONS = (
     "亚索,永恩,李青,卡莎,阿狸,锤石,诺提勒斯,派克,伊泽瑞尔,拉克丝,薇恩,瑟提,维克托,赛娜,金克丝,"
     "格温,佛耶戈,劫,塞拉斯,阿卡丽,菲兹,崔斯特,德莱文,蕾欧娜,莫甘娜,嘉文四世,赵信,雷克顿,墨菲特,诺克萨斯之手,"
@@ -58,7 +58,8 @@ def load_all_records():
   if os.path.exists(DATA_FILE):
     try:
       with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+        return data if isinstance(data, list) else []
     except Exception:
       return []
   return []
@@ -100,7 +101,7 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. 针对掌盟 App 左列头像的切片识别 ----------------
+# ---------------- 2. 针对掌盟 App 图像切片识别 ----------------
 def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
   client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
 
@@ -110,7 +111,6 @@ def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
 
   w, h = pil_img.size
 
-  # 图像锐度与对比度增强
   enhancer = ImageEnhance.Sharpness(pil_img)
   pil_img = enhancer.enhance(1.3)
   enhancer_c = ImageEnhance.Contrast(pil_img)
@@ -123,35 +123,26 @@ def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
 
   full_b64 = to_b64(pil_img)
 
-  # 裁切掌盟左侧头像竖列
+  # 掌盟左侧头像栏截取
   left_avatar_strip = pil_img.crop(
-      (0, int(h * 0.12), int(w * 0.28), int(h * 0.95))
+      (0, int(h * 0.10), int(w * 0.30), int(h * 0.95))
   )
   strip_b64 = to_b64(left_avatar_strip)
 
-  prompt = f"""这是手机端【掌上英雄联盟 App】的对局结算详情页截图。
-我为你提供了两张图：
-1. 第一张是【手机全图】：用于看胜利/失败阵营、每个选手的ID文字和K/D/A数据。
-2. 第二张是【左侧英雄头像列单独放大图】：纯粹由左侧 10 位玩家的英雄圆形头像从上到下按顺序排列。
+  prompt = f"""这是手机端【掌上英雄联盟 App】对局战绩详情截图。
+提供有两张图：全景图与左侧头像列单独放大图。
+请提取整局胜负（蓝方/红方）、10位玩家游戏名、所选英雄与KDA数据。
+左侧头像列从上到下严格对应10位玩家。
+英雄名请从以下列表匹配：
+[{ALL_CHAMPIONS}]
 
-【关键结构（掌上英雄联盟布局）】：
-- 页面自上而下通常分为两个队伍（前 5 行为上方队伍，后 5 行为下方队伍）。
-- 每一行最左侧是英雄头像，往右紧接着是玩家ID、召唤师技能和 K/D/A。
-- 请将【左侧头像放大图】从上到下的 10 个头像，严格按照自上而下的顺序，精准赋给对应行的 10 位玩家！
-
-【防错要求】：
-1. 头像常常有炫彩或至臻等皮肤，请看清楚面部轮廓、特征武器或发型，切勿仅凭金黄色/深蓝色盲目猜测！
-2. 全局 10 位玩家英雄互斥（不重复）。
-3. 英雄名称请严格从官方常用名库中匹配输出：
-   [{ALL_CHAMPIONS}]
-
-严格输出合法的纯 JSON 对象，格式如下：
+严格输出JSON格式：
 {{
   "winning_team": "BLUE" 或 "RED",
   "players": [
     {{
-      "player_name": "玩家游戏ID",
-      "champion": "规范英雄名",
+      "player_name": "玩家名",
+      "champion": "英雄名",
       "team": "BLUE" 或 "RED",
       "kills": 0,
       "deaths": 0,
@@ -164,21 +155,26 @@ def analyze_screenshot_for_app(image_bytes, key, max_retries=3):
 
   content_payload = [
       {"type": "text", "text": prompt},
-      {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{full_b64}"}},
-      {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{strip_b64}"}},
+      {
+          "type": "image_url",
+          "image_url": {"url": f"data:image/jpeg;base64,{full_b64}"},
+      },
+      {
+          "type": "image_url",
+          "image_url": {"url": f"data:image/jpeg;base64,{strip_b64}"},
+      },
   ]
 
   for attempt in range(max_retries):
     try:
       response = client.chat.completions.create(
-          model="deepseek-flash",
+          model="deepseek-chat",  # 修正模型参数
           messages=[{"role": "user", "content": content_payload}],
           response_format={"type": "json_object"},
           temperature=0.1,
       )
       content = response.choices[0].message.content.strip()
 
-      # 安全清理 markdown 标记，避免因反引号导致的语法错误
       if content.startswith("```json"):
         content = content[7:]
       elif content.startswith("```"):
@@ -204,10 +200,10 @@ with st.sidebar:
       else ""
   )
   api_key = st.text_input(
-      "DeepSeek API Key",
+      "API Key",
       value=default_key,
       type="password",
-      help="sk- 开头的密钥",
+      help="以 sk- 开头的密钥",
   )
 
   st.markdown("---")
@@ -221,7 +217,6 @@ with st.sidebar:
         data=json_data,
         file_name="lol_match_backup.json",
         mime="application/json",
-        help="定期备份，防止云端重启",
     )
 
   with st.expander("📥 导入战绩备份"):
@@ -300,7 +295,7 @@ with st.sidebar:
     elif admin_pwd:
       st.error("密码错误")
 
-# ---------------- 4. 上传与解析 ----------------
+# ---------------- 4. 上传模块 ----------------
 st.header("📱 LOL 内战战绩中心 (掌盟截图版)")
 
 uploaded_files = st.file_uploader(
@@ -311,7 +306,7 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
   if not api_key:
-    st.warning("请先在左侧侧边栏填入 DeepSeek API Key！")
+    st.warning("请先在左侧侧边栏填入 API Key！")
   else:
     if st.button("🚀 开始解析录入", type="primary"):
       images_to_process = []
@@ -374,3 +369,126 @@ if uploaded_files:
       if success_count > 0:
         st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
         time.sleep(1)
+        st.rerun()
+
+# ---------------- 5. 核心看板展示（常驻显示，杜绝界面消失） ----------------
+records = load_all_records()
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🏆 胜率风云榜",
+    "⚔️ 每局对决复盘（英雄与评定）",
+    "🤝 羁绊与宿命死敌",
+    "👤 选手黑历史档案",
+    "📸 赛后长图战报",
+])
+
+# ----- Tab 1: 胜率风云榜 -----
+with tab1:
+  if not records:
+    st.info("💡 暂无历史对局数据，请在上方上传截图开始统计！")
+  else:
+    player_stats = defaultdict(
+        lambda: {
+            "总场次": 0,
+            "胜场": 0,
+            "负场": 0,
+            "总击杀": 0,
+            "总死亡": 0,
+            "总助攻": 0,
+        }
+    )
+    for r in records:
+      for p in r.get("players", []):
+        name = clean_player_name(p.get("player_name", ""))
+        if not name:
+          continue
+        player_stats[name]["总场次"] += 1
+        if p.get("is_winner"):
+          player_stats[name]["胜场"] += 1
+        else:
+          player_stats[name]["负场"] += 1
+        player_stats[name]["总击杀"] += p.get("kills", 0)
+        player_stats[name]["总死亡"] += p.get("deaths", 0)
+        player_stats[name]["总助攻"] += p.get("assists", 0)
+
+    df = pd.DataFrame.from_dict(player_stats, orient="index")
+    df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
+    df["K/D"] = (df["总击杀"] / df["总死亡"].replace(0, 1)).round(2)
+    df["KDA"] = (
+        (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
+    ).round(2)
+
+    df["win_rate_num"] = df["胜场"] / df["总场次"]
+    df = df.sort_values(
+        by=["win_rate_num", "总场次", "KDA"], ascending=[False, False, False]
+    )
+    df = df.drop(columns=["win_rate_num"])
+    st.dataframe(df, use_container_width=True)
+
+# ----- Tab 2: 每局对决卡片 -----
+with tab2:
+  if not records:
+    st.info("💡 暂无对局卡片记录。")
+  else:
+    for i, r in enumerate(reversed(records)):
+      idx = len(records) - i
+      win_team = r.get("winning_team")
+      players = r.get("players", [])
+
+      blue_players = [p for p in players if p.get("team") == "BLUE"]
+      red_players = [p for p in players if p.get("team") == "RED"]
+
+      loser_players = (
+          red_players
+          if win_team == "BLUE"
+          else blue_players
+          if win_team == "RED"
+          else []
+      )
+      winner_players = (
+          blue_players
+          if win_team == "BLUE"
+          else red_players
+          if win_team == "RED"
+          else []
+      )
+
+      juzhang = (
+          max(
+              loser_players,
+              key=lambda x: (x.get("kills", 0) + x.get("assists", 0))
+              / max(x.get("deaths", 1), 1),
+          )
+          if loser_players
+          else None
+      )
+      wodi = max(players, key=lambda x: x.get("deaths", 0)) if players else None
+      datui = (
+          max(winner_players, key=lambda x: x.get("kills", 0))
+          if winner_players
+          else None
+      )
+
+      with st.container():
+        win_label = (
+            "🟦 上方阵营胜"
+            if win_team == "BLUE"
+            else "🟥 下方阵营胜"
+            if win_team == "RED"
+            else "⚪ 赛果未知"
+        )
+        st.markdown(
+            f"### 第 {idx} 局对决 【{win_label}】  "
+            f"<small style='color: gray; font-size: 0.85em;'>录入时间:"
+            f" {r.get('uploaded_time', '历史记录')}</small>",
+            unsafe_allow_html=True,
+        )
+
+        honor_tags = []
+        if datui:
+          honor_tags.append(
+              f"✨ **胜方大腿**: {clean_player_name(datui.get('player_name', ''))}（操刀"
+              f" {datui.get('champion')} / 斩获 {datui.get('kills')} 杀）"
+          )
+        if juzhang:
+          kda_val = round
