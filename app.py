@@ -19,7 +19,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 侧边栏全面黑白分明 CSS ----------------
+# ---------------- 高级深海蓝微光 + 侧边栏按钮彻底修复 CSS ----------------
 st.markdown("""
     <style>
     /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
@@ -43,7 +43,7 @@ st.markdown("""
         letter-spacing: 0.8px;
     }
 
-    /* 侧边栏彻底修复：确保底色深沉，文字与输入框黑白分明 */
+    /* 侧边栏彻底修复：确保底色深沉，文字与控件黑白分明 */
     section[data-testid="stSidebar"] {
         background-color: #0b1726 !important;
         border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
@@ -58,6 +58,36 @@ st.markdown("""
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span {
         color: #f1f5f9 !important;
+    }
+
+    /* 核心修复：彻底解决侧边栏按钮（如删除本局、清空对局）白底白字隐形的问题 */
+    section[data-testid="stSidebar"] button {
+        background: rgba(239, 68, 68, 0.15) !important; /* 微透暗红底色 */
+        color: #ffffff !important;                       /* 纯白文字 */
+        border: 1px solid rgba(239, 68, 68, 0.4) !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+        transition: all 0.2s ease !important;
+    }
+    section[data-testid="stSidebar"] button:hover {
+        background: rgba(239, 68, 68, 0.35) !important;
+        border-color: #ef4444 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.4) !important;
+    }
+    /* 侧边栏非删除类通用按钮（如保存链接、下载备份）恢复沉稳科技蓝底 */
+    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] button,
+    section[data-testid="stSidebar"] form button {
+        background: rgba(56, 189, 248, 0.15) !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] button:hover,
+    section[data-testid="stSidebar"] form button:hover {
+        background: rgba(56, 189, 248, 0.3) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
     }
 
     /* 针对输入框、密码框、下拉框内文字彻底高亮，背景设为深色 */
