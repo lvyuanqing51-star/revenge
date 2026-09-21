@@ -19,103 +19,166 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
-# ---------------- 优雅现代明亮风 CSS ----------------
+# ---------------- 全局海克斯科技暗黑电竞 CSS ----------------
 st.markdown(
     """
     <style>
-    /* 全局背景：柔和现代极简浅灰白 */
+    /* 全局背景：深邃峡谷暗夜星空 */
     .stApp {
-        background: #f8fafc !important;
-        color: #1e293b !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: radial-gradient(circle at 50% 0%, #0d1927 0%, #070a0e 100%) !important;
+        color: #cdbe91 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    /* 顶部标题 */
+    /* 顶部标题：海克斯鎏金渐变 */
     h1 {
-        color: #0f172a !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.5px;
+        background: linear-gradient(90deg, #c8aa6e 0%, #f0e6d2 50%, #c8aa6e 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        font-weight: 900 !important;
+        letter-spacing: 2px !important;
+        text-shadow: 0 0 25px rgba(200, 170, 110, 0.3) !important;
+    }
+    h2, h3 {
+        color: #f0e6d2 !important;
+        letter-spacing: 1px;
     }
 
-    /* 语音作战室三大专属微光按钮（适配浅底） */
+    /* 语音作战室专属呼吸发光按钮 */
     div[data-testid="stLinkButton"] a {
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-        transition: all 0.25s ease !important;
-        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
     div[data-testid="stLinkButton"] a:hover {
         transform: translateY(-2px);
     }
-    /* 大厅主语音：雅金质感 */
+    /* 大厅主语音：暗金微光 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-        border-color: #fde68a !important;
-        color: #92400e !important;
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+        background: linear-gradient(135deg, rgba(50, 40, 20, 0.9), rgba(200, 170, 110, 0.35)) !important;
+        border-color: #c8aa6e !important;
+        box-shadow: 0 0 15px rgba(200, 170, 110, 0.25) !important;
+        color: #f0e6d2 !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.25) !important;
+        box-shadow: 0 0 25px rgba(200, 170, 110, 0.5) !important;
     }
-    /* 蓝方作战室：清爽科技蓝 */
+    /* 蓝方作战室：海克斯霓虹蓝 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-        border-color: #bfdbfe !important;
-        color: #1d4ed8 !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15) !important;
+        background: linear-gradient(135deg, rgba(10, 45, 80, 0.9), rgba(0, 150, 255, 0.4)) !important;
+        border-color: #0ac8b9 !important;
+        box-shadow: 0 0 15px rgba(10, 200, 185, 0.3) !important;
+        color: #e0f7fa !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25) !important;
+        box-shadow: 0 0 25px rgba(10, 200, 185, 0.6) !important;
     }
-    /* 红方作战室：赤焰红微光 */
+    /* 红方作战室：暗红熔岩光 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important;
-        border-color: #fecdd3 !important;
-        color: #be123c !important;
-        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.15) !important;
+        background: linear-gradient(135deg, rgba(80, 15, 25, 0.9), rgba(230, 50, 70, 0.4)) !important;
+        border-color: #e84057 !important;
+        box-shadow: 0 0 15px rgba(232, 64, 87, 0.3) !important;
+        color: #ffebee !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 6px 16px rgba(225, 29, 72, 0.25) !important;
+        box-shadow: 0 0 25px rgba(232, 64, 87, 0.6) !important;
     }
 
-    /* 指标卡片：精致白卡与轻柔阴影 */
+    /* 指标卡片：海克斯毛玻璃暗金面板 */
     div[data-testid="stMetric"] {
-        background: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 12px !important;
-        padding: 14px 18px !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        background: rgba(13, 22, 33, 0.75) !important;
+        border: 1px solid rgba(200, 170, 110, 0.3) !important;
+        border-radius: 10px !important;
+        padding: 14px 16px !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
     }
     div[data-testid="stMetric"]:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07) !important;
-        border-color: #cbd5e1 !important;
+        transform: translateY(-3px) !important;
+        border-color: rgba(200, 170, 110, 0.8) !important;
+        box-shadow: 0 6px 25px rgba(200, 170, 110, 0.25) !important;
     }
     div[data-testid="stMetricLabel"] p {
-        font-size: 0.85rem !important;
-        color: #64748b !important;
-        font-weight: 500 !important;
+        font-size: 0.82rem !important;
+        color: #a09b8c !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px;
     }
     div[data-testid="stMetricValue"] > div {
-        font-size: 1.22rem !important;
-        font-weight: 700 !important;
-        color: #0f172a !important;
+        font-size: 1.25rem !important;
+        font-weight: 800 !important;
+        color: #f0e6d2 !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
-    div[data-testid="stMetricDelta"] {
-        font-size: 0.82rem !important;
+
+    /* 上传框与侧边栏深色适配 */
+    div[data-testid="stFileUploader"] {
+        background: rgba(13, 22, 33, 0.5) !important;
+        border-radius: 8px !important;
+        border: 1px dashed rgba(200, 170, 110, 0.4) !important;
+        padding: 10px !important;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #06090d !important;
+        border-right: 1px solid rgba(200, 170, 110, 0.15) !important;
     }
 
-    /* 表格容器无缝融入 */
-    div[data-testid="stDataFrame"] {
-        border-radius: 12px !important;
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-        overflow: hidden !important;
-        background: #ffffff !important;
+    /* 自定义纯血电竞暗黑表格容器 */
+    .hextech-table-container {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid rgba(200, 170, 110, 0.35);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+        background: rgba(11, 18, 26, 0.85);
+        backdrop-filter: blur(8px);
+        margin-top: 10px;
+    }
+    .hextech-table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #f0e6d2;
+        font-size: 0.92rem;
+        text-align: center;
+    }
+    .hextech-table th {
+        background: linear-gradient(180deg, rgba(30, 45, 60, 0.9), rgba(15, 25, 35, 0.95));
+        color: #c8aa6e;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 12px 10px;
+        border-bottom: 2px solid rgba(200, 170, 110, 0.4);
+    }
+    .hextech-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background 0.2s;
+    }
+    .hextech-table tr:hover td {
+        background: rgba(200, 170, 110, 0.12) !important;
+    }
+    .hextech-table tr:nth-child(even) {
+        background: rgba(18, 28, 40, 0.4);
+    }
+    .hextech-badge-win {
+        color: #0ac8b9;
+        font-weight: 700;
+        text-shadow: 0 0 10px rgba(10, 200, 185, 0.3);
+    }
+    .hextech-badge-loss {
+        color: #e84057;
+        font-weight: 700;
+    }
+    .hextech-player-name {
+        text-align: left;
+        padding-left: 16px !important;
+        font-weight: 600;
+        color: #e1e7eb;
     }
     </style>
 """,
@@ -415,7 +478,7 @@ with st.sidebar:
       st.error("❌ 密码错误")
 
 # ---------------- 主界面 1：标题与连麦作战室直达 ----------------
-st.title("内战")
+st.title("⚔️ 峡谷内战控制台")
 
 cfg = load_config()
 c1, c2, c3 = st.columns(3)
@@ -573,12 +636,11 @@ else:
   df = pd.DataFrame.from_dict(stats, orient="index")
 
   if not df.empty:
-    df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
+    df["胜率_num"] = (df["胜场"] / df["总场次"] * 100).round(1)
     df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
     df["KDA_num"] = (
         (df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)
     ).round(2)
-    df["KDA"] = df["KDA_num"].astype(str)
 
     # 1. 单人趣味头衔
     kda_candidates = df[df["总场次"] >= 2]
@@ -597,7 +659,7 @@ else:
       st.metric(
           label="💀 峡谷死神 (KDA王)",
           value=short_name(top_kda_name),
-          delta=f"KDA {df.loc[top_kda_name, 'KDA']}",
+          delta=f"KDA {df.loc[top_kda_name, 'KDA_num']}",
       )
     with col2:
       st.metric(
@@ -671,28 +733,63 @@ else:
           )
 
     st.markdown("---")
-    st.subheader("胜率榜单")
+    st.subheader("📊 胜率总榜")
 
-    df["sort_key"] = df["胜场"] / df["总场次"]
-    df = (
-        df.sort_values(
-            by=["sort_key", "总场次", "KDA_num"],
-            ascending=[False, False, False],
-        )
-        .drop(columns=["sort_key", "KDA_num"])
+    # 排序
+    df = df.sort_values(
+        by=["胜率_num", "总场次", "KDA_num"],
+        ascending=[False, False, False],
     )
 
-    col_order = [
-        "总场次",
-        "胜场",
-        "负场",
-        "胜率",
-        "KD",
-        "KDA",
-        "击杀",
-        "死亡",
-        "助攻",
-    ]
-    df = df[col_order]
+    # 渲染海克斯纯暗黑电竞表格（彻底告别白色生硬表格）
+    table_rows = []
+    for player_id, row in df.iterrows():
+      wr_val = row["胜率_num"]
+      wr_badge = (
+          f"<span class='hextech-badge-win'>{wr_val}%</span>"
+          if wr_val >= 50
+          else f"<span class='hextech-badge-loss'>{wr_val}%</span>"
+      )
+      kd_str = f"{row['KD']:.2f}"
+      kda_str = f"{row['KDA_num']:.2f}"
+      p_name = short_name(player_id)
 
-    st.dataframe(df, use_container_width=True)
+      table_rows.append(f"""
+                <tr>
+                    <td class="hextech-player-name">{p_name}</td>
+                    <td>{row['总场次']}</td>
+                    <td>{row['胜场']}</td>
+                    <td>{row['负场']}</td>
+                    <td>{wr_badge}</td>
+                    <td style="color:#0ac8b9;font-weight:600;">{kd_str}</td>
+                    <td style="color:#c8aa6e;font-weight:700;">{kda_str}</td>
+                    <td>{row['击杀']}</td>
+                    <td>{row['死亡']}</td>
+                    <td>{row['助攻']}</td>
+                </tr>
+            """)
+
+    custom_table_html = f"""
+        <div class="hextech-table-container">
+            <table class="hextech-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding-left: 16px;">玩家</th>
+                        <th>总场次</th>
+                        <th>胜场</th>
+                        <th>负场</th>
+                        <th>胜率</th>
+                        <th>KD比</th>
+                        <th>KDA</th>
+                        <th>击杀</th>
+                        <th>死亡</th>
+                        <th>助攻</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {''.join(table_rows)}
+                </tbody>
+            </table>
+        </div>
+        """
+    st.markdown(custom_table_html, unsafe_allow_html=True)
