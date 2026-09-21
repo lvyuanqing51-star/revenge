@@ -346,26 +346,26 @@ else:
   col1, col2, col3, col4 = st.columns(4)
   with col1:
     st.metric(
-        label="💀 峡谷死神 (KDA王)",
+        label="KDA王",
         value=short_name(top_kda_name),
         delta=f"KDA {df.loc[top_kda_name, 'KDA']}",
     )
   with col2:
     st.metric(
-        label="🩸 人头收割机 (击杀王)",
+        label="击杀王",
         value=short_name(top_kill_name),
         delta=f"{df.loc[top_kill_name, '击杀']} 杀",
     )
   with col3:
     st.metric(
-        label="🥔 慈善赌王 (白给王)",
+        label="白给王",
         value=short_name(top_death_name),
         delta=f"{df.loc[top_death_name, '死亡']} 阵亡",
         delta_color="inverse",
     )
   with col4:
     st.metric(
-        label="🤝 金牌工具人 (助攻王)",
+        label="助攻王",
         value=short_name(top_assist_name),
         delta=f"{df.loc[top_assist_name, '助攻']} 助攻",
     )
