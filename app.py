@@ -17,7 +17,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
-# 严格限定 CSS 作用域，只缩小卡片指标字体，绝不影响上传窗口和表格
+# 严格限定 CSS 作用域，优化卡片字号防止截断
 st.markdown(
     """
     <style>
@@ -280,7 +280,7 @@ with c3:
 
 st.write("")
 
-# ---------------- 主界面 2：战绩上传窗口（稳固标准渲染） ----------------
+# ---------------- 主界面 2：战绩上传窗口 ----------------
 with st.form("upload_box", clear_on_submit=False):
   files = st.file_uploader(
       "选择或拖拽战绩截图",
@@ -334,7 +334,7 @@ if submit_btn:
 
 st.markdown("---")
 
-# ---------------- 主界面 3：趣味头衔、羁绊与胜率榜 ----------------
+# ---------------- 主界面 3：趣味头衔、双人羁绊与胜率榜 ----------------
 records = load_records()
 
 if not records:
@@ -412,6 +412,9 @@ else:
 
   if not df.empty:
     df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
+
+    # 新增：纯击杀死亡比 (KD) 与 综合 KDA
+    df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
     df["KDA_num"] = (
         (df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)
     ).round(2)
@@ -510,6 +513,7 @@ else:
     st.markdown("---")
     st.subheader("胜率榜单")
 
+    # 排序与列调整
     df["sort_key"] = df["胜场"] / df["总场次"]
     df = (
         df.sort_values(
@@ -518,5 +522,19 @@ else:
         )
         .drop(columns=["sort_key", "KDA_num"])
     )
+
+    # 调整表格列顺序：总场次 -> 胜场 -> 负场 -> 胜率 -> KD -> KDA -> 击杀 -> 死亡 -> 助攻
+    col_order = [
+        "总场次",
+        "胜场",
+        "负场",
+        "胜率",
+        "KD",
+        "KDA",
+        "击杀",
+        "死亡",
+        "助攻",
+    ]
+    df = df[col_order]
 
     st.dataframe(df, use_container_width=True)
