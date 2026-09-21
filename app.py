@@ -16,47 +16,35 @@ st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
 # ---------------- 自动名字强力归一与聚类 ----------------
 def normalize_name_skeleton(name: str) -> str:
-  """骨架化名字：去空格、统一番号、去除常见混淆标点（丶、顿号、横杠等）"""
   if not name:
     return ""
   s = str(name).strip()
-  # 去除所有不可见空白
   s = re.sub(r"[\s\u200b\ufeff\u3000]+", "", s)
-  # 统一全角井号
-  s = s.replace("＃", "#")
-  # 统一横杠类
-  s = s.replace("—", "-").replace("–", "-")
-  # 统一各种'点'和'顿号'为无，解决 大原丶 与 大原、 的分裂
+  s = s.replace("＃", "#").replace("—", "-").replace("–", "-")
   s = s.replace("丶", "").replace("、", "").replace(",", "")
-  # 统一千秋字形
   s = s.replace("一粟卿", "一栗卿")
   return s
 
 
 def build_canonical_name_map(all_raw_names: list) -> dict:
-  """根据所有出现的原始名字，自动聚类合并相似度超 85% 或骨架相同的名字"""
   mapping = {}
-  unique_clusters = []  # 存放标准名称
+  unique_clusters = []
 
   for raw in all_raw_names:
     if not raw:
       continue
     skel = normalize_name_skeleton(raw)
 
-    # 优先强规则：千秋系列
     if "千秋" in raw:
       mapping[raw] = "千秋种我一栗卿#52652"
       continue
 
-    # 检查是否与已有聚类高度相似
     matched_target = None
     for cluster in unique_clusters:
       cluster_skel = normalize_name_skeleton(cluster)
-      # 骨架完全一致（如 大原丶娜娜子#64291 和 大原、娜娜子#64291）
       if skel == cluster_skel:
         matched_target = cluster
         break
-      # 或者相似度大于 88%
       ratio = difflib.SequenceMatcher(None, skel, cluster_skel).ratio()
       if ratio >= 0.88:
         matched_target = cluster
@@ -79,7 +67,8 @@ def load_records():
   if os.path.exists(DATA_FILE):
     try:
       with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+        return data if isinstance(data, list) else []
     except Exception:
       return []
   return []
@@ -130,8 +119,9 @@ def analyze_image(img_bytes, api_key):
   return json.loads(content.strip())
 
 
-# ---------------- 侧边栏 ----------------
+# ---------------- 侧边栏（配置、数据备份与恢复） ----------------
 with st.sidebar:
+  st.header("⚙️ 系统管理")
   default_key = (
       st.secrets.get("DASHSCOPE_API_KEY", "")
       if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets
@@ -145,8 +135,46 @@ with st.sidebar:
   )
 
   records = load_records()
-  st.caption(f"已录入对局: {len(records)} 局")
+  st.metric("总计收录对局", f"{len(records)} 局")
 
+  st.markdown("---")
+  st.subheader("📦 数据备份与恢复")
+
+  # 1. 导出备份
+  if records:
+    json_bytes = json.dumps(records, ensure_ascii=False, indent=2).encode(
+        "utf-8"
+    )
+    st.download_button(
+        label="💾 导出战绩备份 (JSON)",
+        data=json_bytes,
+        file_name="lol_records_backup.json",
+        mime="application/json",
+        help="点击下载备份文件到本地，防止云端容器重启清空",
+    )
+
+  # 2. 导入恢复
+  with st.expander("📥 导入恢复历史数据"):
+    uploaded_backup = st.file_uploader(
+        "选择已备份的 JSON 文件",
+        type=["json"],
+        key="backup_uploader",
+    )
+    if uploaded_backup is not None:
+      try:
+        imported_data = json.load(uploaded_backup)
+        if isinstance(imported_data, list):
+          if st.button("⚡ 确认导入并覆盖", type="primary"):
+            save_records(imported_data)
+            st.success("恢复成功！正在刷新...")
+            time.sleep(0.8)
+            st.rerun()
+        else:
+          st.error("备份文件格式不符合要求！")
+      except Exception as err:
+        st.error(f"读取备份失败: {err}")
+
+  st.markdown("---")
   pwd = st.text_input("管理密码", type="password")
   if pwd == "666888":
     if records and st.button("🗑️ 删除最近一局"):
@@ -218,7 +246,6 @@ records = load_records()
 if not records:
   st.info("💡 暂无战绩数据，请在上方上传截图。")
 else:
-  # 1. 先收集库中所有出现的全部原始玩家名
   all_raw = []
   for r in records:
     for p in r.get("players", []):
@@ -226,7 +253,6 @@ else:
       if pname:
         all_raw.append(pname)
 
-  # 2. 自动生成聚类映射字典（彻底合并微小标点差异如 丶 与 、）
   name_mapping = build_canonical_name_map(list(set(all_raw)))
 
   stats = defaultdict(
@@ -245,7 +271,6 @@ else:
       raw_pname = p.get("player_name", "").strip()
       if not raw_pname:
         continue
-      # 使用自动聚类后的统一名字
       final_name = name_mapping.get(raw_pname, raw_pname)
 
       stats[final_name]["总场次"] += 1
