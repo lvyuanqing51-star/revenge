@@ -2,6 +2,7 @@ import base64
 from collections import defaultdict
 import difflib
 import hashlib
+from io import BytesIO
 from itertools import combinations
 import json
 import os
@@ -9,6 +10,7 @@ import re
 import time
 from openai import OpenAI
 import pandas as pd
+from PIL import Image
 import streamlit as st
 
 DATA_FILE = "records.json"
@@ -17,7 +19,6 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
-# 严格限定 CSS 作用域，优化卡片字号防止截断
 st.markdown(
     """
     <style>
@@ -40,7 +41,7 @@ st.markdown(
 )
 
 
-# ---------------- 0. 语音配置 ----------------
+# ---------------- 0. 配置与图片压缩 ----------------
 def load_config():
   if os.path.exists(CONFIG_FILE):
     try:
@@ -58,6 +59,23 @@ def load_config():
 def save_config(cfg):
   with open(CONFIG_FILE, "w", encoding="utf-8") as f:
     json.dump(cfg, f, ensure_ascii=False, indent=2)
+
+
+def compress_image_to_b64(img_bytes, max_w=720):
+  """压缩原图并转为轻量 Base64 存储，方便回溯核对且不占满磁盘"""
+  try:
+    img = Image.open(BytesIO(img_bytes))
+    if img.mode in ("RGBA", "P"):
+      img = img.convert("RGB")
+    ratio = max_w / float(img.size[0])
+    if ratio < 1.0:
+      new_h = int(float(img.size[1]) * ratio)
+      img = img.resize((max_w, new_h), Image.Resampling.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=75)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+  except Exception:
+    return ""
 
 
 # ---------------- 1. 名字清洗与归一 ----------------
@@ -177,7 +195,7 @@ def short_name(full_name):
   return full_name.split("#")[0]
 
 
-# ---------------- 侧边栏 ----------------
+# ---------------- 侧边栏（管理 + 对局核对抽屉） ----------------
 with st.sidebar:
   st.header("⚙️ 系统管理")
   default_key = (
@@ -195,6 +213,56 @@ with st.sidebar:
   records = load_records()
   st.metric("总计收录对局", f"{len(records)} 局")
 
+  # --- 新增：逐局战绩回溯与图文核对 ---
+  if records:
+    st.markdown("---")
+    st.subheader("🔍 对局图文核对")
+    game_options = [
+        f"第 {i + 1} 局 ({r.get('winning_team', '未知')}方胜)"
+        for i, r in enumerate(records)
+    ]
+    selected_idx = st.selectbox(
+        "选择要核对的场次",
+        range(len(records)),
+        format_func=lambda i: game_options[i],
+    )
+
+    curr_record = records[selected_idx]
+
+    # 显示该局关联的截图
+    thumb_b64 = curr_record.get("image_thumb", "")
+    if thumb_b64:
+      st.image(
+          f"data:image/jpeg;base64,{thumb_b64}",
+          caption=f"第 {selected_idx + 1} 局原始结算图",
+          use_container_width=True,
+      )
+    else:
+      st.caption("ℹ️ 此历史记录无缓存截图（更新代码前录入的数据）。")
+
+    # 显示该局提取的10人明细表格
+    p_rows = []
+    for p in curr_record.get("players", []):
+      p_rows.append({
+          "阵营": p.get("team", ""),
+          "玩家ID": short_name(p.get("player_name", "")),
+          "K/D/A": (
+              f"{p.get('kills', 0)}/{p.get('deaths', 0)}/{p.get('assists', 0)}"
+          ),
+          "胜负": "胜" if p.get("is_winner") else "负",
+      })
+    if p_rows:
+      st.dataframe(pd.DataFrame(p_rows), hide_index=True)
+
+    # 发现认错时支持定向删除该局
+    if st.button("🗑️ 删除本局错误战绩", key=f"del_game_{selected_idx}"):
+      records.pop(selected_idx)
+      save_records(records)
+      st.success("已删除该局记录！")
+      time.sleep(0.5)
+      st.rerun()
+
+  # --- 语音房设置 ---
   with st.expander("🎙️ 配置内战语音房链接"):
     cfg = load_config()
     new_main = st.text_input("大厅主语音链接", value=cfg.get("main_voice", ""))
@@ -313,6 +381,9 @@ if submit_btn:
         try:
           result = analyze_image(img_data, key)
           result["md5"] = h
+          # 保存经过优化的图片 Base64 缩略图用于回溯
+          result["image_thumb"] = compress_image_to_b64(img_data)
+
           for p in result.get("players", []):
             p["player_name"] = clean_player_name_strict(
                 p.get("player_name", "")
@@ -412,8 +483,6 @@ else:
 
   if not df.empty:
     df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-
-    # 新增：纯击杀死亡比 (KD) 与 综合 KDA
     df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
     df["KDA_num"] = (
         (df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)
@@ -513,7 +582,6 @@ else:
     st.markdown("---")
     st.subheader("胜率榜单")
 
-    # 排序与列调整
     df["sort_key"] = df["胜场"] / df["总场次"]
     df = (
         df.sort_values(
@@ -523,7 +591,6 @@ else:
         .drop(columns=["sort_key", "KDA_num"])
     )
 
-    # 调整表格列顺序：总场次 -> 胜场 -> 负场 -> 胜率 -> KD -> KDA -> 击杀 -> 死亡 -> 助攻
     col_order = [
         "总场次",
         "胜场",
