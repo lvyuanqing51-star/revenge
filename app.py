@@ -305,56 +305,61 @@ with st.sidebar:
     elif admin_pwd:
       st.error("密码错误")
 
-# ==================== 顶部核心：直接强制展示上传区域 ====================
-st.markdown("---")
-st.subheader("📤 上传战绩截图并核对")
-st.caption("支持直接多选 `.png / .jpg` 图片，或者直接上传包含截图的 `.zip` 压缩包。")
-
+# ==================== 顶部：可折叠的上传与复核入口 ====================
 if "staging_records" not in st.session_state:
   st.session_state.staging_records = []
 
-uploaded_files = st.file_uploader(
-    "点击下方区域选择文件，或将截图文件拖曳至此：",
-    type=["png", "jpg", "jpeg", "zip"],
-    accept_multiple_files=True,
-    key="main_file_uploader_standalone",
-)
+# 如果当前有待复核的数据，自动保持展开状态；否则默认折叠，把首屏留给排行榜
+has_pending_review = len(st.session_state.staging_records) > 0
 
-if uploaded_files:
-  if not api_key:
-    st.warning("⚠️ 请先在左侧侧边栏填入通义千问 API Key！")
-  else:
-    if st.button(
-        "🚀 开始 AI 解析（放入待复核区）",
-        type="primary",
-        key="btn_start_ai_process",
-    ):
-      images_to_process = []
-      for f in uploaded_files:
-        file_bytes = f.getvalue()
-        if f.name.lower().endswith(".zip"):
-          try:
-            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
-              for zip_info in z.infolist():
-                if (
-                    not zip_info.is_dir()
-                    and zip_info.filename.lower().endswith(
-                        (".png", ".jpg", ".jpeg")
+with st.expander(
+    "📤 录入新对局战绩（点击展开上传截图与核对）",
+    expanded=has_pending_review,
+):
+  st.caption("提示：支持单选/多选截图图片，或者直接拖入内含战绩图的 `.zip` 压缩包。")
+
+  uploaded_files = st.file_uploader(
+      "拖入战绩截图或压缩包：",
+      type=["png", "jpg", "jpeg", "zip"],
+      accept_multiple_files=True,
+      key="main_file_uploader_standalone",
+  )
+
+  if uploaded_files:
+    if not api_key:
+      st.warning("⚠️ 请先在左侧控制面板中填入通义千问 API Key！")
+    else:
+      if st.button(
+          "🚀 开始 AI 识别（进入待复核）",
+          type="primary",
+          key="btn_start_ai_process",
+      ):
+        images_to_process = []
+        for f in uploaded_files:
+          file_bytes = f.getvalue()
+          if f.name.lower().endswith(".zip"):
+            try:
+              with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+                for zip_info in z.infolist():
+                  if (
+                      not zip_info.is_dir()
+                      and zip_info.filename.lower().endswith(
+                          (".png", ".jpg", ".jpeg")
+                      )
+                      and "__MACOSX" not in zip_info.filename
+                  ):
+                    img_data = z.read(zip_info.filename)
+                    images_to_process.append(
+                        (os.path.basename(zip_info.filename), img_data)
                     )
-                    and "__MACOSX" not in zip_info.filename
-                ):
-                  img_data = z.read(zip_info.filename)
-                  images_to_process.append(
-                      (os.path.basename(zip_info.filename), img_data)
-                  )
-          except Exception as err:
-            st.error(f"❌ 压缩包 {f.name} 读取失败: {err}")
-        else:
-          images_to_process.append((f.name, file_bytes))
+            except Exception as err:
+              st.error(f"❌ 压缩包 {f.name} 读取失败: {err}")
+          else:
+            images_to_process.append((f.name, file_bytes))
 
-      existing_records = load_all_records()
-      existing_hashes = {
-          r.get("image_hash") for r in existing_records if "image_hash" in r
-      }
+        existing_records = load_all_records()
+        existing_hashes = {
+            r.get("image_hash") for r in existing_records if "image_hash" in r
+        }
 
-      st.session_state.staging_records = []
+        st.session_
