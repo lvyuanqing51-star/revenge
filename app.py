@@ -13,25 +13,17 @@ import streamlit as st
 DATA_FILE = "records.json"
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
-# 标准千秋统一名称
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 
+# ---------------- 自动名字强力归一与聚类 ----------------
 def clean_player_name_strict(name: str) -> str:
-  """无死角终极归一化拦截器"""
   if not name:
     return ""
 
-  # 1. 强力清除所有不可见字符、零宽字符、首尾及中间空白
   s = re.sub(r"[\s\u200b\ufeff\u3000\r\n\t]+", "", str(name))
-
-  # 2. 统一全角井号及破折号/减号
   s = s.replace("＃", "#").replace("—", "-").replace("–", "-")
 
-  # 3. 千秋特征多维度穿透拦截（只要命中其一，直接锁死）
-  # 特征A: 包含千秋
-  # 特征B: 包含专属Tag 52652
-  # 特征C: 包含核心字样（一栗、一粟、—栗、-栗等）
   if (
       ("千秋" in s)
       or ("52652" in s)
@@ -42,14 +34,11 @@ def clean_player_name_strict(name: str) -> str:
   ):
     return TARGET_QIANQIU
 
-  # 4. 其它常规字符清洗（大原的点与顿号等）
   s = s.replace("丶", "").replace("、", "").replace(",", "")
-
   return s
 
 
 def build_canonical_name_map(all_raw_names: list) -> dict:
-  """为其它微小差异的名字做相似度聚合（如其它玩家的标点差异）"""
   mapping = {}
   unique_clusters = []
 
@@ -58,7 +47,6 @@ def build_canonical_name_map(all_raw_names: list) -> dict:
     if not cleaned:
       continue
 
-    # 千秋直接归一
     if cleaned == TARGET_QIANQIU:
       mapping[raw] = TARGET_QIANQIU
       continue
@@ -142,7 +130,7 @@ def analyze_image(img_bytes, api_key):
   return json.loads(content.strip())
 
 
-# ---------------- 侧边栏（配置、数据备份与恢复） ----------------
+# ---------------- 侧边栏 ----------------
 with st.sidebar:
   st.header("⚙️ 系统管理")
   default_key = (
@@ -243,7 +231,6 @@ if submit_btn:
         try:
           result = analyze_image(img_data, key)
           result["md5"] = h
-          # 存入时直接过一遍严格清洗
           for p in result.get("players", []):
             p["player_name"] = clean_player_name_strict(
                 p.get("player_name", "")
@@ -265,14 +252,11 @@ if submit_btn:
 
 st.markdown("---")
 
-# ---------------- 主界面 3：胜率榜单（强制终极合并） ----------------
-st.subheader("胜率榜单")
-
+# ---------------- 主界面 3：趣味头衔与胜率榜单 ----------------
 records = load_records()
 if not records:
   st.info("💡 暂无战绩数据，请在上方上传截图。")
 else:
-  # 收集所有原始名称
   all_raw = []
   for r in records:
     for p in r.get("players", []):
@@ -299,11 +283,9 @@ else:
       if not raw_pname:
         continue
 
-      # 双保险：先走严格拦截器，再走聚类字典
       strict_name = clean_player_name_strict(raw_pname)
       final_name = name_mapping.get(raw_pname, strict_name)
 
-      # 最终强锁死千秋
       if strict_name == TARGET_QIANQIU or "千秋" in final_name:
         final_name = TARGET_QIANQIU
 
@@ -318,12 +300,64 @@ else:
 
   df = pd.DataFrame.from_dict(stats, orient="index")
   df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-  df["KDA"] = (
+  df["KDA_num"] = (
       (df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)
   ).round(2)
+  df["KDA"] = df["KDA_num"].astype(str)
+
+  # ---------- 新增：趣味头衔四栏卡片 ----------
+  # 优先筛选场次 >= 2 的选手参评 KDA 王，若都只有 1 场则全员参评
+  kda_candidates = df[df["总场次"] >= 2]
+  if kda_candidates.empty:
+    kda_candidates = df
+
+  top_kda_name = kda_candidates.sort_values(
+      by="KDA_num", ascending=False
+  ).index[0]
+  top_kill_name = df.sort_values(by="击杀", ascending=False).index[0]
+  top_death_name = df.sort_values(by="死亡", ascending=False).index[0]
+  top_assist_name = df.sort_values(by="助攻", ascending=False).index[0]
+
+  # 格式化名字显示（去掉长Tag，展示更清爽）
+  def short_name(full_name):
+    return full_name.split("#")[0]
+
+  col1, col2, col3, col4 = st.columns(4)
+  with col1:
+    st.metric(
+        label="💀 峡谷死神 (KDA王)",
+        value=short_name(top_kda_name),
+        delta=f"KDA {df.loc[top_kda_name, 'KDA']}",
+    )
+  with col2:
+    st.metric(
+        label="🩸 人头收割机 (击杀王)",
+        value=short_name(top_kill_name),
+        delta=f"{df.loc[top_kill_name, '击杀']} 杀",
+    )
+  with col3:
+    st.metric(
+        label="🥔 慈善赌王 (白给王)",
+        value=short_name(top_death_name),
+        delta=f"{df.loc[top_death_name, '死亡']} 阵亡",
+        delta_color="inverse",
+    )
+  with col4:
+    st.metric(
+        label="🤝 金牌工具人 (助攻王)",
+        value=short_name(top_assist_name),
+        delta=f"{df.loc[top_assist_name, '助攻']} 助攻",
+    )
+
+  st.markdown("---")
+  st.subheader("胜率榜单")
+
   df["sort_key"] = df["胜场"] / df["总场次"]
-  df = df.sort_values(
-      by=["sort_key", "总场次", "KDA"], ascending=[False, False, False]
-  ).drop(columns=["sort_key"])
+  df = (
+      df.sort_values(
+          by=["sort_key", "总场次", "KDA_num"], ascending=[False, False, False]
+      )
+      .drop(columns=["sort_key", "KDA_num"])
+  )
 
   st.dataframe(df, use_container_width=True)
