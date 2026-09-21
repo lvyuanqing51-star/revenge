@@ -1,10 +1,13 @@
 import base64
+from collections import defaultdict
 import hashlib
 import io
+import itertools
 import json
 import os
 import re
 import time
+import zipfile
 from openai import OpenAI
 import pandas as pd
 from PIL import Image
@@ -16,14 +19,13 @@ IMAGE_DIR = "saved_images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 st.set_page_config(
-    page_title="LOL 内战战绩看板",
-    page_icon="🎮",
+    page_title="LOL 内战战绩与整活看板",
+    page_icon="⚔️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-st.title("🎮 英雄联盟对局结算智能统计看板 (DeepSeek 版)")
 
-# ---------------- 核心：玩家名字防呆与纠错映射 ----------------
+# ---------------- 核心：玩家名字纠错映射 ----------------
 NAME_FIX_MAP = {
     "千秋种我一粟卿": "千秋种我一栗卿",
 }
@@ -38,12 +40,11 @@ def clean_player_name(raw_name: str) -> str:
   return name
 
 
-# 计算文件唯一 MD5 指纹（去重核心）
 def calculate_md5(data: bytes) -> str:
   return hashlib.md5(data).hexdigest()
 
 
-# ---------------- 1. 数据读写与管理函数 ----------------
+# ---------------- 1. 数据持久化与维护 ----------------
 def load_all_records():
   if os.path.exists(DATA_FILE):
     try:
@@ -67,11 +68,9 @@ def overwrite_all_records(records_list):
 
 
 def delete_record_by_index(target_index: int):
-  """删除指定索引的一局，同时清理对应的关联图片"""
   records = load_all_records()
   if 0 <= target_index < len(records):
     removed = records.pop(target_index)
-    # 尝试同步删除图片文件
     img_filename = removed.get("image_file")
     if img_filename:
       img_path = os.path.join(IMAGE_DIR, img_filename)
@@ -92,14 +91,14 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. DeepSeek API 识图核心 ----------------
+# ---------------- 2. DeepSeek 视觉解析 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
   client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
   b64_img = base64.b64encode(image_bytes).decode("utf-8")
 
   prompt = """这是一张英雄联盟战绩结算界面截图。
 请精准识别整局胜负（蓝方/红方）以及所有玩家的对局数据。
-请直接输出纯 JSON 对象，不要输出任何额外的 markdown 标记或解释文字。格式如下：
+请直接输出纯 JSON 对象，格式如下：
 {
   "winning_team": "BLUE" 或 "RED",
   "players": [
@@ -114,7 +113,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
     }
   ]
 }
-注意：请仔细区分"栗"与"粟"等形近字。
+注意仔细区分'栗'与'粟'等形近字。
 """
 
   for attempt in range(max_retries):
@@ -139,7 +138,6 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
       content = re.sub(r"^```json\s*", "", content)
       content = re.sub(r"\s*```$", "", content)
       return json.loads(content)
-
     except Exception as e:
       if attempt < max_retries - 1:
         time.sleep((attempt + 1) * 2)
@@ -147,9 +145,9 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
       raise e
 
 
-# ---------------- 3. 侧边栏配置与管理控制台 ----------------
+# ---------------- 3. 侧边栏与管理功能 ----------------
 with st.sidebar:
-  st.header("⚙️ 核心设置")
+  st.title("🎮 控制台")
   default_key = (
       st.secrets.get("DEEPSEEK_API_KEY", "")
       if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets
@@ -159,22 +157,13 @@ with st.sidebar:
       "DeepSeek API Key",
       value=default_key,
       type="password",
-      help="以 sk- 开头的 DeepSeek 密钥",
+      help="sk- 开头的密钥",
   )
 
   st.markdown("---")
-  st.header("📂 历史数据管理")
   current_records = load_all_records()
-  saved_images = [
-      f
-      for f in os.listdir(IMAGE_DIR)
-      if f.lower().endswith((".png", ".jpg", ".jpeg"))
-  ]
+  st.metric("总计已战", f"{len(current_records)} 局")
 
-  st.metric("已累计对局", f"{len(current_records)} 局")
-  st.metric("已归档截图", f"{len(saved_images)} 张")
-
-  # 导出备份
   if current_records:
     json_data = json.dumps(current_records, ensure_ascii=False, indent=2)
     st.download_button(
@@ -182,105 +171,157 @@ with st.sidebar:
         data=json_data,
         file_name="lol_match_backup.json",
         mime="application/json",
-        help="定期备份，防止云端重启",
     )
 
-  # 导入备份
   with st.expander("📥 导入战绩备份"):
-    backup_file = st.file_uploader(
-        "选择 JSON 备份文件", type=["json"], key="backup_uploader"
-    )
+    backup_file = st.file_uploader("选择 JSON 备份文件", type=["json"])
     if backup_file is not None:
       try:
         imported_data = json.load(backup_file)
         if isinstance(imported_data, list):
-          if st.button("⚡ 确认恢复该备份数据", type="primary"):
+          if st.button("⚡ 确认导入覆写", type="primary"):
             overwrite_all_records(imported_data)
-            st.success(f"已恢复 {len(imported_data)} 局数据！")
+            st.success("恢复成功！")
             time.sleep(1)
             st.rerun()
-        else:
-          st.error("备份数据格式不符合要求")
       except Exception as err:
         st.error(f"读取失败: {err}")
 
   st.markdown("---")
-  # ---------------- 管理员面板：精准删除与撤销 ----------------
-  with st.expander("🔒 管理员控制台（删除/撤回）"):
-    admin_pwd = st.text_input(
-        "管理员密码",
-        type="password",
-        key="admin_pwd",
-        help="默认密码 666888",
-    )
-
+  with st.expander("🔒 管理员功能"):
+    admin_pwd = st.text_input("管理员密码", type="password")
     if admin_pwd == "666888":
-      st.caption("✅ 身份验证通过")
-
-      # 功能 1：一键撤销最新一局
       if current_records:
-        if st.button("⏪ 撤销最新录入的一局"):
-          last_idx = len(current_records) - 1
-          delete_record_by_index(last_idx)
-          st.toast("已成功撤销最新一局！", icon="🗑️")
+        if st.button("⏪ 撤回最近的一局"):
+          delete_record_by_index(len(current_records) - 1)
+          st.toast("已撤回！", icon="🗑️")
           time.sleep(0.8)
           st.rerun()
 
-      # 功能 2：下拉精准删除指定对局
-      if current_records:
-        st.markdown("##### 🎯 精准删除指定对局")
+        st.markdown("##### 精准删除指定局")
         options = {}
         for i, r in enumerate(current_records):
           win_team = "蓝方胜" if r.get("winning_team") == "BLUE" else "红方胜"
-          # 提取 2 位代表玩家名字做摘要
-          player_sample = " / ".join(
-              [p.get("player_name", "") for p in r.get("players", [])[:2]]
-          )
-          desc = f"第 {i + 1} 局 | {win_team} | {player_sample}..."
-          options[i] = desc
+          time_str = r.get("uploaded_time", "")
+          options[i] = f"第 {i + 1} 局 ({win_team}) - {time_str}"
 
-        # 倒序显示，最新局排在最上面方便找
-        selected_idx = st.selectbox(
-            "选择要删除的对局",
+        sel_idx = st.selectbox(
+            "选择对局",
             options=list(reversed(list(options.keys()))),
             format_func=lambda x: options[x],
         )
-
-        if st.button("❌ 确认删除选中的这局", type="secondary"):
-          delete_record_by_index(selected_idx)
-          st.toast(f"已删除：{options[selected_idx]}", icon="🗑️")
+        if st.button("❌ 确认删除选中局"):
+          delete_record_by_index(sel_idx)
+          st.toast("已删除该局！", icon="🗑️")
           time.sleep(0.8)
           st.rerun()
 
-      st.divider()
-      # 功能 3：彻底清空全部
-      if st.button("💣 清空所有数据与截图", type="primary"):
+      if st.button("💣 清空所有历史数据", type="primary"):
         reset_all_records()
-        st.toast("已全部清空！", icon="🧹")
-        time.sleep(0.8)
         st.rerun()
-
     elif admin_pwd:
-      st.error("密码错误，权限拒绝")
+      st.error("密码错误")
 
+# ---------------- 4. 上传区（支持图片与 ZIP 文件夹压缩包） ----------------
+st.header("⚔️ 英雄联盟内战战绩中心")
 
-# ---------------- 4. 榜单渲染 ----------------
-def render_leaderboard(records):
-  if not records:
-    st.info("💡 暂无历史对局数据。请在下方上传截图开始统计！")
-    return
+uploaded_files = st.file_uploader(
+    "📤 上传结算截图（支持多张图片全选拖入，或直接把整个文件夹打包为 .zip 上传）",
+    type=["png", "jpg", "jpeg", "zip"],
+    accept_multiple_files=True,
+)
 
-  player_stats = {}
-  for record in records:
-    for p in record.get("players", []):
-      raw_name = p.get("player_name", "")
-      name = clean_player_name(raw_name)
+if uploaded_files:
+  if not api_key:
+    st.warning("请先在左侧侧边栏填入 DeepSeek API Key！")
+  else:
+    if st.button("🚀 开始解析录入", type="primary"):
+      # 收集待处理的所有图片 (名字, bytes)
+      images_to_process = []
+      for file in uploaded_files:
+        file_bytes = file.read()
+        if file.name.lower().endswith(".zip"):
+          # 如果用户上传的是打包的文件夹压缩包，自动解压读取里面的所有图片
+          try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+              for zip_info in z.infolist():
+                if not zip_info.is_dir() and zip_info.filename.lower().endswith(
+                    (".png", ".jpg", ".jpeg")
+                ):
+                  img_data = z.read(zip_info.filename)
+                  # 过滤 macOS 自动生成的 __MACOSX 隐藏缓存文件
+                  if "__MACOSX" not in zip_info.filename:
+                    images_to_process.append(
+                        (os.path.basename(zip_info.filename), img_data)
+                    )
+          except Exception as e:
+            st.error(f"❌ 读取压缩包 {file.name} 失败: {e}")
+        else:
+          images_to_process.append((file.name, file_bytes))
 
-      if not name:
-        continue
+      success_count = 0
+      skip_count = 0
+      existing_records = load_all_records()
+      existing_hashes = {
+          r.get("image_hash") for r in existing_records if "image_hash" in r
+      }
+      pbar = st.progress(0)
+      total = len(images_to_process)
 
-      if name not in player_stats:
-        player_stats[name] = {
+      for idx, (img_name, img_bytes) in enumerate(images_to_process):
+        img_hash = calculate_md5(img_bytes)
+
+        if img_hash in existing_hashes:
+          st.warning(f"⚠️ {img_name} 此前已录入，自动跳过！")
+          skip_count += 1
+          pbar.progress((idx + 1) / total)
+          continue
+
+        with st.spinner(f"正在识别 ({idx + 1}/{total}): {img_name}..."):
+          try:
+            result = analyze_screenshot(img_bytes, api_key)
+            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
+            with open(os.path.join(IMAGE_DIR, saved_file_name), "wb") as f:
+              f.write(img_bytes)
+
+            result["image_hash"] = img_hash
+            result["image_file"] = saved_file_name
+            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            save_record(result)
+            existing_hashes.add(img_hash)
+            success_count += 1
+            time.sleep(0.5)
+          except Exception as e:
+            st.error(f"❌ {img_name} 识别失败: {e}")
+        pbar.progress((idx + 1) / total)
+
+      if success_count > 0:
+        st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
+        time.sleep(1)
+        st.rerun()
+      elif skip_count > 0:
+        st.info("所有图片此前均已录入，未增加任何重复数据。")
+
+# ---------------- 5. 核心功能展示区 ----------------
+records = load_all_records()
+
+if not records:
+  st.info("💡 暂无历史对局数据，请在上方上传截图开始对决统计！")
+else:
+  # 4 个精简纯粹的功能 Tab（去除了连胜）
+  tab1, tab2, tab3, tab4, tab5 = st.tabs([
+      "🏆 胜率风云榜",
+      "⚔️ 每局对决卡片（查英雄/尽力局长）",
+      "🤝 羁绊与宿命死敌",
+      "👤 选手黑历史档案",
+      "📸 赛后长图战报",
+  ])
+
+  # ----- Tab 1: 胜率风云榜 -----
+  with tab1:
+    player_stats = defaultdict(
+        lambda: {
             "总场次": 0,
             "胜场": 0,
             "负场": 0,
@@ -288,122 +329,323 @@ def render_leaderboard(records):
             "总死亡": 0,
             "总助攻": 0,
         }
-
-      player_stats[name]["总场次"] += 1
-      if p.get("is_winner"):
-        player_stats[name]["胜场"] += 1
-      else:
-        player_stats[name]["负场"] += 1
-      player_stats[name]["总击杀"] += p.get("kills", 0)
-      player_stats[name]["总死亡"] += p.get("deaths", 0)
-      player_stats[name]["总助攻"] += p.get("assists", 0)
-
-  df = pd.DataFrame.from_dict(player_stats, orient="index")
-  df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-  df["K/D"] = (df["总击杀"] / df["总死亡"].replace(0, 1)).round(2)
-  df["KDA"] = (
-      (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
-  ).round(2)
-
-  df["win_ratio"] = df["胜场"] / df["总场次"]
-  df = df.sort_values(by=["win_ratio", "总场次"], ascending=[False, False])
-  df = df.drop(columns=["win_ratio"])
-
-  st.subheader(f"🏆 玩家全员胜率榜单（累计收录 {len(records)} 局）")
-  st.dataframe(df, use_container_width=True)
-
-
-# ---------------- 5. 智能查重上传区 ----------------
-uploaded_files = st.file_uploader(
-    "📤 上传结算截图（支持多张拖入，已开启自动去重防翻倍）",
-    type=["png", "jpg", "jpeg"],
-    accept_multiple_files=True,
-)
-
-if uploaded_files:
-  if not api_key:
-    st.warning("⚠️ 请先在左侧输入你的 DeepSeek API Key！")
-  else:
-    if st.button("🚀 开始解析并录入", type="primary"):
-      success_count = 0
-      skip_count = 0
-      progress_bar = st.progress(0)
-      total = len(uploaded_files)
-
-      # 收集现有已存记录的所有图片 MD5，用于秒级去重
-      existing_records = load_all_records()
-      existing_hashes = {
-          r.get("image_hash") for r in existing_records if "image_hash" in r
-      }
-
-      for idx, file in enumerate(uploaded_files):
-        img_bytes = file.read()
-        img_hash = calculate_md5(img_bytes)
-
-        # 1. 指纹查重判断：如果已经录过完全相同的图片，直接跳过并省下 API 调用
-        if img_hash in existing_hashes:
-          st.warning(
-              f"⚠️ 跳过重复图片: 【{file.name}】 之前已经录入过，无需重复统计！"
-          )
-          skip_count += 1
-          progress_bar.progress((idx + 1) / total)
+    )
+    for r in records:
+      for p in r.get("players", []):
+        name = clean_player_name(p.get("player_name", ""))
+        if not name:
           continue
+        player_stats[name]["总场次"] += 1
+        if p.get("is_winner"):
+          player_stats[name]["胜场"] += 1
+        else:
+          player_stats[name]["负场"] += 1
+        player_stats[name]["总击杀"] += p.get("kills", 0)
+        player_stats[name]["总死亡"] += p.get("deaths", 0)
+        player_stats[name]["总助攻"] += p.get("assists", 0)
 
-        with st.spinner(f"正在识别 ({idx + 1}/{total}): {file.name}..."):
-          try:
-            result = analyze_screenshot(img_bytes, api_key)
+    df = pd.DataFrame.from_dict(player_stats, orient="index")
+    df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
+    df["K/D"] = (df["总击杀"] / df["总死亡"].replace(0, 1)).round(2)
+    df["KDA"] = (
+        (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
+    ).round(2)
 
-            # 关联保存图片文件与哈希指纹
-            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
-            save_path = os.path.join(IMAGE_DIR, saved_file_name)
-            with open(save_path, "wb") as img_file:
-              img_file.write(img_bytes)
+    df["win_rate_num"] = df["胜场"] / df["总场次"]
+    df = df.sort_values(
+        by=["win_rate_num", "总场次", "KDA"], ascending=[False, False, False]
+    )
+    df = df.drop(columns=["win_rate_num"])
+    st.dataframe(df, use_container_width=True)
 
-            result["image_hash"] = img_hash
-            result["image_file"] = saved_file_name
-            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+  # ----- Tab 2: 每局对决卡片（查英雄、局长、卧底） -----
+  with tab2:
+    st.caption("💡 汇总每局双方所选英雄与对决战况，自动计算大腿、局长与卧底！")
 
-            save_record(result)
-            existing_hashes.add(img_hash)  # 防止同批次内也有重复图
-            success_count += 1
-            time.sleep(0.5)
-          except Exception as e:
-            st.error(f"❌ 解析 {file.name} 失败: {str(e)}")
+    for i, r in enumerate(reversed(records)):
+      idx = len(records) - i
+      win_team = r.get("winning_team")
+      players = r.get("players", [])
 
-        progress_bar.progress((idx + 1) / total)
+      blue_players = [p for p in players if p.get("team") == "BLUE"]
+      red_players = [p for p in players if p.get("team") == "RED"]
 
-      if success_count > 0:
-        st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
-        time.sleep(1)
-        st.rerun()
-      elif skip_count > 0:
-        st.info("上传的所有图片此前均已录入，未增加任何重复数据。")
+      loser_players = (
+          red_players
+          if win_team == "BLUE"
+          else blue_players
+          if win_team == "RED"
+          else []
+      )
+      winner_players = (
+          blue_players
+          if win_team == "BLUE"
+          else red_players
+          if win_team == "RED"
+          else []
+      )
 
-st.markdown("---")
-render_leaderboard(load_all_records())
-
-# ---------------- 6. 历史截图展示区 ----------------
-st.markdown("---")
-all_saved_imgs = [
-    f
-    for f in os.listdir(IMAGE_DIR)
-    if f.lower().endswith((".png", ".jpg", ".jpeg"))
-]
-all_saved_imgs.sort(reverse=True)
-
-with st.expander(
-    f"🖼️ 查看已上传的历史战绩截图（共 {len(all_saved_imgs)} 张）"
-):
-  if not all_saved_imgs:
-    st.caption("暂无归档截图")
-  else:
-    cols = st.columns(3)
-    for index, img_name in enumerate(all_saved_imgs):
-      col = cols[index % 3]
-      img_path = os.path.join(IMAGE_DIR, img_name)
-      with col:
-        st.image(
-            img_path,
-            caption=img_name.split("_", 1)[-1],
-            use_container_width=True,
+      # 尽力局局长
+      juzhang = None
+      if loser_players:
+        juzhang = max(
+            loser_players,
+            key=lambda x: (x.get("kills", 0) + x.get("assists", 0))
+            / max(x.get("deaths", 1), 1),
         )
+
+      # 白给王/卧底
+      wodi = max(players, key=lambda x: x.get("deaths", 0)) if players else None
+
+      # 胜方大腿
+      datui = (
+          max(winner_players, key=lambda x: x.get("kills", 0))
+          if winner_players
+          else None
+      )
+
+      with st.container():
+        win_label = (
+            "🟦 蓝方胜"
+            if win_team == "BLUE"
+            else "🟥 红方胜"
+            if win_team == "RED"
+            else "⚪ 赛果未知"
+        )
+        st.markdown(
+            f"### 第 {idx} 局对决 【{win_label}】  "
+            f"<small style='color: gray; font-size: 0.85em;'>时间:"
+            f" {r.get('uploaded_time', '历史记录')}</small>",
+            unsafe_allow_html=True,
+        )
+
+        honor_tags = []
+        if datui:
+          honor_tags.append(
+              f"✨ **胜方大腿**: {clean_player_name(datui.get('player_name', ''))}（操刀"
+              f" {datui.get('champion')} / 斩获 {datui.get('kills')} 杀）"
+          )
+        if juzhang:
+          kda_val = round(
+              (juzhang.get("kills", 0) + juzhang.get("assists", 0))
+              / max(juzhang.get("deaths", 1), 1),
+              2,
+          )
+          honor_tags.append(
+              f"👑 **尽力局局长**: {clean_player_name(juzhang.get('player_name', ''))}（操刀"
+              f" {juzhang.get('champion')}，KDA {kda_val} 独木难支）"
+          )
+        if wodi and wodi.get("deaths", 0) >= 5:
+          honor_tags.append(
+              f"🥔 **白给王/疑似卧底**:"
+              f" {clean_player_name(wodi.get('player_name', ''))}（操刀"
+              f" {wodi.get('champion')} / 阵亡 {wodi.get('deaths')} 次）"
+          )
+
+        if honor_tags:
+          st.info(" ｜ ".join(honor_tags))
+
+        col_b, col_r = st.columns(2)
+
+        def make_team_df(t_players):
+          data = []
+          for p in t_players:
+            p_name = clean_player_name(p.get("player_name", ""))
+            champ = p.get("champion", "未知")
+            kda = f"{p.get('kills', 0)} / {p.get('deaths', 0)} / {p.get('assists', 0)}"
+
+            tag = "普通"
+            if datui and p_name == clean_player_name(
+                datui.get("player_name", "")
+            ):
+              tag = "✨ 大腿"
+            elif juzhang and p_name == clean_player_name(
+                juzhang.get("player_name", "")
+            ):
+              tag = "👑 尽力局长"
+            elif wodi and p_name == clean_player_name(
+                wodi.get("player_name", "")
+            ):
+              tag = "🥔 白给王"
+
+            data.append(
+                {"玩家": p_name, "英雄": champ, "K / D / A": kda, "本局评定": tag}
+            )
+          return pd.DataFrame(data)
+
+        with col_b:
+          is_win = "👑 [胜利]" if win_team == "BLUE" else "[失败]"
+          st.markdown(f"**🟦 蓝方阵营 {is_win}**")
+          st.dataframe(make_team_df(blue_players), hide_index=True)
+
+        with col_r:
+          is_win = "👑 [胜利]" if win_team == "RED" else "[失败]"
+          st.markdown(f"**🟥 红方阵营 {is_win}**")
+          st.dataframe(make_team_df(red_players), hide_index=True)
+
+        img_f = r.get("image_file")
+        if img_f and os.path.exists(os.path.join(IMAGE_DIR, img_f)):
+          with st.expander("🔍 查看本局原始结算图"):
+            st.image(
+                os.path.join(IMAGE_DIR, img_f), width=450, caption=f"第 {idx} 局原图"
+            )
+
+        st.markdown("---")
+
+  # ----- Tab 3: 羁绊与宿命死敌 -----
+  with tab3:
+    st.subheader("🔗 组合羁绊（谁带飞了谁？还是表面兄弟？）")
+
+    duo_stats = defaultdict(lambda: {"total": 0, "wins": 0})
+    rival_stats = defaultdict(lambda: {"total": 0, "p1_wins": 0})
+
+    for r in records:
+      players = r.get("players", [])
+      blue_p = [
+          clean_player_name(p.get("player_name", ""))
+          for p in players
+          if p.get("team") == "BLUE" and clean_player_name(p.get("player_name", ""))
+      ]
+      red_p = [
+          clean_player_name(p.get("player_name", ""))
+          for p in players
+          if p.get("team") == "RED" and clean_player_name(p.get("player_name", ""))
+      ]
+      win_t = r.get("winning_team")
+
+      for team, win_condition in [(blue_p, "BLUE"), (red_p, "RED")]:
+        for p1, p2 in itertools.combinations(sorted(team), 2):
+          duo_stats[(p1, p2)]["total"] += 1
+          if win_t == win_condition:
+            duo_stats[(p1, p2)]["wins"] += 1
+
+      for p1 in blue_p:
+        for p2 in red_p:
+          pair = (p1, p2) if p1 < p2 else (p2, p1)
+          rival_stats[pair]["total"] += 1
+          if (p1 < p2 and win_t == "BLUE") or (p1 > p2 and win_t == "RED"):
+            rival_stats[pair]["p1_wins"] += 1
+
+    duo_list = []
+    for (p1, p2), s in duo_stats.items():
+      if s["total"] >= 2:
+        wr = round((s["wins"] / s["total"]) * 100, 1)
+        duo_list.append({
+            "组合": f"{p1} & {p2}",
+            "同队场次": s["total"],
+            "合体胜场": s["wins"],
+            "同队胜率": f"{wr}%",
+            "wr_val": wr,
+        })
+
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+      st.markdown("#### 🌟 黄金搭档（胜率顶峰）")
+      if duo_list:
+        duo_df_top = pd.DataFrame(duo_list).sort_values(
+            by=["wr_val", "同队场次"], ascending=[False, False]
+        )
+        st.dataframe(
+            duo_df_top.drop(columns=["wr_val"]).head(5), hide_index=True
+        )
+      else:
+        st.caption("数据积累中（需至少同队 2 局）...")
+
+    with col_d2:
+      st.markdown("#### 💔 表面兄弟（灾难二人组）")
+      if duo_list:
+        duo_df_bot = pd.DataFrame(duo_list).sort_values(
+            by=["wr_val", "同队场次"], ascending=[True, False]
+        )
+        st.dataframe(duo_df_bot.drop(columns=["wr_val"]).head(5), hide_index=True)
+      else:
+        st.caption("数据积累中...")
+
+    st.markdown("---")
+    st.subheader("⚔️ 一生之敌（分立两边对抗时的血脉压制）")
+    rival_list = []
+    for (p1, p2), s in rival_stats.items():
+      if s["total"] >= 2:
+        p1_rate = round((s["p1_wins"] / s["total"]) * 100, 1)
+        rival_list.append({
+            "宿敌对位": f"{p1} vs {p2}",
+            "交手场次": s["total"],
+            "胜负对局": f"{p1} 赢 {s['p1_wins']} 局 / {p2} 赢 {s['total'] - s['p1_wins']} 局",
+            "克制率": f"{p1} 胜率 {p1_rate}%",
+        })
+    if rival_list:
+      st.dataframe(pd.DataFrame(rival_list), hide_index=True)
+    else:
+      st.caption("需双方对抗 2 局以上解锁...")
+
+  # ----- Tab 4: 选手个人黑历史档案 -----
+  with tab4:
+    all_players_list = sorted(list(df.index))
+    target_player = st.selectbox(
+        "🔍 选择要查成分的好友:",
+        options=all_players_list,
+    )
+
+    if target_player:
+      champs_used = defaultdict(lambda: {"total": 0, "wins": 0})
+      p_records = []
+
+      for r in records:
+        for p in r.get("players", []):
+          if clean_player_name(p.get("player_name", "")) == target_player:
+            c = p.get("champion", "未知英雄")
+            champs_used[c]["total"] += 1
+            if p.get("is_winner"):
+              champs_used[c]["wins"] += 1
+            p_records.append(p)
+
+      c_metric1, c_metric2, c_metric3 = st.columns(3)
+      with c_metric1:
+        st.metric(
+            "个人总场次", f"{len(p_records)} 局", delta=df.loc[target_player, "胜率"]
+        )
+      with c_metric2:
+        max_kill = max([p.get("kills", 0) for p in p_records], default=0)
+        st.metric("单局最高击杀", f"{max_kill} 杀")
+      with c_metric3:
+        max_death = max([p.get("deaths", 0) for p in p_records], default=0)
+        st.metric("单局最高白给", f"{max_death} 阵亡")
+
+      st.markdown(f"#### 🎭 **{target_player}** 的招牌英雄池")
+      champ_list = []
+      for c_name, c_stat in champs_used.items():
+        c_wr = round((c_stat["wins"] / c_stat["total"]) * 100, 1)
+        champ_list.append({
+            "操刀英雄": c_name,
+            "出场次数": c_stat["total"],
+            "获胜场次": c_stat["wins"],
+            "英雄胜率": f"{c_wr}%",
+            "wr_val": c_wr,
+        })
+      champ_df = pd.DataFrame(champ_list).sort_values(
+          by=["出场次数", "wr_val"], ascending=[False, False]
+      )
+      st.dataframe(champ_df.drop(columns=["wr_val"]), hide_index=True)
+
+  # ----- Tab 5: 赛后战报长图 -----
+  with tab5:
+    st.subheader("📸 微信群一键发图战报")
+    st.caption("长按或右键截取下方信息卡片，直接丢进群里开撕！")
+
+    total_kills = sum(df["总击杀"])
+    most_kill_p = df.sort_values(by="总击杀", ascending=False).index[0]
+    most_death_p = df.sort_values(by="总死亡", ascending=False).index[0]
+    best_wr_p = (
+        df[df["总场次"] >= 2]
+        .sort_values(by="KDA", ascending=False)
+        .index
+    )
+    king_p = best_wr_p[0] if len(best_wr_p) > 0 else df.index[0]
+
+    st.markdown(f"""
+    > ### 🎮 **LOL 内战群封神榜战报**
+    > * **🏆 综合战力王 (MVP)**: **【{king_p}】**（KDA: {df.loc[king_p, 'KDA']}）
+    > * **🩸 人头收割机**: **【{most_kill_p}】**（累计击杀 {df.loc[most_kill_p, '总击杀']} 命）
+    > * **🥔 峡谷慈善家**: **【{most_death_p}】**（累计送出 {df.loc[most_death_p, '总死亡']} 命）
+    > * **🔥 峡谷累计产生人头**: {total_kills} 个，累计交战 {len(records)} 局。
+    """)
