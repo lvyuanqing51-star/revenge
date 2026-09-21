@@ -19,116 +19,103 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
-# ---------------- 注入电竞微光暗黑风 CSS ----------------
+# ---------------- 优雅现代明亮风 CSS ----------------
 st.markdown(
     """
     <style>
-    /* 全局背景与字体 */
+    /* 全局背景：柔和现代极简浅灰白 */
     .stApp {
-        background: radial-gradient(circle at 50% 10%, #0f1923 0%, #080d12 100%) !important;
-        color: #e1e7eb !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #f8fafc !important;
+        color: #1e293b !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* 顶部主标题美化 */
+    /* 顶部标题 */
     h1 {
-        background: linear-gradient(90deg, #c8aa6e 0%, #f0e6d2 50%, #c8aa6e 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #0f172a !important;
         font-weight: 800 !important;
-        letter-spacing: 1.5px;
-        text-shadow: 0 0 20px rgba(200, 170, 110, 0.2);
+        letter-spacing: -0.5px;
     }
 
-    /* 语音作战室三大按钮定制 */
+    /* 语音作战室三大专属微光按钮（适配浅底） */
     div[data-testid="stLinkButton"] a {
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         font-weight: 600 !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        transition: all 0.25s ease !important;
+        border: 1px solid transparent !important;
     }
     div[data-testid="stLinkButton"] a:hover {
         transform: translateY(-2px);
     }
-    /* 蓝方按钮霓虹微光 */
+    /* 大厅主语音：雅金质感 */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+        border-color: #fde68a !important;
+        color: #92400e !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.25) !important;
+    }
+    /* 蓝方作战室：清爽科技蓝 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(10, 50, 90, 0.8), rgba(0, 150, 255, 0.4)) !important;
-        border-color: #0ac8b9 !important;
-        box-shadow: 0 0 15px rgba(10, 200, 185, 0.25) !important;
-        color: #e0f7fa !important;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+        border-color: #bfdbfe !important;
+        color: #1d4ed8 !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15) !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 0 25px rgba(10, 200, 185, 0.5) !important;
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25) !important;
     }
-    /* 红方按钮微光 */
+    /* 红方作战室：赤焰红微光 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(90, 20, 30, 0.8), rgba(230, 50, 70, 0.4)) !important;
-        border-color: #e84057 !important;
-        box-shadow: 0 0 15px rgba(232, 64, 87, 0.25) !important;
-        color: #ffebee !important;
+        background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important;
+        border-color: #fecdd3 !important;
+        color: #be123c !important;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.15) !important;
     }
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-        box-shadow: 0 0 25px rgba(232, 64, 87, 0.5) !important;
-    }
-    /* 大厅按钮暗金光 */
-    div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
-        background: linear-gradient(135deg, rgba(60, 50, 30, 0.8), rgba(200, 170, 110, 0.4)) !important;
-        border-color: #c8aa6e !important;
-        box-shadow: 0 0 15px rgba(200, 170, 110, 0.2) !important;
-        color: #f0e6d2 !important;
+        box-shadow: 0 6px 16px rgba(225, 29, 72, 0.25) !important;
     }
 
-    /* 指标卡片（Metric）：海克斯毛玻璃面板 */
+    /* 指标卡片：精致白卡与轻柔阴影 */
     div[data-testid="stMetric"] {
-        background: rgba(16, 26, 35, 0.7) !important;
-        border: 1px solid rgba(200, 170, 110, 0.25) !important;
-        border-radius: 10px !important;
-        padding: 14px 16px !important;
-        backdrop-filter: blur(10px) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
-        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 14px 18px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
     }
     div[data-testid="stMetric"]:hover {
-        transform: translateY(-3px) !important;
-        border-color: rgba(200, 170, 110, 0.6) !important;
-        box-shadow: 0 6px 25px rgba(200, 170, 110, 0.15) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07) !important;
+        border-color: #cbd5e1 !important;
     }
     div[data-testid="stMetricLabel"] p {
-        font-size: 0.82rem !important;
-        color: #a09b8c !important;
+        font-size: 0.85rem !important;
+        color: #64748b !important;
         font-weight: 500 !important;
-        letter-spacing: 0.5px;
     }
     div[data-testid="stMetricValue"] > div {
-        font-size: 1.25rem !important;
+        font-size: 1.22rem !important;
         font-weight: 700 !important;
-        color: #f0e6d2 !important;
+        color: #0f172a !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
-
-    /* 上传框暗色优化 */
-    div[data-testid="stFileUploader"] {
-        background: rgba(16, 26, 35, 0.5) !important;
-        border-radius: 8px !important;
-        border: 1px dashed rgba(200, 170, 110, 0.3) !important;
-        padding: 10px !important;
+    div[data-testid="stMetricDelta"] {
+        font-size: 0.82rem !important;
     }
 
-    /* 侧边栏深色适配 */
-    section[data-testid="stSidebar"] {
-        background-color: #0a0e13 !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
-
-    /* 表格容器微光衬底 */
+    /* 表格容器无缝融入 */
     div[data-testid="stDataFrame"] {
-        border-radius: 10px !important;
-        border: 1px solid rgba(200, 170, 110, 0.2) !important;
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5) !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
         overflow: hidden !important;
+        background: #ffffff !important;
     }
     </style>
 """,
@@ -428,7 +415,7 @@ with st.sidebar:
       st.error("❌ 密码错误")
 
 # ---------------- 主界面 1：标题与连麦作战室直达 ----------------
-st.title("⚔️ 峡谷内战控制台")
+st.title("内战")
 
 cfg = load_config()
 c1, c2, c3 = st.columns(3)
