@@ -17,12 +17,12 @@ IMAGE_DIR = "saved_images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 st.set_page_config(
-    page_title="LOL 内战胜率统计",
+    page_title="LOL 内战胜率统计 (千问版)",
     page_icon="🏆",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-st.title("🏆 英雄联盟内战胜率统计看板")
+st.title("🏆 英雄联盟内战胜率统计看板 (通义千问版)")
 
 # ---------------- 核心：玩家名字纠错映射 ----------------
 NAME_FIX_MAP = {
@@ -43,7 +43,7 @@ def calculate_md5(data: bytes) -> str:
   return hashlib.md5(data).hexdigest()
 
 
-# ---------------- 1. 数据持久化与备份 ----------------
+# ---------------- 1. 数据持久化与维护 ----------------
 def load_all_records():
   if os.path.exists(DATA_FILE):
     try:
@@ -91,16 +91,20 @@ def reset_all_records():
         os.remove(file_path)
 
 
-# ---------------- 2. 纯净稳健文字识别（不识英雄，准确率最高） ----------------
+# ---------------- 2. 通义千问多模态识图引擎 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
-  client = OpenAI(api_key=key, base_url="https://api.deepseek.com")
+  # 阿里云百炼兼容 OpenAI SDK 接口地址
+  client = OpenAI(
+      api_key=key,
+      base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+  )
   b64_img = base64.b64encode(image_bytes).decode("utf-8")
 
-  prompt = """这是手机端【掌上英雄联盟 App】或客户端的对局结算截图。
-请精准识别整局胜负（蓝方/红方，或上方/下方队伍），以及所有选手的ID和击杀/死亡/助攻(K/D/A)。
-请勿识别英雄。注意区分'栗'与'粟'等形近字。
+  prompt = """这是手机端【掌上英雄联盟 App】或客户端的对局结算战绩截图。
+请精准识别整局胜负（上方/下方队伍，或蓝方/红方），以及所有玩家的游戏ID和对应的击杀/死亡/助攻 (K/D/A)。
+无需识别英雄。请务必仔细辨别玩家名字中的'栗'与'粟'等形近字。
 
-严格输出纯 JSON 对象：
+严格输出纯 JSON 对象，格式如下：
 {
   "winning_team": "BLUE" 或 "RED",
   "players": [
@@ -119,7 +123,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
   for attempt in range(max_retries):
     try:
       response = client.chat.completions.create(
-          model="deepseek-chat",
+          model="qwen-vl-max",  # 阿里云百炼旗舰视觉大模型
           messages=[{
               "role": "user",
               "content": [
@@ -153,19 +157,19 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
       raise e
 
 
-# ---------------- 3. 侧边栏与管理功能 ----------------
+# ---------------- 3. 侧边栏与控制台 ----------------
 with st.sidebar:
   st.title("⚙️ 控制面板")
   default_key = (
-      st.secrets.get("DEEPSEEK_API_KEY", "")
-      if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets
+      st.secrets.get("DASHSCOPE_API_KEY", "")
+      if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets
       else ""
   )
   api_key = st.text_input(
-      "DeepSeek API Key",
+      "通义千问 API Key (DashScope)",
       value=default_key,
       type="password",
-      help="以 sk- 开头的密钥",
+      help="以 sk- 开头的阿里云百炼密钥",
   )
 
   st.markdown("---")
@@ -180,7 +184,7 @@ with st.sidebar:
         data=json_data,
         file_name="lol_match_backup.json",
         mime="application/json",
-        help="建议定期备份，防止服务器休眠清空",
+        help="建议定期备份到本地，防止云端重启",
     )
 
   # 导入恢复
@@ -199,7 +203,6 @@ with st.sidebar:
         st.error(f"读取失败: {err}")
 
   st.markdown("---")
-  # 撤销与删除
   with st.expander("🔒 管理员功能"):
     admin_pwd = st.text_input(
         "输入管理员密码", type="password", key="admin_pwd_input"
@@ -233,7 +236,7 @@ with st.sidebar:
     elif admin_pwd:
       st.error("密码错误")
 
-# ---------------- 4. 截图上传区 ----------------
+# ---------------- 4. 截图上传与解析 ----------------
 uploaded_files = st.file_uploader(
     "📤 上传对局战绩截图（支持多张全选拖入，或直接上传 .zip 文件夹）",
     type=["png", "jpg", "jpeg", "zip"],
@@ -242,7 +245,7 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
   if not api_key:
-    st.warning("⚠️ 请先在左侧侧边栏填入 DeepSeek API Key！")
+    st.warning("⚠️ 请先在左侧侧边栏填入通义千问 API Key！")
   else:
     if st.button("🚀 开始解析并计入胜率", type="primary"):
       images_to_process = []
@@ -283,7 +286,7 @@ if uploaded_files:
           pbar.progress((idx + 1) / total)
           continue
 
-        with st.spinner(f"正在录入 ({idx + 1}/{total}): {img_name}..."):
+        with st.spinner(f"正在分析 ({idx + 1}/{total}): {img_name}..."):
           try:
             result = analyze_screenshot(img_bytes, api_key)
             saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
@@ -309,7 +312,7 @@ if uploaded_files:
 
 st.markdown("---")
 
-# ---------------- 5. 核心：纯净胜率总榜展示 ----------------
+# ---------------- 5. 纯净胜率总榜展示 ----------------
 records = load_all_records()
 
 st.subheader("📊 玩家胜率与战绩总榜")
@@ -349,12 +352,10 @@ else:
       (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
   ).round(2)
 
-  # 按胜率第一、场次第二、KDA 第三降序排序
   df["win_rate_num"] = df["胜场"] / df["总场次"]
   df = df.sort_values(
       by=["win_rate_num", "总场次", "KDA"], ascending=[False, False, False]
   )
   df = df.drop(columns=["win_rate_num"])
 
-  # 纯净展示胜率核心大表
   st.dataframe(df, use_container_width=True)
