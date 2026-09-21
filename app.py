@@ -1,7 +1,9 @@
 import base64
 from collections import defaultdict
+import difflib
 import hashlib
 import io
+from itertools import combinations
 import json
 import os
 import time
@@ -20,26 +22,47 @@ except Exception:
   pass
 
 st.set_page_config(
-    page_title="LOL 内战胜率统计",
+    page_title="LOL 内战战绩与羁绊统计",
     page_icon="🏆",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("🏆 英雄联盟内战胜率统计看板")
+st.title("🏆 英雄联盟内战战绩与羁绊看板")
 
-# ---------------- 核心：玩家名字纠错映射 ----------------
+# ---------------- 核心：玩家名字纠错与模糊匹配 ----------------
+KNOWN_PLAYERS = [
+    "千秋种我一栗卿",
+]
+
 NAME_FIX_MAP = {
     "千秋种我一粟卿": "千秋种我一栗卿",
+    "千秋种我一卵卿": "千秋种我一栗卿",
+    "千秋种我一桑卿": "千秋种我一栗卿",
+    "千秋种我一梁卿": "千秋种我一栗卿",
 }
 
 
 def clean_player_name(raw_name: str) -> str:
   name = str(raw_name).strip()
-  name = name.replace("一粟卿", "一栗卿")
+
+  # 1. 强特征前缀拦截（只要是以 "千秋种我" 开头，无论中间被 OCR 识成什么字，直接归一）
+  if name.startswith("千秋种我") and (name.endswith("卿") or len(name) >= 6):
+    return "千秋种我一栗卿"
+
+  # 2. 字形字典映射
   for wrong, right in NAME_FIX_MAP.items():
     if wrong in name:
       name = name.replace(wrong, right)
+
+  # 3. 常见局部别字直接纠正
+  name = name.replace("一粟卿", "一栗卿").replace("一卵卿", "一栗卿")
+
+  # 4. 白名单相似度模糊匹配兜底
+  matches = difflib.get_close_matches(name, KNOWN_PLAYERS, n=1, cutoff=0.7)
+  if matches:
+    return matches[0]
+
   return name
 
 
@@ -104,6 +127,22 @@ def reset_all_records():
           pass
 
 
+def sanitize_database():
+  """把 records.json 中所有现存的历史错误玩家名字重写归一"""
+  records = load_all_records()
+  modified = False
+  for r in records:
+    for p in r.get("players", []):
+      old_name = p.get("player_name", "")
+      fixed_name = clean_player_name(old_name)
+      if old_name != fixed_name:
+        p["player_name"] = fixed_name
+        modified = True
+  if modified:
+    overwrite_all_records(records)
+  return modified
+
+
 # ---------------- 2. 通义千问 Qwen-VL 视觉文字识别 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
   client = OpenAI(
@@ -113,7 +152,10 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
 
   prompt = """这是手机端【掌上英雄联盟 App】或客户端的对局结算截图。
 请精准识别整局胜负（蓝方/红方，或上方/下方队伍），以及所有选手的ID和击杀/死亡/助攻(K/D/A)。
-请勿识别英雄。注意区分'栗'与'粟'等形近字。
+请勿识别英雄。
+
+【特别提醒选手名字识别】：
+常驻选手包含“千秋种我一栗卿”，请务必注意是“栗（板栗的栗）”，切勿错认成“粟”或“卵”。
 
 严格输出纯 JSON 对象，格式必须如下：
 {
@@ -163,6 +205,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
       data = json.loads(content)
 
       for p in data.get("players", []):
+        p["player_name"] = clean_player_name(p.get("player_name", ""))
         p["kills"] = int(p.get("kills", 0))
         p["deaths"] = int(p.get("deaths", 0))
         p["assists"] = int(p.get("assists", 0))
@@ -228,7 +271,22 @@ with st.sidebar:
     admin_pwd = st.text_input(
         "输入管理员密码", type="password", key="admin_pwd_input"
     )
-    if admin_pwd == "666888":
+    admin_target_pwd = "666888"
+    try:
+      if hasattr(st, "secrets") and "ADMIN_PWD" in st.secrets:
+        admin_target_pwd = st.secrets["ADMIN_PWD"]
+    except Exception:
+      pass
+
+    if admin_pwd == admin_target_pwd:
+      if st.button("🧹 一键清洗历史别字(粟/卵等)", key="btn_sanitize"):
+        if sanitize_database():
+          st.toast("已成功修复历史数据中的所有错别字！", icon="✨")
+          time.sleep(0.8)
+          st.rerun()
+        else:
+          st.info("数据很健康，未发现需要清洗的别字。")
+
       if current_records:
         if st.button("⏪ 撤回最近的一局", key="btn_undo"):
           delete_record_by_index(len(current_records) - 1)
@@ -255,10 +313,12 @@ with st.sidebar:
     elif admin_pwd:
       st.error("密码错误")
 
-# ---------------- 4. 主页面：Tabs 分页展示 ----------------
-tab1, tab2 = st.tabs(["📊 胜率与战绩总榜", "📤 上传战绩截图"])
+# ---------------- 4. 主页面：Tabs 多功能展示 ----------------
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["📊 战绩与胜率榜", "🤝 羁绊与宿敌", "📜 历史对局详情", "📤 上传战绩截图"]
+)
 
-# ===== TAB 1: 战绩总榜 =====
+# ===== TAB 1: 胜率总榜与趣味勋章 =====
 with tab1:
   records = load_all_records()
   if not records:
@@ -272,6 +332,7 @@ with tab1:
             "总击杀": 0,
             "总死亡": 0,
             "总助攻": 0,
+            "零死对局数": 0,
         }
     )
 
@@ -285,9 +346,16 @@ with tab1:
           player_stats[name]["胜场"] += 1
         else:
           player_stats[name]["负场"] += 1
-        player_stats[name]["总击杀"] += int(p.get("kills", 0))
-        player_stats[name]["总死亡"] += int(p.get("deaths", 0))
-        player_stats[name]["总助攻"] += int(p.get("assists", 0))
+
+        k = int(p.get("kills", 0))
+        d = int(p.get("deaths", 0))
+        a = int(p.get("assists", 0))
+
+        player_stats[name]["总击杀"] += k
+        player_stats[name]["总死亡"] += d
+        player_stats[name]["总助攻"] += a
+        if d == 0:
+          player_stats[name]["零死对局数"] += 1
 
     df = pd.DataFrame.from_dict(player_stats, orient="index")
     df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
@@ -295,101 +363,5 @@ with tab1:
     df["KDA"] = (
         (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
     ).round(2)
-
-    df["win_rate_num"] = df["胜场"] / df["总场次"]
-    df = df.sort_values(
-        by=["win_rate_num", "总场次", "KDA"], ascending=[False, False, False]
-    )
-    df = df.drop(columns=["win_rate_num"])
-
-    st.dataframe(df, use_container_width=True)
-
-# ===== TAB 2: 独立上传入口 =====
-with tab2:
-  st.subheader("📤 战绩截图批量上传")
-  st.caption("提示：支持单张/多选 .png / .jpg 图片，也可以直接打包为 .zip 上传。")
-
-  uploaded_files = st.file_uploader(
-      "点击浏览或直接将截图文件拖曳至此区域：",
-      type=["png", "jpg", "jpeg", "zip"],
-      accept_multiple_files=True,
-      key="main_match_uploader",
-  )
-
-  if uploaded_files:
-    images_to_process = []
-    for f in uploaded_files:
-      file_bytes = f.getvalue()
-      if f.name.lower().endswith(".zip"):
-        try:
-          with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
-            for zip_info in z.infolist():
-              if not zip_info.is_dir() and zip_info.filename.lower().endswith(
-                  (".png", ".jpg", ".jpeg")
-              ):
-                if "__MACOSX" not in zip_info.filename:
-                  img_data = z.read(zip_info.filename)
-                  images_to_process.append(
-                      (os.path.basename(zip_info.filename), img_data)
-                  )
-        except Exception as e:
-          st.error(f"❌ 压缩包 {f.name} 读取失败: {e}")
-      else:
-        images_to_process.append((f.name, file_bytes))
-
-    st.success(f"已识别到 {len(images_to_process)} 张待处理战绩截图！")
-
-    if not api_key:
-      st.warning(
-          "⚠️ 左侧侧边栏未检测到 API Key，请先展开左侧面板输入通义千问 API"
-          " Key！"
-      )
-    else:
-      if st.button("🚀 开始解析并计入胜率", type="primary", key="btn_run_ai"):
-        success_count = 0
-        skip_count = 0
-        existing_records = load_all_records()
-        existing_hashes = {
-            r.get("image_hash") for r in existing_records if "image_hash" in r
-        }
-
-        pbar = st.progress(0)
-        total = len(images_to_process)
-
-        for idx, (img_name, img_bytes) in enumerate(images_to_process):
-          img_hash = calculate_md5(img_bytes)
-
-          if img_hash in existing_hashes:
-            st.warning(f"⚠️ {img_name} 此前已录入，已自动跳过！")
-            skip_count += 1
-            pbar.progress((idx + 1) / total)
-            continue
-
-          with st.spinner(f"正在录入 ({idx + 1}/{total}): {img_name}..."):
-            try:
-              result = analyze_screenshot(img_bytes, api_key)
-              saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
-              with open(
-                  os.path.join(IMAGE_DIR, saved_file_name), "wb"
-              ) as save_f:
-                save_f.write(img_bytes)
-
-              result["image_hash"] = img_hash
-              result["image_file"] = saved_file_name
-              result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
-
-              save_record(result)
-              existing_hashes.add(img_hash)
-              success_count += 1
-              time.sleep(0.3)
-            except Exception as e:
-              st.error(f"❌ {img_name} 录入识别失败: {str(e)}")
-
-          pbar.progress((idx + 1) / total)
-
-        if success_count > 0:
-          st.success(
-              f"🎉 录入完成！成功 {success_count} 局，跳过重复 {skip_count} 局。"
-          )
-          time.sleep(1)
-          st.rerun()
+    df["场均击杀"] = (df["总击杀"] / df["总场次"]).round(1)
+    df["场均死亡"] = (df["总死亡"] / df["总场次"]).round(
