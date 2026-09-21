@@ -17,7 +17,7 @@ DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
-st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
+st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
 # ---------------- 高级深海蓝微光 + 侧边栏按钮彻底修复 CSS ----------------
 st.markdown("""
