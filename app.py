@@ -154,16 +154,19 @@ def analyze_image(img_bytes, api_key):
   client = OpenAI(
       api_key=api_key,
       base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-      timeout=40.0,
+      timeout=45.0,
   )
   b64 = base64.b64encode(img_bytes).decode("utf-8")
 
-  # 强化 Prompt：明确要求通过玩家头像识别所用英雄中文名
+  # 极其严格且精准的定向识别 Prompt
   prompt = (
-      "这是英雄联盟掌盟战绩结算截图。\n"
-      "请识别整局胜负（BLUE或RED），以及全部10位玩家使用的英雄中文名（根据头像识别，如'亚索'、'盲僧'、'金克丝'等，无法确定请填'未知'）、游戏ID与KDA数值。\n"
-      "请严格输出合法JSON：\n"
-      '{"winning_team": "BLUE", "players": [{"player_name": "ID", "champion":'
+      "这是英雄联盟掌盟（手机端）战绩结算截图。\n"
+      "请仔细阅读以下提取规则并输出标准JSON：\n"
+      "1. 【胜负】识别整局胜负（胜利的一方是BLUE还是RED）。\n"
+      "2. 【英雄提取（重点）】每位玩家条目的最左侧，都有一个方形的英雄头像图标（旁边带有KDA得分、召唤师技能等）。请务必根据头像图案识别出对应的英雄中文名（例如：扎克、瑞兹、卡尔萨斯、亚索、伊泽瑞尔、卡莎等）。如果使用了皮肤头像，请根据人物脸型、头饰、武器特征尽全力推断英雄名，尽量不要留空或填未知！\n"
+      "3. 【玩家与战绩】提取每位玩家的游戏ID以及击杀(kills)、死亡(deaths)、助攻(assists)。\n"
+      "4. 请严格输出纯JSON，格式为：\n"
+      '{"winning_team": "BLUE", "players": [{"player_name": "玩家ID", "champion":'
       ' "英雄名", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0,'
       ' "is_winner": true}]}'
   )
@@ -460,8 +463,8 @@ else:
       stats[fname]["死亡"] += p.get("deaths", 0)
       stats[fname]["助攻"] += p.get("assists", 0)
 
-      # 记录使用的英雄
-      champ = p.get("champion", "").strip()
+      # 记录使用的英雄名
+      champ = str(p.get("champion", "")).strip()
       if champ and champ != "未知":
         stats[fname]["英雄列表"].append(champ)
 
@@ -482,7 +485,7 @@ else:
           else:
             synergy_stats[pair_key]["负场"] += 1
 
-  # 计算招牌英雄（使用最多的英雄）
+  # 计算招牌英雄
   for p, p_data in stats.items():
     if p_data["英雄列表"]:
       most_common_champ, count = Counter(p_data["英雄列表"]).most_common(1)[0]
@@ -602,7 +605,6 @@ else:
         .drop(columns=["sort_key", "KDA_num", "英雄列表"])
     )
 
-    # 呈现列顺序：总场次 -> 招牌英雄 -> 胜场 -> 负场 -> 胜率 -> KD -> KDA -> 击杀 -> 死亡 -> 助攻
     col_order = [
         "总场次",
         "招牌英雄",
