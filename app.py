@@ -128,7 +128,6 @@ def reset_all_records():
 
 
 def sanitize_database():
-  """把 records.json 中所有现存的历史错误玩家名字重写归一"""
   records = load_all_records()
   modified = False
   for r in records:
@@ -291,5 +290,4 @@ with st.sidebar:
         if st.button("⏪ 撤回最近的一局", key="btn_undo"):
           delete_record_by_index(len(current_records) - 1)
           st.toast("已撤回最新对局！", icon="🗑️")
-          time.sleep(0.8)
-          st.rerun()
+          time
