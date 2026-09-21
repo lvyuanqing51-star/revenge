@@ -248,6 +248,11 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     color: #fb7185;
     border: 1px solid rgba(251, 113, 133, 0.3);
 }
+.delta-purple {
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+}
 .delta-gray {
     background: rgba(148, 163, 184, 0.15);
     color: #94a3b8;
@@ -571,7 +576,7 @@ st.caption("💡 微信内无法直接拉起语音？请点击右上角「···
 
 st.write("")
 
-# ---------------- 主界面 2：趣味头衔、双人羁绊与胜率总榜 ----------------
+# ---------------- 主界面 2：趣味头衔、单人巅峰、双人羁绊与胜率总榜 ----------------
 records = load_records()
 
 if not records:
@@ -603,7 +608,12 @@ else:
     # 宿敌对战统计（分属蓝红两队正面交手）
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
-    for r in records:
+    # 单场巅峰记录追踪
+    max_single_kill = {"player": "", "val": -1, "game_idx": 0}
+    max_single_death = {"player": "", "val": -1, "game_idx": 0}
+    max_single_assist = {"player": "", "val": -1, "game_idx": 0}
+
+    for game_idx, r in enumerate(records):
         blue_team = []
         red_team = []
         
@@ -613,15 +623,27 @@ else:
                 continue
             fname = get_final_name(raw_pname)
 
+            kills = int(p.get("kills", 0))
+            deaths = int(p.get("deaths", 0))
+            assists = int(p.get("assists", 0))
+
             stats[fname]["总场次"] += 1
             is_win = bool(p.get("is_winner"))
             if is_win:
                 stats[fname]["胜场"] += 1
             else:
                 stats[fname]["负场"] += 1
-            stats[fname]["击杀"] += int(p.get("kills", 0))
-            stats[fname]["死亡"] += int(p.get("deaths", 0))
-            stats[fname]["助攻"] += int(p.get("assists", 0))
+            stats[fname]["击杀"] += kills
+            stats[fname]["死亡"] += deaths
+            stats[fname]["助攻"] += assists
+
+            # 单场巅峰数值更新
+            if kills > max_single_kill["val"]:
+                max_single_kill = {"player": fname, "val": kills, "game_idx": game_idx + 1}
+            if deaths > max_single_death["val"]:
+                max_single_death = {"player": fname, "val": deaths, "game_idx": game_idx + 1}
+            if assists > max_single_assist["val"]:
+                max_single_assist = {"player": fname, "val": assists, "game_idx": game_idx + 1}
 
             team_side = str(p.get("team", "")).upper()
             if team_side == "BLUE":
@@ -662,7 +684,38 @@ else:
         df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
 
-        # 1. 4 大单人头衔（至少2局）
+        # ---------------- 板块 A：单场巅峰纪录 (3 列) ----------------
+        st.subheader("🔥 单场最高纪录")
+        col_peak1, col_peak2, col_peak3 = st.columns(3)
+        with col_peak1:
+            st.markdown(f"""
+                <div class="esport-card">
+                    <div class="esport-card-title">单场最高击杀</div>
+                    <div class="esport-card-player">{short_name(max_single_kill['player'])}</div>
+                    <div class="esport-card-delta delta-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_peak2:
+            st.markdown(f"""
+                <div class="esport-card">
+                    <div class="esport-card-title">单场最高阵亡</div>
+                    <div class="esport-card-player">{short_name(max_single_death['player'])}</div>
+                    <div class="esport-card-delta delta-red">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_peak3:
+            st.markdown(f"""
+                <div class="esport-card">
+                    <div class="esport-card-title">单场最高助攻</div>
+                    <div class="esport-card-player">{short_name(max_single_assist['player'])}</div>
+                    <div class="esport-card-delta delta-cyan">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        st.write("")
+
+        # ---------------- 板块 B：综合竞技头衔 (4 列) ----------------
+        st.subheader("🎖️ 综合荣誉头衔")
         kda_candidates = df[df["总场次"] >= 2]
         if kda_candidates.empty:
             kda_candidates = df
@@ -684,7 +737,7 @@ else:
         with col2:
             st.markdown(f"""
                 <div class="esport-card">
-                    <div class="esport-card-title">击杀王</div>
+                    <div class="esport-card-title">累计击杀王</div>
                     <div class="esport-card-player">{short_name(top_kill_name)}</div>
                     <div class="esport-card-delta delta-gold">{int(df.loc[top_kill_name, '击杀'])} 杀</div>
                 </div>
@@ -692,7 +745,7 @@ else:
         with col3:
             st.markdown(f"""
                 <div class="esport-card">
-                    <div class="esport-card-title">白给王</div>
+                    <div class="esport-card-title">累计白给王</div>
                     <div class="esport-card-player">{short_name(top_death_name)}</div>
                     <div class="esport-card-delta delta-red">{int(df.loc[top_death_name, '死亡'])} 阵亡</div>
                 </div>
@@ -700,13 +753,16 @@ else:
         with col4:
             st.markdown(f"""
                 <div class="esport-card">
-                    <div class="esport-card-title">助攻王</div>
+                    <div class="esport-card-title">累计助攻王</div>
                     <div class="esport-card-player">{short_name(top_assist_name)}</div>
                     <div class="esport-card-delta delta-cyan">{int(df.loc[top_assist_name, '助攻'])} 助攻</div>
                 </div>
             """, unsafe_allow_html=True)
 
-        # 2. 羁绊看板（黄金搭档 / 难兄难弟 / 一生之敌，严格 >= 5 局门槛）
+        st.write("")
+
+        # ---------------- 板块 C：羁绊看板 (3 列，严格 >= 5 局门槛) ----------------
+        st.subheader("🔗 阵营羁绊与宿敌")
         syn_list = []
         for (p1, p2), v in synergy_stats.items():
             t_games = int(v["同队场次"])
@@ -763,7 +819,6 @@ else:
             if not nem_candidates.empty:
                 rival_pair = nem_candidates.sort_values(by=["dom_rate", "diff", "games"], ascending=[False, False, False]).iloc[0]
 
-        st.write("")
         col_syn1, col_syn2, col_syn3 = st.columns(3)
         with col_syn1:
             if best_pair is not None:
