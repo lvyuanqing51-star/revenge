@@ -2,6 +2,7 @@ import base64
 from collections import defaultdict
 import difflib
 import hashlib
+from itertools import combinations
 import json
 import os
 import re
@@ -13,12 +14,12 @@ import streamlit as st
 DATA_FILE = "records.json"
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
-# 自定义紧凑字号样式，彻底解决 st.metric 名字超大被省略截断的问题
+# 自定义紧凑字号样式，让名字展示整齐且不被省略截断
 st.markdown(
     """
     <style>
     div[data-testid="stMetricValue"] {
-        font-size: 1.15rem !important;
+        font-size: 1.12rem !important;
         font-weight: 600 !important;
         white-space: nowrap !important;
         overflow: hidden !important;
@@ -152,6 +153,10 @@ def analyze_image(img_bytes, api_key):
   return json.loads(content.strip())
 
 
+def short_name(full_name):
+  return full_name.split("#")[0]
+
+
 # ---------------- 侧边栏 ----------------
 with st.sidebar:
   st.header("⚙️ 系统管理")
@@ -274,7 +279,7 @@ if submit_btn:
 
 st.markdown("---")
 
-# ---------------- 主界面 3：趣味头衔与胜率榜单 ----------------
+# ---------------- 主界面 3：趣味头衔与双人羁绊 ----------------
 records = load_records()
 if not records:
   st.info("💡 暂无战绩数据，请在上方上传截图。")
@@ -288,6 +293,13 @@ else:
 
   name_mapping = build_canonical_name_map(list(set(all_raw)))
 
+  def get_final_name(pname):
+    strict_name = clean_player_name_strict(pname)
+    fname = name_mapping.get(pname, strict_name)
+    if strict_name == TARGET_QIANQIU or "千秋" in fname:
+      return TARGET_QIANQIU
+    return fname
+
   stats = defaultdict(
       lambda: {
           "总场次": 0,
@@ -299,26 +311,48 @@ else:
       }
   )
 
+  # 双人羁绊统计字典: key 为排序后的 (玩家A, 玩家B)
+  synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
+
   for r in records:
+    blue_team = []
+    red_team = []
+
     for p in r.get("players", []):
       raw_pname = p.get("player_name", "")
       if not raw_pname:
         continue
+      fname = get_final_name(raw_pname)
 
-      strict_name = clean_player_name_strict(raw_pname)
-      final_name = name_mapping.get(raw_pname, strict_name)
-
-      if strict_name == TARGET_QIANQIU or "千秋" in final_name:
-        final_name = TARGET_QIANQIU
-
-      stats[final_name]["总场次"] += 1
-      if p.get("is_winner"):
-        stats[final_name]["胜场"] += 1
+      stats[fname]["总场次"] += 1
+      is_win = bool(p.get("is_winner"))
+      if is_win:
+        stats[fname]["胜场"] += 1
       else:
-        stats[final_name]["负场"] += 1
-      stats[final_name]["击杀"] += p.get("kills", 0)
-      stats[final_name]["死亡"] += p.get("deaths", 0)
-      stats[final_name]["助攻"] += p.get("assists", 0)
+        stats[fname]["负场"] += 1
+      stats[fname]["击杀"] += p.get("kills", 0)
+      stats[fname]["死亡"] += p.get("deaths", 0)
+      stats[fname]["助攻"] += p.get("assists", 0)
+
+      # 归队用于双人搭档计算
+      team_side = str(p.get("team", "")).upper()
+      if team_side == "BLUE":
+        blue_team.append((fname, is_win))
+      elif team_side == "RED":
+        red_team.append((fname, is_win))
+
+    # 计算蓝队所有双人组合
+    for t in [blue_team, red_team]:
+      # 去重同一队伍的同名玩家（防止极端识别情况）
+      team_members = list({item[0]: item[1] for item in t}.items())
+      if len(team_members) >= 2:
+        for (p1, win1), (p2, _) in combinations(team_members, 2):
+          pair_key = tuple(sorted([p1, p2]))
+          synergy_stats[pair_key]["同队场次"] += 1
+          if win1:
+            synergy_stats[pair_key]["胜场"] += 1
+          else:
+            synergy_stats[pair_key]["负场"] += 1
 
   df = pd.DataFrame.from_dict(stats, orient="index")
   df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
@@ -327,7 +361,7 @@ else:
   ).round(2)
   df["KDA"] = df["KDA_num"].astype(str)
 
-  # ---------- 趣味头衔计算 ----------
+  # ---------- 1. 单人趣味头衔计算 ----------
   kda_candidates = df[df["总场次"] >= 2]
   if kda_candidates.empty:
     kda_candidates = df
@@ -339,36 +373,88 @@ else:
   top_death_name = df.sort_values(by="死亡", ascending=False).index[0]
   top_assist_name = df.sort_values(by="助攻", ascending=False).index[0]
 
-  def short_name(full_name):
-    # 去除井号及后缀数字，只留纯游戏昵称
-    return full_name.split("#")[0]
-
   col1, col2, col3, col4 = st.columns(4)
   with col1:
     st.metric(
-        label="KDA王",
+        label="(KDA王)",
         value=short_name(top_kda_name),
         delta=f"KDA {df.loc[top_kda_name, 'KDA']}",
     )
   with col2:
     st.metric(
-        label="击杀王",
+        label="(击杀王)",
         value=short_name(top_kill_name),
         delta=f"{df.loc[top_kill_name, '击杀']} 杀",
     )
   with col3:
     st.metric(
-        label="白给王",
+        label="(白给王)",
         value=short_name(top_death_name),
         delta=f"{df.loc[top_death_name, '死亡']} 阵亡",
         delta_color="inverse",
     )
   with col4:
     st.metric(
-        label="助攻王",
+        label="(助攻王)",
         value=short_name(top_assist_name),
         delta=f"{df.loc[top_assist_name, '助攻']} 助攻",
     )
+
+  # ---------- 2. 双人羁绊计算（黄金搭档 vs 难兄难弟） ----------
+  if synergy_stats:
+    syn_list = []
+    for (p1, p2), v in synergy_stats.items():
+      t_games = v["同队场次"]
+      w_games = v["胜场"]
+      l_games = v["负场"]
+      wr = w_games / t_games if t_games > 0 else 0
+      syn_list.append({
+          "p1": p1,
+          "p2": p2,
+          "pair_name": f"{short_name(p1)} & {short_name(p2)}",
+          "games": t_games,
+          "wins": w_games,
+          "losses": l_games,
+          "win_rate": wr,
+      })
+
+    syn_df = pd.DataFrame(syn_list)
+
+    # 优先筛选同队 >= 2 场的搭档，如果不足则取全部
+    syn_candidates = syn_df[syn_df["games"] >= 2]
+    if syn_candidates.empty:
+      syn_candidates = syn_df
+
+    # 黄金搭档：胜率最高，同胜率按总场次多者优先
+    best_pair = syn_candidates.sort_values(
+        by=["win_rate", "games"], ascending=[False, False]
+    ).iloc[0]
+    # 难兄难弟：胜率最低，同胜率按总场次多者优先
+    worst_pair = syn_candidates.sort_values(
+        by=["win_rate", "games"], ascending=[True, False]
+    ).iloc[0]
+
+    st.write("")  # 微小间距
+    col_syn1, col_syn2 = st.columns(2)
+    with col_syn1:
+      st.metric(
+          label="🏆 黄金搭档 (同队胜率最高)",
+          value=best_pair["pair_name"],
+          delta=(
+              f"{best_pair['wins']}胜{best_pair['losses']}负"
+              f" ({round(best_pair['win_rate'] * 100, 1)}%)"
+          ),
+      )
+    with col_syn2:
+      st.metric(
+          label="💥 难兄难弟 (同队翻车最多)",
+          value=worst_pair["pair_name"],
+          delta=(
+              f"{worst_pair['wins']}胜{worst_pair['losses']}负"
+              f" ({round(worst_pair['win_rate'] * 100, 1)}%)"
+          ),
+          delta_color="inverse",
+      )
 
   st.markdown("---")
   st.subheader("胜率榜单")
