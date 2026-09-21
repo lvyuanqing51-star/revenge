@@ -19,7 +19,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级明朗深海蓝微光 CSS ----------------
+# ---------------- 高级深海蓝微光 + 侧边栏文字穿透高亮 CSS ----------------
 st.markdown("""
     <style>
     /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
@@ -43,6 +43,36 @@ st.markdown("""
         letter-spacing: 0.8px;
     }
 
+    /* 侧边栏所有文字强力穿透提亮，彻底杜绝隐藏 */
+    section[data-testid="stSidebar"] {
+        background-color: rgba(10, 22, 36, 0.96) !important;
+        border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
+    }
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] h4 {
+        color: #fef08a !important;
+        font-weight: 700 !important;
+    }
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] div,
+    section[data-testid="stSidebar"] summary {
+        color: #f1f5f9 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    section[data-testid="stSidebar"] summary:hover {
+        color: #38bdf8 !important;
+    }
+    section[data-testid="stSidebar"] input {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    }
+
     /* 语音作战室三大专属微光按钮 */
     div[data-testid="stLinkButton"] a {
         border-radius: 10px !important;
@@ -54,7 +84,7 @@ st.markdown("""
     div[data-testid="stLinkButton"] a:hover {
         transform: translateY(-2px);
     }
-    /* 大厅主语音：磨砂琥珀金 */
+    /* 大厅主语音 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
         background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(202, 138, 4, 0.15)) !important;
         border: 1px solid rgba(253, 224, 71, 0.5) !important;
@@ -64,7 +94,7 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
         box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
     }
-    /* 蓝方作战室：明朗极光霓虹蓝 */
+    /* 蓝方作战室 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
         background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.2)) !important;
         border: 1px solid rgba(56, 189, 248, 0.7) !important;
@@ -74,7 +104,7 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
         box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6) !important;
     }
-    /* 红方作战室：绯红熔岩光 */
+    /* 红方作战室 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
         background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.2)) !important;
         border: 1px solid rgba(251, 113, 133, 0.7) !important;
@@ -85,7 +115,7 @@ st.markdown("""
         box-shadow: 0 6px 24px rgba(251, 113, 133, 0.55) !important;
     }
 
-    /* 独立手写电竞磨砂卡片系统 */
+    /* 独立电竞磨砂卡片系统 */
     .esport-card {
         background: rgba(255, 255, 255, 0.08);
         border: 1px solid rgba(255, 255, 255, 0.22);
@@ -147,72 +177,75 @@ st.markdown("""
         border: 1px solid rgba(251, 113, 133, 0.3);
     }
 
-    /* 底部上传框磨砂优化 */
+    /* 胜率榜名字超链接按钮美化 */
+    div.player-click-box button {
+        background: rgba(56, 189, 248, 0.12) !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        border-radius: 6px !important;
+        color: #e0f2fe !important;
+        font-weight: 700 !important;
+        font-size: 0.92rem !important;
+        padding: 3px 8px !important;
+        width: 100% !important;
+        transition: all 0.2s ease !important;
+    }
+    div.player-click-box button:hover {
+        background: rgba(56, 189, 248, 0.28) !important;
+        border-color: #38bdf8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+        transform: translateY(-1px);
+    }
+
+    /* AI 锐评弹窗卡片全局样式 */
+    .ai-modal-box {
+        background: radial-gradient(circle at 50% 10%, #1a385c 0%, #0d1e31 100%);
+        border: 1px solid rgba(56, 189, 248, 0.5);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+        margin: 15px 0 25px 0;
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .ai-tag {
+        display: inline-block;
+        background: rgba(234, 179, 8, 0.25);
+        color: #fef08a;
+        border: 1px solid rgba(234, 179, 8, 0.5);
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        margin-left: 10px;
+    }
+    .ai-quote {
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid #38bdf8;
+        padding: 10px 14px;
+        margin: 14px 0;
+        color: #bae6fd;
+        font-style: italic;
+        font-size: 0.95rem;
+        border-radius: 0 8px 8px 0;
+    }
+    .ai-roast-body {
+        color: #f1f5f9;
+        font-size: 0.95rem;
+        line-height: 1.7;
+        padding: 8px 4px;
+    }
+
+    /* 底部上传框 */
     div[data-testid="stFileUploader"] {
         background: rgba(255, 255, 255, 0.06) !important;
         border-radius: 10px !important;
         border: 1px dashed rgba(255, 255, 255, 0.3) !important;
         backdrop-filter: blur(12px) !important;
         padding: 12px !important;
-    }
-    section[data-testid="stSidebar"] {
-        background-color: rgba(10, 24, 40, 0.95) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
-    }
-
-    /* 亮感磨砂电竞表格容器 */
-    .hextech-table-container {
-        width: 100%;
-        overflow-x: auto;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 12px;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        margin-top: 10px;
-        margin-bottom: 25px;
-    }
-    .hextech-table {
-        width: 100%;
-        border-collapse: collapse;
-        color: #f1f5f9;
-        font-size: 0.95rem;
-        text-align: center;
-    }
-    .hextech-table th {
-        background: rgba(23, 49, 77, 0.8);
-        color: #fef08a;
-        font-weight: 700;
-        letter-spacing: 0.6px;
-        padding: 14px 10px;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.15);
-    }
-    .hextech-table td {
-        padding: 13px 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        transition: background 0.2s;
-    }
-    .hextech-table tr:hover td {
-        background: rgba(56, 189, 248, 0.12) !important;
-    }
-    .hextech-table tr:nth-child(even) {
-        background: rgba(255, 255, 255, 0.03);
-    }
-    .hextech-badge-win {
-        color: #38bdf8;
-        font-weight: 700;
-        text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-    }
-    .hextech-badge-loss {
-        color: #fb7185;
-        font-weight: 700;
-    }
-    .hextech-player-name {
-        text-align: left;
-        padding-left: 20px !important;
-        font-weight: 600;
-        color: #ffffff;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -350,6 +383,58 @@ def short_name(full_name):
         return "未知"
     return full_name.split("#")[0]
 
+def generate_player_roast(player_name, p_stats, api_key):
+    """调用通义千问大模型进行趣味电竞打法点评"""
+    if not api_key:
+        return {
+            "tag": "神秘大掌门",
+            "quote": "人在峡谷飘，全凭感觉捞。",
+            "roast": "请在左侧侧边栏填入正确的 DashScope API Key，即可解锁专业电竞解说锐评与战术定位！"
+        }
+    
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        timeout=15.0
+    )
+    
+    prompt = f"""
+你是一位毒舌幽默、深谙英雄联盟内战文化的金牌电竞解说兼老六裁判。
+请根据玩家【{player_name}】的内战统计数据，生成一份风趣幽默、一针见血的选手打法风格鉴定书。
+
+【玩家数据】：
+- 总出场: {p_stats['总场次']} 场
+- 战绩: {p_stats['胜场']} 胜 / {p_stats['负场']} 负 (胜率: {p_stats['胜率_num']}%)
+- KD击杀死亡比: {p_stats['KD']}
+- 综合KDA: {p_stats['KDA']}
+- 总击杀: {p_stats['击杀']} | 总阵亡: {p_stats['死亡']} | 总助攻: {p_stats['助攻']}
+
+【要求】：
+1. 必须输出标准 JSON，格式如下：
+{{
+    "tag": "4-6字选手风格标签（如：峡谷收税官、敢死队大队长、躺赢界天花板、军训受害人）",
+    "quote": "一句精辟搞笑的经典语录或座右铭（15字内）",
+    "roast": "一段120字左右的风趣锐评：结合他的KDA、击杀或阵亡特点点评他的打法风格、在队伍中的战术定位（是大爹、诱饵、气氛组还是团灭发动机）"
+}}
+2. 语言生动风趣、带电竞梗（如K头、白给、尽力局、红温），评价务必贴合数据。
+"""
+    try:
+        resp = client.chat.completions.create(
+            model="qwen-plus",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.8
+        )
+        raw = resp.choices[0].message.content.strip()
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        return json.loads(match.group(0) if match else raw)
+    except Exception as e:
+        return {
+            "tag": "电竞隐世高人",
+            "quote": "顺风全靠吹，逆风全是推。",
+            "roast": f"AI 解说在赶来的路上遭遇反蹲，暂未生成评论（报错: {e}）。"
+        }
+
 # ---------------- 侧边栏（管理 + 对局图文核对） ----------------
 with st.sidebar:
     st.header("⚙️ 系统管理")
@@ -465,7 +550,7 @@ with c3:
 
 st.write("")
 
-# ---------------- 主界面 2：趣味头衔、双人羁绊与胜率总榜（核心展示区置顶） ----------------
+# ---------------- 主界面 2：趣味头衔、双人羁绊与胜率总榜 ----------------
 records = load_records()
 
 if not records:
@@ -537,8 +622,9 @@ else:
         df["胜率_num"] = (df["胜场"] / df["总场次"] * 100).round(1)
         df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
+        df["KDA"] = df["KDA_num"].astype(str)
 
-        # 1. 精简纯粹的 4 个单人头衔
+        # 1. 4 大单人头衔
         kda_candidates = df[df["总场次"] >= 2]
         if kda_candidates.empty:
             kda_candidates = df
@@ -622,63 +708,91 @@ else:
                         <div class="esport-card">
                             <div class="esport-card-title">难兄难弟</div>
                             <div class="esport-card-player">{worst_pair['pair_name']}</div>
-                            <div class="esport-card-delta delta-red">{worst_pair['wins']}胜{worst_pair['losses']}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
+                            <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
                         </div>
                     """, unsafe_allow_html=True)
 
         st.markdown("---")
-        st.subheader("📊 胜率总榜")
+        st.subheader("📊 胜率总榜 (点击玩家名即可查看 AI 风格锐评)")
 
         # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 亮感磨砂电竞表格拼接
-        table_rows = []
+        # ---------------- AI 锐评全端兼容模态框 ----------------
+        if "selected_player" in st.session_state and st.session_state["selected_player"]:
+            target_pid = st.session_state["selected_player"]
+            if target_pid in df.index:
+                p_row = df.loc[target_pid].to_dict()
+                target_name = short_name(target_pid)
+                
+                cache_key = f"roast_{target_pid}_{p_row['总场次']}_{p_row['胜场']}"
+                if cache_key not in st.session_state:
+                    with st.spinner(f"🎙️ 金牌解说正在锐评【{target_name}】的比赛录像..."):
+                        st.session_state[cache_key] = generate_player_roast(target_name, p_row, key)
+                
+                roast_data = st.session_state[cache_key]
+                
+                # 弹出精美磨砂锐评卡片
+                st.markdown(f"""
+                    <div class="ai-modal-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <span style="font-size:1.5rem; font-weight:800; color:#ffffff;">{target_name}</span>
+                                <span class="ai-tag">{roast_data.get('tag', '特约嘉宾')}</span>
+                            </div>
+                            <div style="color:#94a3b8; font-size:0.9rem;">内战出场: {int(p_row['总场次'])} 局 | 胜率: {p_row['胜率_num']}%</div>
+                        </div>
+                        <div class="ai-quote">“{roast_data.get('quote', '战术撤退，绝非白给。')}”</div>
+                        <div class="ai-roast-body">{roast_data.get('roast', '')}</div>
+                        <div style="display:flex; gap:16px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.88rem; color:#cbd5e1;">
+                            <div>击杀比 (KD): <b style="color:#38bdf8;">{p_row['KD']}</b></div>
+                            <div>综合 KDA: <b style="color:#fef08a;">{p_row['KDA']}</b></div>
+                            <div>击杀/阵亡/助攻: <b>{int(p_row['击杀'])} / {int(p_row['死亡'])} / {int(p_row['助攻'])}</b></div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("✖️ 收起选手评价", key="close_roast_btn"):
+                    st.session_state["selected_player"] = None
+                    st.rerun()
+
+        # 表头
+        col_widths = [2.2, 1, 1, 1, 1.2, 1.1, 1.1, 1, 1, 1]
+        th_cols = st.columns(col_widths)
+        headers = ["玩家 (点击)", "总场次", "胜场", "负场", "胜率", "KD比", "KDA", "击杀", "死亡", "助攻"]
+        for col, title in zip(th_cols, headers):
+            col.markdown(f"<div style='text-align:center; font-weight:700; color:#fef08a; padding:6px 0;'>{title}</div>", unsafe_allow_html=True)
+
+        # 数据行渲染
         for player_id, row in df.iterrows():
+            p_name = short_name(player_id)
             wr_val = row["胜率_num"]
-            wr_badge = f"<span class='hextech-badge-win'>{wr_val}%</span>" if wr_val >= 50 else f"<span class='hextech-badge-loss'>{wr_val}%</span>"
+            wr_badge = f"<span style='color:#38bdf8;font-weight:700;'>{wr_val}%</span>" if wr_val >= 50 else f"<span style='color:#fb7185;font-weight:700;'>{wr_val}%</span>"
             kd_str = f"{row['KD']:.2f}"
             kda_str = f"{row['KDA_num']:.2f}"
-            p_name = short_name(player_id)
 
-            total_games = int(row['总场次'])
-            wins = int(row['胜场'])
-            losses = int(row['负场'])
-            kills = int(row['击杀'])
-            deaths = int(row['死亡'])
-            assists = int(row['助攻'])
+            r_cols = st.columns(col_widths)
+            
+            with r_cols[0]:
+                st.markdown('<div class="player-click-box">', unsafe_allow_html=True)
+                if st.button(f"🔍 {p_name}", key=f"btn_p_{player_id}"):
+                    st.session_state["selected_player"] = player_id
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
-            row_html = (
-                f"<tr>"
-                f"<td class='hextech-player-name'>{p_name}</td>"
-                f"<td>{total_games}</td>"
-                f"<td>{wins}</td>"
-                f"<td>{losses}</td>"
-                f"<td>{wr_badge}</td>"
-                f"<td style='color:#38bdf8;font-weight:700;'>{kd_str}</td>"
-                f"<td style='color:#fef08a;font-weight:700;'>{kda_str}</td>"
-                f"<td>{kills}</td>"
-                f"<td>{deaths}</td>"
-                f"<td>{assists}</td>"
-                f"</tr>"
-            )
-            table_rows.append(row_html)
+            r_cols[1].markdown(f"<div style='text-align:center; padding-top:6px;'>{int(row['总场次'])}</div>", unsafe_allow_html=True)
+            r_cols[2].markdown(f"<div style='text-align:center; padding-top:6px;'>{int(row['胜场'])}</div>", unsafe_allow_html=True)
+            r_cols[3].markdown(f"<div style='text-align:center; padding-top:6px;'>{int(row['负场'])}</div>", unsafe_allow_html=True)
+            r_cols[4].markdown(f"<div style='text-align:center; padding-top:6px;'>{wr_badge}</div>", unsafe_allow_html=True)
+            r_cols[5].markdown(f"<div style='text-align:center; padding-top:6px; color:#38bdf8; font-weight:700;'>{kd_str}</div>", unsafe_allow_html=True)
+            r_cols[6].markdown(f"<div style='text-align:center; padding-top:6px; color:#fef08a; font-weight:700;'>{kda_str}</div>", unsafe_allow_html=True)
+            r_cols[7].markdown(f"<div style='text-align:center; padding-top:6px;'>{int(row['击杀'])}</div>", unsafe_allow_html=True)
+            r_cols[8].markdown(f"<div style='text-align:center; padding-top:6px;'>{int(row['死亡'])}</div>", unsafe_allow_html=True)
+            r_cols[9].markdown(f"<div style='text-align:center; padding-top:6px;'>{int(row['助攻'])}</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div style='border-bottom: 1px solid rgba(255,255,255,0.06); margin: 3px 0;'></div>", unsafe_allow_html=True)
 
-        custom_table_html = (
-            f'<div class="hextech-table-container">'
-            f'<table class="hextech-table">'
-            f'<thead><tr>'
-            f'<th style="text-align:left;padding-left:20px;">玩家</th>'
-            f'<th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>'
-            f'<th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
-            f'</tr></thead>'
-            f'<tbody>{"".join(table_rows)}</tbody>'
-            f'</table></div>'
-        )
-
-        st.markdown(custom_table_html, unsafe_allow_html=True)
-
-# ---------------- 主界面 3：战绩上传窗口（移至页面最底部） ----------------
+# ---------------- 主界面 3：战绩上传窗口（置底） ----------------
 st.markdown("---")
 st.subheader("📥 战绩录入")
 
