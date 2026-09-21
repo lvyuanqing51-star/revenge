@@ -24,19 +24,31 @@ st.set_page_config(
 )
 st.title("🏆 英雄联盟内战胜率统计看板 (通义千问版)")
 
-# ---------------- 核心：玩家名字纠错映射 ----------------
+# ---------------- 核心：玩家名字强力清洗与合并映射 ----------------
 NAME_FIX_MAP = {
     "千秋种我一粟卿": "千秋种我一栗卿",
 }
 
 
 def clean_player_name(raw_name: str) -> str:
-  name = raw_name.strip()
-  name = name.replace("一粟卿", "一栗卿")
+  if not raw_name:
+    return ""
+
+  # 1. 统一全角井号及字符替换
+  name = raw_name.replace("＃", "#").replace("一粟卿", "一栗卿")
+
+  # 2. 彻底清除名字中意外混入的所有空格、换行及空白字符
+  name = "".join(name.split())
+
+  # 3. 针对形近字/隐形字符的强行归一化合并
+  if "千秋" in name and "52652" in name:
+    return "千秋种我一栗卿#52652"
+
   for wrong, right in NAME_FIX_MAP.items():
     if wrong in name:
       name = name.replace(wrong, right)
-  return name
+
+  return name.strip()
 
 
 def calculate_md5(data: bytes) -> str:
@@ -93,7 +105,6 @@ def reset_all_records():
 
 # ---------------- 2. 通义千问多模态识图引擎 ----------------
 def analyze_screenshot(image_bytes, key, max_retries=3):
-  # 阿里云百炼兼容 OpenAI SDK 接口地址
   client = OpenAI(
       api_key=key,
       base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -123,7 +134,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
   for attempt in range(max_retries):
     try:
       response = client.chat.completions.create(
-          model="qwen-vl-max",  # 阿里云百炼旗舰视觉大模型
+          model="qwen-vl-max",
           messages=[{
               "role": "user",
               "content": [
@@ -207,155 +218,4 @@ with st.sidebar:
     admin_pwd = st.text_input(
         "输入管理员密码", type="password", key="admin_pwd_input"
     )
-    if admin_pwd == "666888":
-      if current_records:
-        if st.button("⏪ 撤回最近的一局"):
-          delete_record_by_index(len(current_records) - 1)
-          st.toast("已撤回最新对局！", icon="🗑️")
-          time.sleep(0.8)
-          st.rerun()
-
-        corr_options = {
-            i: f"第 {i + 1} 局" for i in range(len(current_records))
-        }
-        sel_del_idx = st.selectbox(
-            "选择要删除的对局",
-            options=list(reversed(list(corr_options.keys()))),
-            format_func=lambda x: corr_options[x],
-            key="select_del_game",
-        )
-        if st.button("❌ 确认删除该局"):
-          delete_record_by_index(sel_del_idx)
-          st.toast("已删除该局！", icon="🗑️")
-          time.sleep(0.8)
-          st.rerun()
-
-      if st.button("💣 清空所有历史数据", type="primary"):
-        reset_all_records()
-        st.rerun()
-    elif admin_pwd:
-      st.error("密码错误")
-
-# ---------------- 4. 截图上传与解析 ----------------
-uploaded_files = st.file_uploader(
-    "📤 上传对局战绩截图（支持多张全选拖入，或直接上传 .zip 文件夹）",
-    type=["png", "jpg", "jpeg", "zip"],
-    accept_multiple_files=True,
-)
-
-if uploaded_files:
-  if not api_key:
-    st.warning("⚠️ 请先在左侧侧边栏填入通义千问 API Key！")
-  else:
-    if st.button("🚀 开始解析并计入胜率", type="primary"):
-      images_to_process = []
-      for file in uploaded_files:
-        file_bytes = file.read()
-        if file.name.lower().endswith(".zip"):
-          try:
-            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
-              for zip_info in z.infolist():
-                if not zip_info.is_dir() and zip_info.filename.lower().endswith(
-                    (".png", ".jpg", ".jpeg")
-                ):
-                  img_data = z.read(zip_info.filename)
-                  if "__MACOSX" not in zip_info.filename:
-                    images_to_process.append(
-                        (os.path.basename(zip_info.filename), img_data)
-                    )
-          except Exception as e:
-            st.error(f"❌ 读取压缩包 {file.name} 失败: {e}")
-        else:
-          images_to_process.append((file.name, file_bytes))
-
-      success_count = 0
-      skip_count = 0
-      existing_records = load_all_records()
-      existing_hashes = {
-          r.get("image_hash") for r in existing_records if "image_hash" in r
-      }
-      pbar = st.progress(0)
-      total = len(images_to_process)
-
-      for idx, (img_name, img_bytes) in enumerate(images_to_process):
-        img_hash = calculate_md5(img_bytes)
-
-        if img_hash in existing_hashes:
-          st.warning(f"⚠️ {img_name} 此前已录入，已自动跳过！")
-          skip_count += 1
-          pbar.progress((idx + 1) / total)
-          continue
-
-        with st.spinner(f"正在分析 ({idx + 1}/{total}): {img_name}..."):
-          try:
-            result = analyze_screenshot(img_bytes, api_key)
-            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
-            with open(os.path.join(IMAGE_DIR, saved_file_name), "wb") as f:
-              f.write(img_bytes)
-
-            result["image_hash"] = img_hash
-            result["image_file"] = saved_file_name
-            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
-
-            save_record(result)
-            existing_hashes.add(img_hash)
-            success_count += 1
-            time.sleep(0.3)
-          except Exception as e:
-            st.error(f"❌ {img_name} 录入失败: {e}")
-        pbar.progress((idx + 1) / total)
-
-      if success_count > 0:
-        st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
-        time.sleep(1)
-        st.rerun()
-
-st.markdown("---")
-
-# ---------------- 5. 纯净胜率总榜展示 ----------------
-records = load_all_records()
-
-st.subheader("📊 玩家胜率与战绩总榜")
-
-if not records:
-  st.info("💡 暂无历史对局数据。请在上方上传截图开始统计！")
-else:
-  player_stats = defaultdict(
-      lambda: {
-          "总场次": 0,
-          "胜场": 0,
-          "负场": 0,
-          "总击杀": 0,
-          "总死亡": 0,
-          "总助攻": 0,
-      }
-  )
-
-  for r in records:
-    for p in r.get("players", []):
-      name = clean_player_name(p.get("player_name", ""))
-      if not name:
-        continue
-      player_stats[name]["总场次"] += 1
-      if p.get("is_winner"):
-        player_stats[name]["胜场"] += 1
-      else:
-        player_stats[name]["负场"] += 1
-      player_stats[name]["总击杀"] += p.get("kills", 0)
-      player_stats[name]["总死亡"] += p.get("deaths", 0)
-      player_stats[name]["总助攻"] += p.get("assists", 0)
-
-  df = pd.DataFrame.from_dict(player_stats, orient="index")
-  df["胜率"] = (df["胜场"] / df["总场次"] * 100).round(1).astype(str) + "%"
-  df["K/D"] = (df["总击杀"] / df["总死亡"].replace(0, 1)).round(2)
-  df["KDA"] = (
-      (df["总击杀"] + df["总助攻"]) / df["总死亡"].replace(0, 1)
-  ).round(2)
-
-  df["win_rate_num"] = df["胜场"] / df["总场次"]
-  df = df.sort_values(
-      by=["win_rate_num", "总场次", "KDA"], ascending=[False, False, False]
-  )
-  df = df.drop(columns=["win_rate_num"])
-
-  st.dataframe(df, use_container_width=True)
+    if
