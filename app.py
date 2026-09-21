@@ -147,7 +147,7 @@ st.markdown("""
         border: 1px solid rgba(251, 113, 133, 0.3);
     }
 
-    /* 侧边栏与上传框 */
+    /* 底部上传框磨砂优化 */
     div[data-testid="stFileUploader"] {
         background: rgba(255, 255, 255, 0.06) !important;
         border-radius: 10px !important;
@@ -465,61 +465,11 @@ with c3:
 
 st.write("")
 
-# ---------------- 主界面 2：战绩上传窗口 ----------------
-with st.form("upload_box", clear_on_submit=False):
-    files = st.file_uploader("选择或拖拽战绩截图", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
-    submit_btn = st.form_submit_button("🚀 开始录入战绩", type="primary")
-
-if submit_btn:
-    if not files:
-        st.warning("⚠️ 请先选择或拖入战绩截图！")
-    elif not key:
-        st.warning("⚠️ 请在左侧侧边栏填入 DashScope API Key！")
-    else:
-        records = load_records()
-        seen_hashes = {r.get("md5") for r in records if "md5" in r}
-        added = 0
-        
-        bar = st.progress(0)
-        status_box = st.empty()
-        
-        for idx, file in enumerate(files):
-            status_box.info(f"⏳ 正在分析第 {idx+1}/{len(files)} 张: {file.name}")
-            img_data = file.read()
-            h = get_md5(img_data)
-            
-            if h in seen_hashes:
-                st.warning(f"⚠️ {file.name} 已录入过，已自动跳过。")
-            else:
-                try:
-                    result = analyze_image(img_data, key)
-                    result["md5"] = h
-                    result["image_thumb"] = compress_image_to_b64(img_data)
-                    
-                    for p in result.get("players", []):
-                        p["player_name"] = clean_player_name_strict(p.get("player_name", ""))
-                    records.append(result)
-                    seen_hashes.add(h)
-                    added += 1
-                    save_records(records)
-                except Exception as e:
-                    st.error(f"❌ {file.name} 录入失败: {e}")
-            
-            bar.progress((idx + 1) / len(files))
-        
-        status_box.empty()
-        if added > 0:
-            st.success(f"🎉 成功录入 {added} 局战绩！")
-            time.sleep(0.8)
-            st.rerun()
-
-st.markdown("---")
-
-# ---------------- 主界面 3：趣味头衔、双人羁绊与胜率榜 ----------------
+# ---------------- 主界面 2：趣味头衔、双人羁绊与胜率总榜（核心展示区置顶） ----------------
 records = load_records()
 
 if not records:
-    st.info("💡 暂无对局数据。请在上方上传战绩截图；若之前导出过备份，可在左侧侧边栏导入恢复。")
+    st.info("💡 暂无对局数据。请在页面底部上传战绩截图；若之前导出过备份，可在左侧侧边栏导入恢复。")
 else:
     all_raw = []
     for r in records:
@@ -672,7 +622,7 @@ else:
                         <div class="esport-card">
                             <div class="esport-card-title">难兄难弟</div>
                             <div class="esport-card-player">{worst_pair['pair_name']}</div>
-                            <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
+                            <div class="esport-card-delta delta-red">{worst_pair['wins']}胜{worst_pair['losses']}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -682,7 +632,7 @@ else:
         # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 亮感磨砂电竞表格拼接（全量整形字段强制转为 int，杜绝 13.0）
+        # 亮感磨砂电竞表格拼接
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
@@ -727,3 +677,54 @@ else:
         )
 
         st.markdown(custom_table_html, unsafe_allow_html=True)
+
+# ---------------- 主界面 3：战绩上传窗口（移至页面最底部） ----------------
+st.markdown("---")
+st.subheader("📥 战绩录入")
+
+with st.form("upload_box", clear_on_submit=False):
+    files = st.file_uploader("选择或拖拽战绩截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    submit_btn = st.form_submit_button("🚀 开始录入战绩", type="primary")
+
+if submit_btn:
+    if not files:
+        st.warning("⚠️ 请先选择或拖入战绩截图！")
+    elif not key:
+        st.warning("⚠️ 请在左侧侧边栏填入 DashScope API Key！")
+    else:
+        records = load_records()
+        seen_hashes = {r.get("md5") for r in records if "md5" in r}
+        added = 0
+        
+        bar = st.progress(0)
+        status_box = st.empty()
+        
+        for idx, file in enumerate(files):
+            status_box.info(f"⏳ 正在分析第 {idx+1}/{len(files)} 张: {file.name}")
+            img_data = file.read()
+            h = get_md5(img_data)
+            
+            if h in seen_hashes:
+                st.warning(f"⚠️ {file.name} 已录入过，已自动跳过。")
+            else:
+                try:
+                    result = analyze_image(img_data, key)
+                    result["md5"] = h
+                    result["image_thumb"] = compress_image_to_b64(img_data)
+                    
+                    for p in result.get("players", []):
+                        p["player_name"] = clean_player_name_strict(p.get("player_name", ""))
+                    records.append(result)
+                    seen_hashes.add(h)
+                    added += 1
+                    save_records(records)
+                except Exception as e:
+                    st.error(f"❌ {file.name} 录入失败: {e}")
+            
+            bar.progress((idx + 1) / len(files))
+        
+        status_box.empty()
+        if added > 0:
+            st.success(f"🎉 成功录入 {added} 局战绩！")
+            time.sleep(0.8)
+            st.rerun()
