@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import io
 import json
 import os
@@ -37,7 +38,12 @@ def clean_player_name(raw_name: str) -> str:
   return name
 
 
-# ---------------- 1. 持久化存储与备份恢复函数 ----------------
+# 计算文件唯一 MD5 指纹（去重核心）
+def calculate_md5(data: bytes) -> str:
+  return hashlib.md5(data).hexdigest()
+
+
+# ---------------- 1. 数据读写与管理函数 ----------------
 def load_all_records():
   if os.path.exists(DATA_FILE):
     try:
@@ -56,9 +62,24 @@ def save_record(new_record):
 
 
 def overwrite_all_records(records_list):
-  """导入备份时一键覆写恢复"""
   with open(DATA_FILE, "w", encoding="utf-8") as f:
     json.dump(records_list, f, ensure_ascii=False, indent=2)
+
+
+def delete_record_by_index(target_index: int):
+  """删除指定索引的一局，同时清理对应的关联图片"""
+  records = load_all_records()
+  if 0 <= target_index < len(records):
+    removed = records.pop(target_index)
+    # 尝试同步删除图片文件
+    img_filename = removed.get("image_file")
+    if img_filename:
+      img_path = os.path.join(IMAGE_DIR, img_filename)
+      if os.path.exists(img_path):
+        os.remove(img_path)
+    overwrite_all_records(records)
+    return True
+  return False
 
 
 def reset_all_records():
@@ -99,7 +120,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
   for attempt in range(max_retries):
     try:
       response = client.chat.completions.create(
-          model="deepseek-flash",  # 调用 DeepSeek 官方支持视觉的多模态模型
+          model="deepseek-flash",
           messages=[{
               "role": "user",
               "content": [
@@ -126,7 +147,7 @@ def analyze_screenshot(image_bytes, key, max_retries=3):
       raise e
 
 
-# ---------------- 3. 侧边栏配置（含导入与备份） ----------------
+# ---------------- 3. 侧边栏配置与管理控制台 ----------------
 with st.sidebar:
   st.header("⚙️ 核心设置")
   default_key = (
@@ -153,7 +174,7 @@ with st.sidebar:
   st.metric("已累计对局", f"{len(current_records)} 局")
   st.metric("已归档截图", f"{len(saved_images)} 张")
 
-  # 1. 导出备份
+  # 导出备份
   if current_records:
     json_data = json.dumps(current_records, ensure_ascii=False, indent=2)
     st.download_button(
@@ -161,13 +182,13 @@ with st.sidebar:
         data=json_data,
         file_name="lol_match_backup.json",
         mime="application/json",
-        help="建议定期下载备份到本地，防止云端容器休眠重启导致数据重置",
+        help="定期备份，防止云端重启",
     )
 
-  # 2. 导入恢复备份功能
-  with st.expander("📥 导入战绩备份（数据恢复）"):
+  # 导入备份
+  with st.expander("📥 导入战绩备份"):
     backup_file = st.file_uploader(
-        "上传之前下载的 JSON 备份文件", type=["json"], key="backup_uploader"
+        "选择 JSON 备份文件", type=["json"], key="backup_uploader"
     )
     if backup_file is not None:
       try:
@@ -175,30 +196,72 @@ with st.sidebar:
         if isinstance(imported_data, list):
           if st.button("⚡ 确认恢复该备份数据", type="primary"):
             overwrite_all_records(imported_data)
-            st.success(f"成功恢复 {len(imported_data)} 局历史数据！")
+            st.success(f"已恢复 {len(imported_data)} 局数据！")
             time.sleep(1)
             st.rerun()
         else:
-          st.error("文件格式不正确，内容必须是对局列表")
+          st.error("备份数据格式不符合要求")
       except Exception as err:
-        st.error(f"读取备份文件失败: {err}")
+        st.error(f"读取失败: {err}")
 
   st.markdown("---")
-  # 3. 管理员安全清空（密码 666888）
-  with st.expander("🔒 管理员功能（危险操作）"):
+  # ---------------- 管理员面板：精准删除与撤销 ----------------
+  with st.expander("🔒 管理员控制台（删除/撤回）"):
     admin_pwd = st.text_input(
-        "输入管理密码",
+        "管理员密码",
         type="password",
         key="admin_pwd",
-        help="防止他人误清空数据",
+        help="默认密码 666888",
     )
+
     if admin_pwd == "666888":
-      if st.button("🗑️ 确认清空所有数据与原图", type="primary"):
+      st.caption("✅ 身份验证通过")
+
+      # 功能 1：一键撤销最新一局
+      if current_records:
+        if st.button("⏪ 撤销最新录入的一局"):
+          last_idx = len(current_records) - 1
+          delete_record_by_index(last_idx)
+          st.toast("已成功撤销最新一局！", icon="🗑️")
+          time.sleep(0.8)
+          st.rerun()
+
+      # 功能 2：下拉精准删除指定对局
+      if current_records:
+        st.markdown("##### 🎯 精准删除指定对局")
+        options = {}
+        for i, r in enumerate(current_records):
+          win_team = "蓝方胜" if r.get("winning_team") == "BLUE" else "红方胜"
+          # 提取 2 位代表玩家名字做摘要
+          player_sample = " / ".join(
+              [p.get("player_name", "") for p in r.get("players", [])[:2]]
+          )
+          desc = f"第 {i + 1} 局 | {win_team} | {player_sample}..."
+          options[i] = desc
+
+        # 倒序显示，最新局排在最上面方便找
+        selected_idx = st.selectbox(
+            "选择要删除的对局",
+            options=list(reversed(list(options.keys()))),
+            format_func=lambda x: options[x],
+        )
+
+        if st.button("❌ 确认删除选中的这局", type="secondary"):
+          delete_record_by_index(selected_idx)
+          st.toast(f"已删除：{options[selected_idx]}", icon="🗑️")
+          time.sleep(0.8)
+          st.rerun()
+
+      st.divider()
+      # 功能 3：彻底清空全部
+      if st.button("💣 清空所有数据与截图", type="primary"):
         reset_all_records()
-        st.toast("已清空所有历史数据和截图！", icon="🧹")
+        st.toast("已全部清空！", icon="🧹")
+        time.sleep(0.8)
         st.rerun()
+
     elif admin_pwd:
-      st.error("密码错误，无法清空")
+      st.error("密码错误，权限拒绝")
 
 
 # ---------------- 4. 榜单渲染 ----------------
@@ -250,9 +313,9 @@ def render_leaderboard(records):
   st.dataframe(df, use_container_width=True)
 
 
-# ---------------- 5. 主界面上传与即时刷新 ----------------
+# ---------------- 5. 智能查重上传区 ----------------
 uploaded_files = st.file_uploader(
-    "📤 上传结算截图（支持单张或批量拖入）",
+    "📤 上传结算截图（支持多张拖入，已开启自动去重防翻倍）",
     type=["png", "jpg", "jpeg"],
     accept_multiple_files=True,
 )
@@ -263,31 +326,58 @@ if uploaded_files:
   else:
     if st.button("🚀 开始解析并录入", type="primary"):
       success_count = 0
+      skip_count = 0
       progress_bar = st.progress(0)
       total = len(uploaded_files)
 
-      for idx, file in enumerate(uploaded_files):
-        with st.spinner(f"正在使用 DeepSeek 识别 ({idx + 1}/{total}): {file.name}..."):
-          try:
-            img_bytes = file.read()
-            result = analyze_screenshot(img_bytes, api_key)
-            save_record(result)
+      # 收集现有已存记录的所有图片 MD5，用于秒级去重
+      existing_records = load_all_records()
+      existing_hashes = {
+          r.get("image_hash") for r in existing_records if "image_hash" in r
+      }
 
-            save_path = os.path.join(
-                IMAGE_DIR, f"{int(time.time())}_{file.name}"
-            )
+      for idx, file in enumerate(uploaded_files):
+        img_bytes = file.read()
+        img_hash = calculate_md5(img_bytes)
+
+        # 1. 指纹查重判断：如果已经录过完全相同的图片，直接跳过并省下 API 调用
+        if img_hash in existing_hashes:
+          st.warning(
+              f"⚠️ 跳过重复图片: 【{file.name}】 之前已经录入过，无需重复统计！"
+          )
+          skip_count += 1
+          progress_bar.progress((idx + 1) / total)
+          continue
+
+        with st.spinner(f"正在识别 ({idx + 1}/{total}): {file.name}..."):
+          try:
+            result = analyze_screenshot(img_bytes, api_key)
+
+            # 关联保存图片文件与哈希指纹
+            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
+            save_path = os.path.join(IMAGE_DIR, saved_file_name)
             with open(save_path, "wb") as img_file:
               img_file.write(img_bytes)
 
+            result["image_hash"] = img_hash
+            result["image_file"] = saved_file_name
+            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            save_record(result)
+            existing_hashes.add(img_hash)  # 防止同批次内也有重复图
             success_count += 1
             time.sleep(0.5)
           except Exception as e:
             st.error(f"❌ 解析 {file.name} 失败: {str(e)}")
+
         progress_bar.progress((idx + 1) / total)
 
       if success_count > 0:
-        st.success(f"🎉 成功录入 {success_count} 局战绩并归档原图！")
+        st.success(f"🎉 成功录入 {success_count} 局战绩！(跳过重复 {skip_count} 张)")
+        time.sleep(1)
         st.rerun()
+      elif skip_count > 0:
+        st.info("上传的所有图片此前均已录入，未增加任何重复数据。")
 
 st.markdown("---")
 render_leaderboard(load_all_records())
