@@ -1,5 +1,5 @@
 import base64
-from collections import defaultdict
+from collections import Counter, defaultdict
 import difflib
 import hashlib
 from io import BytesIO
@@ -62,7 +62,6 @@ def save_config(cfg):
 
 
 def compress_image_to_b64(img_bytes, max_w=720):
-  """压缩原图并转为轻量 Base64 存储，方便回溯核对且不占满磁盘"""
   try:
     img = Image.open(BytesIO(img_bytes))
     if img.mode in ("RGBA", "P"):
@@ -159,13 +158,14 @@ def analyze_image(img_bytes, api_key):
   )
   b64 = base64.b64encode(img_bytes).decode("utf-8")
 
+  # 强化 Prompt：明确要求通过玩家头像识别所用英雄中文名
   prompt = (
       "这是英雄联盟掌盟战绩结算截图。\n"
-      "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID与KDA数值。\n"
-      "不要识别英雄。\n"
+      "请识别整局胜负（BLUE或RED），以及全部10位玩家使用的英雄中文名（根据头像识别，如'亚索'、'盲僧'、'金克丝'等，无法确定请填'未知'）、游戏ID与KDA数值。\n"
       "请严格输出合法JSON：\n"
-      '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team":'
-      ' "BLUE", "kills": 0, "deaths": 0, "assists": 0, "is_winner": true}]}'
+      '{"winning_team": "BLUE", "players": [{"player_name": "ID", "champion":'
+      ' "英雄名", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0,'
+      ' "is_winner": true}]}'
   )
 
   resp = client.chat.completions.create(
@@ -195,7 +195,7 @@ def short_name(full_name):
   return full_name.split("#")[0]
 
 
-# ---------------- 侧边栏（管理 + 对局核对抽屉） ----------------
+# ---------------- 侧边栏（管理 + 对局图文核对） ----------------
 with st.sidebar:
   st.header("⚙️ 系统管理")
   default_key = (
@@ -213,7 +213,7 @@ with st.sidebar:
   records = load_records()
   st.metric("总计收录对局", f"{len(records)} 局")
 
-  # --- 新增：逐局战绩回溯与图文核对 ---
+  # --- 逐局核对与明细表格 ---
   if records:
     st.markdown("---")
     st.subheader("🔍 对局图文核对")
@@ -229,7 +229,6 @@ with st.sidebar:
 
     curr_record = records[selected_idx]
 
-    # 显示该局关联的截图
     thumb_b64 = curr_record.get("image_thumb", "")
     if thumb_b64:
       st.image(
@@ -238,13 +237,13 @@ with st.sidebar:
           use_container_width=True,
       )
     else:
-      st.caption("ℹ️ 此历史记录无缓存截图（更新代码前录入的数据）。")
+      st.caption("ℹ️ 此历史记录无缓存截图。")
 
-    # 显示该局提取的10人明细表格
     p_rows = []
     for p in curr_record.get("players", []):
       p_rows.append({
           "阵营": p.get("team", ""),
+          "英雄": p.get("champion", "未知"),
           "玩家ID": short_name(p.get("player_name", "")),
           "K/D/A": (
               f"{p.get('kills', 0)}/{p.get('deaths', 0)}/{p.get('assists', 0)}"
@@ -254,7 +253,6 @@ with st.sidebar:
     if p_rows:
       st.dataframe(pd.DataFrame(p_rows), hide_index=True)
 
-    # 发现认错时支持定向删除该局
     if st.button("🗑️ 删除本局错误战绩", key=f"del_game_{selected_idx}"):
       records.pop(selected_idx)
       save_records(records)
@@ -381,7 +379,6 @@ if submit_btn:
         try:
           result = analyze_image(img_data, key)
           result["md5"] = h
-          # 保存经过优化的图片 Base64 缩略图用于回溯
           result["image_thumb"] = compress_image_to_b64(img_data)
 
           for p in result.get("players", []):
@@ -437,6 +434,7 @@ else:
           "击杀": 0,
           "死亡": 0,
           "助攻": 0,
+          "英雄列表": [],
       }
   )
 
@@ -462,6 +460,11 @@ else:
       stats[fname]["死亡"] += p.get("deaths", 0)
       stats[fname]["助攻"] += p.get("assists", 0)
 
+      # 记录使用的英雄
+      champ = p.get("champion", "").strip()
+      if champ and champ != "未知":
+        stats[fname]["英雄列表"].append(champ)
+
       team_side = str(p.get("team", "")).upper()
       if team_side == "BLUE":
         blue_team.append((fname, is_win))
@@ -478,6 +481,14 @@ else:
             synergy_stats[pair_key]["胜场"] += 1
           else:
             synergy_stats[pair_key]["负场"] += 1
+
+  # 计算招牌英雄（使用最多的英雄）
+  for p, p_data in stats.items():
+    if p_data["英雄列表"]:
+      most_common_champ, count = Counter(p_data["英雄列表"]).most_common(1)[0]
+      p_data["招牌英雄"] = f"{most_common_champ}({count}场)"
+    else:
+      p_data["招牌英雄"] = "-"
 
   df = pd.DataFrame.from_dict(stats, orient="index")
 
@@ -588,11 +599,13 @@ else:
             by=["sort_key", "总场次", "KDA_num"],
             ascending=[False, False, False],
         )
-        .drop(columns=["sort_key", "KDA_num"])
+        .drop(columns=["sort_key", "KDA_num", "英雄列表"])
     )
 
+    # 呈现列顺序：总场次 -> 招牌英雄 -> 胜场 -> 负场 -> 胜率 -> KD -> KDA -> 击杀 -> 死亡 -> 助攻
     col_order = [
         "总场次",
+        "招牌英雄",
         "胜场",
         "负场",
         "胜率",
