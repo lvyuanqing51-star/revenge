@@ -43,7 +43,7 @@ st.markdown("""
         letter-spacing: 0.8px;
     }
 
-    /* 侧边栏彻底修复：确保底色深沉，文字与控件黑白分明 */
+    /* 侧边栏底色 */
     section[data-testid="stSidebar"] {
         background-color: #0b1726 !important;
         border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
@@ -60,54 +60,62 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
 
-    /* 核心修复：彻底解决侧边栏按钮（如删除本局、清空对局）白底白字隐形的问题 */
-    section[data-testid="stSidebar"] button {
-        background: rgba(239, 68, 68, 0.15) !important; /* 微透暗红底色 */
-        color: #ffffff !important;                       /* 纯白文字 */
-        border: 1px solid rgba(239, 68, 68, 0.4) !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
-        transition: all 0.2s ease !important;
-    }
-    section[data-testid="stSidebar"] button:hover {
-        background: rgba(239, 68, 68, 0.35) !important;
-        border-color: #ef4444 !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(239, 68, 68, 0.4) !important;
-    }
-    /* 侧边栏非删除类通用按钮（如保存链接、下载备份）恢复沉稳科技蓝底 */
-    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] button,
-    section[data-testid="stSidebar"] form button {
-        background: rgba(56, 189, 248, 0.15) !important;
-        border-color: rgba(56, 189, 248, 0.4) !important;
-        color: #ffffff !important;
-    }
-    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] button:hover,
-    section[data-testid="stSidebar"] form button:hover {
-        background: rgba(56, 189, 248, 0.3) !important;
-        border-color: #38bdf8 !important;
-        box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
-    }
-
-    /* 针对输入框、密码框、下拉框内文字彻底高亮，背景设为深色 */
-    section[data-testid="stSidebar"] input,
-    section[data-testid="stSidebar"] select,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] {
+    /* 侧边栏交互输入框与下拉框全套深蓝黑一体化 */
+    section[data-testid="stSidebar"] input {
         background-color: #132438 !important;
         color: #ffffff !important;
         border: 1px solid rgba(56, 189, 248, 0.4) !important;
         border-radius: 6px !important;
     }
-    section[data-testid="stSidebar"] input::placeholder {
-        color: #94a3b8 !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] * {
-        color: #ffffff !important;
+    section[data-testid="stSidebar"] div[data-baseweb="select"],
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
         background-color: #132438 !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        border-radius: 6px !important;
     }
 
-    /* 侧边栏折叠面板 (Expander) 适配 */
+    /* 核心修复：彻底拔除误伤下拉箭头的粉色底，将小图标改为醒目霓虹蓝金 */
+    section[data-testid="stSidebar"] div[data-baseweb="select"] button,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] [role="button"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
+        fill: #38bdf8 !important;
+        color: #38bdf8 !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    /* 侧边栏操作按钮精细化：仅针对真正的独立操作按钮上色 */
+    section[data-testid="stSidebar"] div.stButton > button {
+        background: rgba(239, 68, 68, 0.2) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(239, 68, 68, 0.6) !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+        transition: all 0.2s ease !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button:hover {
+        background: rgba(239, 68, 68, 0.45) !important;
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
+    }
+
+    /* 侧边栏下载备份按钮（清爽科技蓝） */
+    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] > button {
+        background: rgba(56, 189, 248, 0.2) !important;
+        border: 1px solid rgba(56, 189, 248, 0.5) !important;
+        color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] > button:hover {
+        background: rgba(56, 189, 248, 0.4) !important;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    /* 侧边栏折叠面板 (Expander) */
     section[data-testid="stSidebar"] details {
         background-color: rgba(255, 255, 255, 0.04) !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -128,7 +136,6 @@ st.markdown("""
     div[data-testid="stLinkButton"] a:hover {
         transform: translateY(-2px);
     }
-    /* 大厅主语音 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
         background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(202, 138, 4, 0.15)) !important;
         border: 1px solid rgba(253, 224, 71, 0.5) !important;
@@ -138,7 +145,6 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
         box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
     }
-    /* 蓝方作战室 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
         background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.2)) !important;
         border: 1px solid rgba(56, 189, 248, 0.7) !important;
@@ -148,7 +154,6 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
         box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6) !important;
     }
-    /* 红方作战室 */
     div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
         background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.2)) !important;
         border: 1px solid rgba(251, 113, 133, 0.7) !important;
@@ -702,7 +707,7 @@ else:
         # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 纯粹流畅的亮感磨砂电竞表格拼接
+        # 亮感磨砂电竞表格拼接
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
