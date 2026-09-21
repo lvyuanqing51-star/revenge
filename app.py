@@ -13,39 +13,62 @@ import streamlit as st
 DATA_FILE = "records.json"
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
+# 标准千秋统一名称
+TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
-# ---------------- 自动名字强力归一与聚类 ----------------
-def normalize_name_skeleton(name: str) -> str:
+
+def clean_player_name_strict(name: str) -> str:
+  """无死角终极归一化拦截器"""
   if not name:
     return ""
-  s = str(name).strip()
-  s = re.sub(r"[\s\u200b\ufeff\u3000]+", "", s)
+
+  # 1. 强力清除所有不可见字符、零宽字符、首尾及中间空白
+  s = re.sub(r"[\s\u200b\ufeff\u3000\r\n\t]+", "", str(name))
+
+  # 2. 统一全角井号及破折号/减号
   s = s.replace("＃", "#").replace("—", "-").replace("–", "-")
+
+  # 3. 千秋特征多维度穿透拦截（只要命中其一，直接锁死）
+  # 特征A: 包含千秋
+  # 特征B: 包含专属Tag 52652
+  # 特征C: 包含核心字样（一栗、一粟、—栗、-栗等）
+  if (
+      ("千秋" in s)
+      or ("52652" in s)
+      or ("一栗卿" in s)
+      or ("一粟卿" in s)
+      or ("栗卿" in s)
+      or ("粟卿" in s)
+  ):
+    return TARGET_QIANQIU
+
+  # 4. 其它常规字符清洗（大原的点与顿号等）
   s = s.replace("丶", "").replace("、", "").replace(",", "")
-  s = s.replace("一粟卿", "一栗卿")
+
   return s
 
 
 def build_canonical_name_map(all_raw_names: list) -> dict:
+  """为其它微小差异的名字做相似度聚合（如其它玩家的标点差异）"""
   mapping = {}
   unique_clusters = []
 
   for raw in all_raw_names:
-    if not raw:
+    cleaned = clean_player_name_strict(raw)
+    if not cleaned:
       continue
-    skel = normalize_name_skeleton(raw)
 
-    if "千秋" in raw:
-      mapping[raw] = "千秋种我一栗卿#52652"
+    # 千秋直接归一
+    if cleaned == TARGET_QIANQIU:
+      mapping[raw] = TARGET_QIANQIU
       continue
 
     matched_target = None
     for cluster in unique_clusters:
-      cluster_skel = normalize_name_skeleton(cluster)
-      if skel == cluster_skel:
+      if cleaned == cluster:
         matched_target = cluster
         break
-      ratio = difflib.SequenceMatcher(None, skel, cluster_skel).ratio()
+      ratio = difflib.SequenceMatcher(None, cleaned, cluster).ratio()
       if ratio >= 0.88:
         matched_target = cluster
         break
@@ -53,8 +76,8 @@ def build_canonical_name_map(all_raw_names: list) -> dict:
     if matched_target:
       mapping[raw] = matched_target
     else:
-      unique_clusters.append(raw)
-      mapping[raw] = raw
+      unique_clusters.append(cleaned)
+      mapping[raw] = cleaned
 
   return mapping
 
@@ -140,7 +163,6 @@ with st.sidebar:
   st.markdown("---")
   st.subheader("📦 数据备份与恢复")
 
-  # 1. 导出备份
   if records:
     json_bytes = json.dumps(records, ensure_ascii=False, indent=2).encode(
         "utf-8"
@@ -150,10 +172,9 @@ with st.sidebar:
         data=json_bytes,
         file_name="lol_records_backup.json",
         mime="application/json",
-        help="点击下载备份文件到本地，防止云端容器重启清空",
+        help="点击下载备份文件到本地",
     )
 
-  # 2. 导入恢复
   with st.expander("📥 导入恢复历史数据"):
     uploaded_backup = st.file_uploader(
         "选择已备份的 JSON 文件",
@@ -222,6 +243,11 @@ if submit_btn:
         try:
           result = analyze_image(img_data, key)
           result["md5"] = h
+          # 存入时直接过一遍严格清洗
+          for p in result.get("players", []):
+            p["player_name"] = clean_player_name_strict(
+                p.get("player_name", "")
+            )
           records.append(result)
           seen_hashes.add(h)
           added += 1
@@ -239,19 +265,20 @@ if submit_btn:
 
 st.markdown("---")
 
-# ---------------- 主界面 3：胜率榜单（自动模糊聚合） ----------------
+# ---------------- 主界面 3：胜率榜单（强制终极合并） ----------------
 st.subheader("胜率榜单")
 
 records = load_records()
 if not records:
   st.info("💡 暂无战绩数据，请在上方上传截图。")
 else:
+  # 收集所有原始名称
   all_raw = []
   for r in records:
     for p in r.get("players", []):
-      pname = p.get("player_name", "").strip()
-      if pname:
-        all_raw.append(pname)
+      raw_pname = p.get("player_name", "")
+      if raw_pname:
+        all_raw.append(raw_pname)
 
   name_mapping = build_canonical_name_map(list(set(all_raw)))
 
@@ -268,10 +295,17 @@ else:
 
   for r in records:
     for p in r.get("players", []):
-      raw_pname = p.get("player_name", "").strip()
+      raw_pname = p.get("player_name", "")
       if not raw_pname:
         continue
-      final_name = name_mapping.get(raw_pname, raw_pname)
+
+      # 双保险：先走严格拦截器，再走聚类字典
+      strict_name = clean_player_name_strict(raw_pname)
+      final_name = name_mapping.get(raw_pname, strict_name)
+
+      # 最终强锁死千秋
+      if strict_name == TARGET_QIANQIU or "千秋" in final_name:
+        final_name = TARGET_QIANQIU
 
       stats[final_name]["总场次"] += 1
       if p.get("is_winner"):
