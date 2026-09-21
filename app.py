@@ -35,11 +35,10 @@ def clean_player_name(raw_name: str) -> str:
   if not raw_name:
     return ""
 
-  # 1. 移除常规空格与零宽不可见字符
   name = re.sub(r"[\s\u200b\ufeff\u3000]+", "", str(raw_name))
   name = name.replace("＃", "#").replace("一粟卿", "一栗卿")
 
-  # 2. 强力霸道规则：只要以“千秋”开头，无条件强行合并！
+  # 只要以千秋开头，无论带不带后缀一律合并
   if name.startswith("千秋"):
     return "千秋种我一栗卿#52652"
 
@@ -233,7 +232,6 @@ with st.sidebar:
     )
     if admin_pwd == "666888":
       if current_records:
-        # 强制合并按钮
         if st.button("🔄 立即强制合并千秋 (彻底合并为一条)"):
           clean_database_names()
           st.toast("已强制把所有千秋合并为一人！", icon="✅")
@@ -280,4 +278,53 @@ if uploaded_files:
   else:
     if st.button("🚀 开始解析并计入胜率", type="primary"):
       images_to_process = []
-      for
+      for file in uploaded_files:
+        file_bytes = file.read()
+        if file.name.lower().endswith(".zip"):
+          try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+              for zip_info in z.infolist():
+                if not zip_info.is_dir() and zip_info.filename.lower().endswith(
+                    (".png", ".jpg", ".jpeg")
+                ):
+                  img_data = z.read(zip_info.filename)
+                  if "__MACOSX" not in zip_info.filename:
+                    images_to_process.append(
+                        (os.path.basename(zip_info.filename), img_data)
+                    )
+          except Exception as e:
+            st.error(f"❌ 读取压缩包 {file.name} 失败: {e}")
+        else:
+          images_to_process.append((file.name, file_bytes))
+
+      success_count = 0
+      skip_count = 0
+      existing_records = load_all_records()
+      existing_hashes = {
+          r.get("image_hash") for r in existing_records if "image_hash" in r
+      }
+      pbar = st.progress(0)
+      total = len(images_to_process)
+
+      for idx, (img_name, img_bytes) in enumerate(images_to_process):
+        img_hash = calculate_md5(img_bytes)
+
+        if img_hash in existing_hashes:
+          st.warning(f"⚠️ {img_name} 此前已录入，已自动跳过！")
+          skip_count += 1
+          pbar.progress((idx + 1) / total)
+          continue
+
+        with st.spinner(f"正在分析 ({idx + 1}/{total}): {img_name}..."):
+          try:
+            result = analyze_screenshot(img_bytes, api_key)
+            saved_file_name = f"{int(time.time())}_{img_hash[:8]}.jpg"
+            with open(os.path.join(IMAGE_DIR, saved_file_name), "wb") as f:
+              f.write(img_bytes)
+
+            result["image_hash"] = img_hash
+            result["image_file"] = saved_file_name
+            result["uploaded_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            for p in result.get("players", []):
+              p["player_name"] = clean_player_name(p.get("
