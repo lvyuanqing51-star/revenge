@@ -19,7 +19,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 侧边栏全面黑白分明 CSS ----------------
+# ---------------- 高级深海蓝微光 + 侧边栏按钮彻底修复 CSS ----------------
 st.markdown("""
     <style>
     /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
@@ -43,7 +43,7 @@ st.markdown("""
         letter-spacing: 0.8px;
     }
 
-    /* 侧边栏整体底色 */
+    /* 侧边栏底色 */
     section[data-testid="stSidebar"] {
         background-color: #0b1726 !important;
         border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
@@ -60,63 +60,59 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
 
-    /* ================= 重点修复 1：输入框/密码框 消除右侧白底白块 ================= */
-    section[data-testid="stSidebar"] div[data-baseweb="input"],
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
+    /* 侧边栏交互输入框与下拉框全套深蓝黑一体化 */
+    section[data-testid="stSidebar"] input {
         background-color: #132438 !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        border-radius: 8px !important;
-        overflow: hidden !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
-        background-color: transparent !important;
         color: #ffffff !important;
-        border: none !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        border-radius: 6px !important;
     }
-    /* 眼睛小图标所在容器与图标本身彻底消除白斑 */
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
-        background-color: transparent !important;
-        border: none !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
-        fill: #38bdf8 !important;
-        color: #38bdf8 !important;
-    }
-
-    /* ================= 重点修复 2：下拉选框消除白斑 ================= */
     section[data-testid="stSidebar"] div[data-baseweb="select"],
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
         background-color: #132438 !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        border-radius: 8px !important;
-        color: #ffffff !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        border-radius: 6px !important;
+    }
+
+    /* 消除下拉箭头粉色底，图标改为醒目霓虹蓝金 */
+    section[data-testid="stSidebar"] div[data-baseweb="select"] button,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] [role="button"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
     section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
         fill: #38bdf8 !important;
         color: #38bdf8 !important;
+        width: 18px !important;
+        height: 18px !important;
     }
 
-    /* ================= 重点修复 3：彻底消灭侧边栏所有按钮的“白底白字” ================= */
-    section[data-testid="stSidebar"] button {
-        background-color: #162a42 !important; /* 彻底覆盖所有原生白色！ */
-        color: #ffffff !important;            /* 强制文字纯白 */
-        border: 1px solid rgba(56, 189, 248, 0.5) !important;
+    /* 侧边栏独立操作按钮上色 */
+    section[data-testid="stSidebar"] div.stButton > button {
+        background: rgba(239, 68, 68, 0.2) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(239, 68, 68, 0.6) !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+        transition: all 0.2s ease !important;
     }
-    section[data-testid="stSidebar"] button p,
-    section[data-testid="stSidebar"] button span,
-    section[data-testid="stSidebar"] button div {
-        color: #ffffff !important;
-        font-weight: 700 !important;
+    section[data-testid="stSidebar"] div.stButton > button:hover {
+        background: rgba(239, 68, 68, 0.45) !important;
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
     }
-    section[data-testid="stSidebar"] button:hover {
-        background-color: #1f3b5c !important;
-        border-color: #38bdf8 !important;
+
+    /* 侧边栏下载备份按钮（清爽科技蓝） */
+    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] > button {
+        background: rgba(56, 189, 248, 0.2) !important;
+        border: 1px solid rgba(56, 189, 248, 0.5) !important;
         color: #ffffff !important;
-        box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stDownloadButton"] > button:hover {
+        background: rgba(56, 189, 248, 0.4) !important;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
     }
 
     /* 侧边栏折叠面板 (Expander) */
@@ -541,6 +537,9 @@ with c2:
     st.link_button("🔵 进蓝方作战室", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
 with c3:
     st.link_button("🔴 进红方作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
+
+# 提示栏：微信内点击无效时指引
+st.caption("💡 微信内无法直接拉起语音？请点击右上角「···」，选择「在浏览器打开」即可一键进麦。")
 
 st.write("")
 
