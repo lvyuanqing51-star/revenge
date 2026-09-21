@@ -15,7 +15,6 @@ DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
-# 自定义紧凑字号样式
 st.markdown(
     """
     <style>
@@ -49,9 +48,9 @@ def load_config():
     except Exception:
       pass
   return {
-      "main_voice": "https://kook.top/",  # 默认主频道
-      "blue_voice": "https://kook.top/",  # 默认蓝方语音
-      "red_voice": "https://kook.top/",  # 默认红方语音
+      "main_voice": "[https://kook.top/](https://kook.top/)",
+      "blue_voice": "[https://kook.top/](https://kook.top/)",
+      "red_voice": "[https://kook.top/](https://kook.top/)",
   }
 
 
@@ -134,10 +133,19 @@ def save_records(records):
     json.dump(records, f, ensure_ascii=False, indent=2)
 
 
+def clean_json_text(text: str) -> str:
+  t = text.strip()
+  # 安全去除 markdown 代码块标记，防止因为反引号在复制时折行断裂
+  match = re.search(r"\{.*\}", t, re.DOTALL)
+  if match:
+    return match.group(0)
+  return t
+
+
 def analyze_image(img_bytes, api_key):
   client = OpenAI(
       api_key=api_key,
-      base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+      base_url="[https://dashscope.aliyuncs.com/compatible-mode/v1](https://dashscope.aliyuncs.com/compatible-mode/v1)",
       timeout=40.0,
   )
   b64 = base64.b64encode(img_bytes).decode("utf-8")
@@ -166,6 +174,64 @@ def analyze_image(img_bytes, api_key):
       response_format={"type": "json_object"},
       temperature=0.1,
   )
-  content = resp.choices[0].message.content.strip()
-  if content.startswith("```"):
-    content = content.split("
+  raw_content = resp.choices[0].message.content
+  parsed_content = clean_json_text(raw_content)
+  return json.loads(parsed_content)
+
+
+def short_name(full_name):
+  return full_name.split("#")[0]
+
+
+# ---------------- 侧边栏 ----------------
+with st.sidebar:
+  st.header("⚙️ 系统管理")
+  default_key = (
+      st.secrets.get("DASHSCOPE_API_KEY", "")
+      if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets
+      else ""
+  )
+  key = st.text_input(
+      "DashScope API Key",
+      value=default_key,
+      type="password",
+      help="sk- 开头的密钥",
+  )
+
+  records = load_records()
+  st.metric("总计收录对局", f"{len(records)} 局")
+
+  with st.expander("🎙️ 配置内战语音房链接"):
+    cfg = load_config()
+    new_main = st.text_input("大厅主语音链接", value=cfg.get("main_voice", ""))
+    new_blue = st.text_input("🔵 蓝方专属语音链接", value=cfg.get("blue_voice", ""))
+    new_red = st.text_input("🔴 红方专属语音链接", value=cfg.get("red_voice", ""))
+    if st.button("💾 保存语音房链接"):
+      save_config(
+          {"main_voice": new_main, "blue_voice": new_blue, "red_voice": new_red}
+      )
+      st.success("配置已保存！")
+      time.sleep(0.5)
+      st.rerun()
+
+  st.markdown("---")
+  st.subheader("📦 数据备份与恢复")
+
+  if records:
+    json_bytes = json.dumps(records, ensure_ascii=False, indent=2).encode(
+        "utf-8"
+    )
+    st.download_button(
+        label="💾 导出战绩备份 (JSON)",
+        data=json_bytes,
+        file_name="lol_records_backup.json",
+        mime="application/json",
+        help="点击下载备份文件到本地",
+    )
+
+  with st.expander("📥 导入恢复历史数据"):
+    uploaded_backup = st.file_uploader(
+        "选择已备份的 JSON 文件",
+        type=["json"],
+        key="backup_uploader",
+    )
