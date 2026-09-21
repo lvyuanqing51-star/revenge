@@ -23,14 +23,14 @@ st.set_page_config(page_title="峡谷内战控制台", page_icon="⚔️", layou
 st.markdown(
     """
     <style>
-    /* 全局背景：深邃峡谷暗夜星空 */
+    /* 全局背景：深邃暗夜星空 */
     .stApp {
         background: radial-gradient(circle at 50% 0%, #0d1927 0%, #070a0e 100%) !important;
         color: #cdbe91 !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    /* 顶部标题：海克斯鎏金渐变 */
+    /* 顶部标题：鎏金渐变 */
     h1 {
         background: linear-gradient(90deg, #c8aa6e 0%, #f0e6d2 50%, #c8aa6e 100%) !important;
         -webkit-background-clip: text !important;
@@ -44,7 +44,7 @@ st.markdown(
         letter-spacing: 1px;
     }
 
-    /* 语音作战室专属呼吸发光按钮 */
+    /* 语音作战室三大发光按钮 */
     div[data-testid="stLinkButton"] a {
         border-radius: 8px !important;
         font-weight: 700 !important;
@@ -135,35 +135,35 @@ st.markdown(
         border: 1px solid rgba(200, 170, 110, 0.35);
         border-radius: 10px;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
-        background: rgba(11, 18, 26, 0.85);
-        backdrop-filter: blur(8px);
+        background: rgba(11, 18, 26, 0.95);
         margin-top: 10px;
+        margin-bottom: 25px;
     }
     .hextech-table {
         width: 100%;
         border-collapse: collapse;
         color: #f0e6d2;
-        font-size: 0.92rem;
+        font-size: 0.95rem;
         text-align: center;
     }
     .hextech-table th {
-        background: linear-gradient(180deg, rgba(30, 45, 60, 0.9), rgba(15, 25, 35, 0.95));
+        background: linear-gradient(180deg, rgba(30, 45, 60, 0.95), rgba(15, 25, 35, 0.98));
         color: #c8aa6e;
         font-weight: 700;
         letter-spacing: 0.5px;
-        padding: 12px 10px;
+        padding: 14px 10px;
         border-bottom: 2px solid rgba(200, 170, 110, 0.4);
     }
     .hextech-table td {
-        padding: 10px 8px;
+        padding: 12px 8px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         transition: background 0.2s;
     }
     .hextech-table tr:hover td {
-        background: rgba(200, 170, 110, 0.12) !important;
+        background: rgba(200, 170, 110, 0.15) !important;
     }
     .hextech-table tr:nth-child(even) {
-        background: rgba(18, 28, 40, 0.4);
+        background: rgba(18, 28, 40, 0.45);
     }
     .hextech-badge-win {
         color: #0ac8b9;
@@ -176,7 +176,7 @@ st.markdown(
     }
     .hextech-player-name {
         text-align: left;
-        padding-left: 16px !important;
+        padding-left: 18px !important;
         font-weight: 600;
         color: #e1e7eb;
     }
@@ -741,7 +741,7 @@ else:
         ascending=[False, False, False],
     )
 
-    # 渲染海克斯纯暗黑电竞表格（彻底告别白色生硬表格）
+    # 紧凑拼接无缩进 HTML，确保绝不触发 Markdown 代码块解析
     table_rows = []
     for player_id, row in df.iterrows():
       wr_val = row["胜率_num"]
@@ -754,42 +754,32 @@ else:
       kda_str = f"{row['KDA_num']:.2f}"
       p_name = short_name(player_id)
 
-      table_rows.append(f"""
-                <tr>
-                    <td class="hextech-player-name">{p_name}</td>
-                    <td>{row['总场次']}</td>
-                    <td>{row['胜场']}</td>
-                    <td>{row['负场']}</td>
-                    <td>{wr_badge}</td>
-                    <td style="color:#0ac8b9;font-weight:600;">{kd_str}</td>
-                    <td style="color:#c8aa6e;font-weight:700;">{kda_str}</td>
-                    <td>{row['击杀']}</td>
-                    <td>{row['死亡']}</td>
-                    <td>{row['助攻']}</td>
-                </tr>
-            """)
+      row_html = (
+          "<tr>"
+          f"<td class='hextech-player-name'>{p_name}</td>"
+          f"<td>{row['总场次']}</td>"
+          f"<td>{row['胜场']}</td>"
+          f"<td>{row['负场']}</td>"
+          f"<td>{wr_badge}</td>"
+          f"<td style='color:#0ac8b9;font-weight:600;'>{kd_str}</td>"
+          f"<td style='color:#c8aa6e;font-weight:700;'>{kda_str}</td>"
+          f"<td>{row['击杀']}</td>"
+          f"<td>{row['死亡']}</td>"
+          f"<td>{row['助攻']}</td>"
+          "</tr>"
+      )
+      table_rows.append(row_html)
 
-    custom_table_html = f"""
-        <div class="hextech-table-container">
-            <table class="hextech-table">
-                <thead>
-                    <tr>
-                        <th style="text-align: left; padding-left: 16px;">玩家</th>
-                        <th>总场次</th>
-                        <th>胜场</th>
-                        <th>负场</th>
-                        <th>胜率</th>
-                        <th>KD比</th>
-                        <th>KDA</th>
-                        <th>击杀</th>
-                        <th>死亡</th>
-                        <th>助攻</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {''.join(table_rows)}
-                </tbody>
-            </table>
-        </div>
-        """
+    custom_table_html = (
+        '<div class="hextech-table-container">'
+        '<table class="hextech-table">'
+        "<thead><tr>"
+        '<th style="text-align:left;padding-left:18px;">玩家</th>'
+        "<th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>"
+        "<th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>"
+        "</tr></thead>"
+        f"<tbody>{''.join(table_rows)}</tbody>"
+        "</table></div>"
+    )
+
     st.markdown(custom_table_html, unsafe_allow_html=True)
