@@ -13,6 +13,28 @@ import streamlit as st
 DATA_FILE = "records.json"
 st.set_page_config(page_title="内战", page_icon="⚔️", layout="wide")
 
+# 自定义紧凑字号样式，彻底解决 st.metric 名字超大被省略截断的问题
+st.markdown(
+    """
+    <style>
+    div[data-testid="stMetricValue"] {
+        font-size: 1.15rem !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 0.85rem !important;
+    }
+    div[data-testid="stMetricDelta"] {
+        font-size: 0.8rem !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 
@@ -305,8 +327,7 @@ else:
   ).round(2)
   df["KDA"] = df["KDA_num"].astype(str)
 
-  # ---------- 新增：趣味头衔四栏卡片 ----------
-  # 优先筛选场次 >= 2 的选手参评 KDA 王，若都只有 1 场则全员参评
+  # ---------- 趣味头衔计算 ----------
   kda_candidates = df[df["总场次"] >= 2]
   if kda_candidates.empty:
     kda_candidates = df
@@ -318,8 +339,8 @@ else:
   top_death_name = df.sort_values(by="死亡", ascending=False).index[0]
   top_assist_name = df.sort_values(by="助攻", ascending=False).index[0]
 
-  # 格式化名字显示（去掉长Tag，展示更清爽）
   def short_name(full_name):
+    # 去除井号及后缀数字，只留纯游戏昵称
     return full_name.split("#")[0]
 
   col1, col2, col3, col4 = st.columns(4)
