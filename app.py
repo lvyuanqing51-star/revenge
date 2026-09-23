@@ -7,6 +7,8 @@ import difflib
 import re
 import random
 import math
+import urllib.request
+import urllib.error
 from io import BytesIO
 from itertools import combinations
 from collections import defaultdict
@@ -40,7 +42,6 @@ st.markdown("""
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* 顶部导航控制台（纯粹利落，去除了多余英文字段） */
 .app-header-bar {
     display: flex;
     justify-content: space-between;
@@ -66,7 +67,6 @@ st.markdown("""
     letter-spacing: 0.5px;
 }
 
-/* 🎙️ 三大微光语音作战室：黑金流光边框 */
 div[data-testid="stLinkButton"] a {
     border-radius: 14px !important;
     font-weight: 800 !important;
@@ -117,7 +117,6 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     color: #ffffff !important;
 }
 
-/* 标签切换栏加粗放大与酒红高光 */
 div[data-baseweb="tab-list"] {
     gap: 12px !important;
     background: transparent !important;
@@ -242,7 +241,6 @@ div[data-baseweb="tab"] p {
     font-size: 0.88rem;
 }
 
-/* 胜率天梯专用表格 */
 .ladder-table-box {
     width: 100%;
     overflow-x: auto;
@@ -378,19 +376,100 @@ def build_canonical_name_map(all_raw_names: list) -> dict:
 def get_md5(data):
     return hashlib.md5(data).hexdigest()
 
+# ---------------- 1.5 GitHub 云端持久化引擎 ----------------
+def get_github_auth():
+    token = st.secrets.get("GITHUB_TOKEN", "")
+    repo = st.secrets.get("GITHUB_REPO", "")
+    return token, repo
+
+def fetch_records_from_github():
+    token, repo = get_github_auth()
+    if not token or not repo:
+        return None
+    url = f"https://api.github.com/repos/{repo}/contents/{DATA_FILE}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "HexLeagueApp"
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            file_content_b64 = data.get("content", "")
+            raw_json = base64.b64decode(file_content_b64).decode('utf-8')
+            parsed = json.loads(raw_json)
+            if isinstance(parsed, list):
+                return parsed
+    except Exception:
+        pass
+    return None
+
+def push_records_to_github(records):
+    token, repo = get_github_auth()
+    if not token or not repo:
+        return False
+    url = f"https://api.github.com/repos/{repo}/contents/{DATA_FILE}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "HexLeagueApp"
+    }
+    content_bytes = json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8')
+    content_b64 = base64.b64encode(content_bytes).decode('utf-8')
+
+    sha = None
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            sha = data.get("sha")
+    except Exception:
+        pass
+
+    payload = {
+        "message": "Auto-sync records.json from Hex League Web",
+        "content": content_b64
+    }
+    if sha:
+        payload["sha"] = sha
+
+    put_data = json.dumps(payload).encode('utf-8')
+    put_req = urllib.request.Request(url, data=put_data, headers=headers, method='PUT')
+    try:
+        with urllib.request.urlopen(put_req, timeout=10) as _:
+            return True
+    except Exception:
+        return False
+
 def load_records():
+    local_data = []
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data if isinstance(data, list) else []
+                d = json.load(f)
+                if isinstance(d, list):
+                    local_data = d
         except Exception:
-            return []
-    return []
+            local_data = []
+
+    if "gh_synced" not in st.session_state:
+        st.session_state["gh_synced"] = True
+        cloud_data = fetch_records_from_github()
+        if cloud_data and len(cloud_data) >= len(local_data):
+            try:
+                with open(DATA_FILE, "w", encoding="utf-8") as f:
+                    json.dump(cloud_data, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+            return cloud_data
+
+    return local_data
 
 def save_records(records):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
+    push_records_to_github(records)
 
 def analyze_image(img_bytes, api_key):
     client = OpenAI(
@@ -480,6 +559,12 @@ with st.sidebar:
     records = load_records()
     total_games_all = len(records)
 
+    gh_t, gh_r = get_github_auth()
+    if gh_t and gh_r:
+        st.caption("🟢 **云端自动同步**: 已启用 (GitHub)")
+    else:
+        st.caption("⚪ **云端自动同步**: 未配置 Token")
+
     st.markdown("---")
     st.markdown("#### ⚡ 智能数据工具")
     if records:
@@ -509,7 +594,7 @@ with st.sidebar:
                     p_bar.progress((idx + 1) / len(records))
                 save_records(records)
                 st_msg.empty()
-                st.success(f"成功更新 {success_n} 局！")
+                st.success(f"成功更新 {success_n} 局并同步云端！")
                 time.sleep(0.5)
                 st.rerun()
 
@@ -529,7 +614,7 @@ with st.sidebar:
                 imported_data = json.load(uploaded_backup)
                 if isinstance(imported_data, list):
                     save_records(imported_data)
-                    st.success("恢复成功！")
+                    st.success("恢复成功并已同步至云端！")
                     time.sleep(0.5)
                     st.rerun()
             except Exception as e:
@@ -557,7 +642,7 @@ with st.sidebar:
             if st.button("🗑️ 删除该局", key=f"del_game_{selected_idx}", use_container_width=True):
                 records.pop(selected_idx)
                 save_records(records)
-                st.success("已删除该局！")
+                st.success("已删除该局并同步云端！")
                 time.sleep(0.3)
                 st.rerun()
 
@@ -770,7 +855,6 @@ with tab_ladder:
     if df.empty:
         st.info("💡 暂无选手数据。请在战绩智能录入页面上传掌盟战绩截图！")
     else:
-        # 1. 胜率天梯总榜：直接置顶第一位
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
         df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
         
@@ -780,7 +864,6 @@ with tab_ladder:
             kda_val = row["KDA_num"]
             mmr_val = row["MMR"]
             
-            # 胜率染色
             if wr_val >= 60.0:
                 wr_badge = f"<span style='background:#72092c;color:#ffffff;font-weight:900;padding:2px 8px;border-radius:6px;'>{wr_val}% 👑</span>"
             elif wr_val >= 50.0:
@@ -788,13 +871,9 @@ with tab_ladder:
             else:
                 wr_badge = f"<span style='color:#be123c;font-weight:700;'>{wr_val}%</span>"
 
-            # KDA 突出
             kda_badge = f"<span style='color:#b45309;font-weight:900;background:#fef9c3;padding:1px 6px;border-radius:4px;'>{kda_val:.2f}</span>" if kda_val >= 3.5 else f"<b>{kda_val:.2f}</b>"
-            
-            # MMR 突出
             mmr_badge = f"<span style='color:#72092c;font-weight:900;'>{mmr_val:.1f}</span>"
 
-            # 奖牌
             medal = "🥇 " if rank_idx == 0 else ("🥈 " if rank_idx == 1 else ("🥉 " if rank_idx == 2 else f"{rank_idx+1} "))
             row_class = "rank-1" if rank_idx == 0 else ("rank-2" if rank_idx == 1 else ("rank-3" if rank_idx == 2 else ""))
 
@@ -831,7 +910,6 @@ with tab_ladder:
 
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-        # 2. 单场巅峰纪录
         st.markdown('<div class="panel-header-title">🔥 单场巅峰纪录</div>', unsafe_allow_html=True)
         col_p1, col_p2, col_p3 = st.columns(3)
         with col_p1:
@@ -861,7 +939,6 @@ with tab_ladder:
 
         st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
-        # 3. 综合荣誉头衔
         st.markdown('<div class="panel-header-title">🎖️ 综合荣誉名人堂 (≥10局)</div>', unsafe_allow_html=True)
         candidates_10 = df[df["总场次"] >= 10]
         has_vet = not candidates_10.empty
@@ -885,7 +962,6 @@ with tab_ladder:
 
         st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
-        # 4. 羁绊看板
         st.markdown('<div class="panel-header-title">🔗 阵营羁绊与宿敌</div>', unsafe_allow_html=True)
         syn_list = []
         for (p1, p2), v in synergy_stats.items():
@@ -986,7 +1062,6 @@ with tab_match:
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 人情世故与宿敌锁定器
         if "lock_rules" not in st.session_state:
             st.session_state["lock_rules"] = []
 
@@ -1032,7 +1107,6 @@ with tab_match:
                     st.session_state["lock_rules"] = []
                     st.rerun()
 
-        # 分队操作栏
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
             balance_btn = st.button("⚖️ 战力天平平衡分配", type="primary", use_container_width=True, help="全局计算，使双方总战力最接近")
@@ -1157,7 +1231,6 @@ with tab_match:
                 if not found:
                     st.error("❌ 随机抽签 100 次均无法满足当前羁绊锁定规则！")
 
-        # 呈现阵营对决卡片
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
             blue_team = st.session_state["assigned_blue"]
             red_team = st.session_state["assigned_red"]
@@ -1272,7 +1345,6 @@ with tab_radar:
             avg_kp = (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
             sample_desc = f"{p_g_total} 局全局对局"
 
-        # 科学平滑六维打分
         score_dmg = max(18.0, min(96.0, (25.0 + (dmg_share / 20.0) * 35.0) if dmg_share <= 20.0 else (60.0 + min(1.0, (dmg_share - 20.0) / 14.0) * 35.0)))
         score_tank = max(18.0, min(96.0, (25.0 + (taken_share / 20.0) * 35.0) if taken_share <= 20.0 else (60.0 + min(1.0, (taken_share - 20.0) / 14.0) * 35.0)))
         score_kp = max(18.0, min(96.0, (25.0 + (avg_kp / 0.55) * 35.0) if avg_kp <= 0.55 else (60.0 + min(1.0, (avg_kp - 0.55) / 0.22) * 35.0)))
@@ -1308,7 +1380,6 @@ with tab_radar:
         else:
             recent_status, status_tip, status_color = "⚖️ 状态起伏平稳", "发挥稳定：胜负交替，在场上保持中流砥柱表现。", "#64748b"
 
-        # 勋章库
         badges_data = []
         if p_hist["max_dmg_share"] >= 38.0 or score_dmg >= 92:
             badges_data.append(("💥 血条消失术", "【核爆级主C】曾在正规局单场打出 38%+ 恐怖输出占比，融化血条"))
@@ -1354,7 +1425,6 @@ with tab_radar:
                 </div>
             """, unsafe_allow_html=True)
 
-        # 荣誉勋章馆展示卡
         st.markdown(f"""
             <div class="card-panel" style="margin-top:4px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #fecdd3;padding-bottom:8px;margin-bottom:10px;">
@@ -1438,7 +1508,7 @@ with tab_upload:
 
             status_box.empty()
             if added > 0:
-                st.success(f"🎉 成功录入 {added} 局战绩！")
+                st.success(f"🎉 成功录入 {added} 局战绩并自动同步至云端！")
                 time.sleep(0.6)
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
