@@ -1,17 +1,3 @@
-从截图中可以明确诊断出两个问题的原因：
-
-1. **满屏的红色（红标签、红按钮）**：你的 Streamlit 环境（可能是 `.streamlit/config.toml` 中，或者缓存的默认主题）全局 `primaryColor` 被设置成了红色。Streamlit 的原生组件会强行继承这个红色，导致之前的 CSS 没有完全压制住它。
-
-
-2. **背景没有生效**：由于 Streamlit DOM 结构的更新，简单的 `.stApp` 背景注入有时会被外层的主题容器遮挡，导致变成了普通的浅灰白底。
-
-
-
-为了彻底解决这两个问题，并且**回归你最初想要的「深海蓝微光磨砂电竞风」**（深邃美观、不刺眼、无黑白杂块），我重新编写了**核弹级（Nuclear-level）CSS 强制覆盖**。这次直接穿透 Streamlit 的底层 Shadow DOM，强行剥离红色，并锁定深海暗黑质感。
-
-请直接复制以下最新版 `app.py`：
-
-```python
 import os
 import json
 import hashlib
@@ -872,5 +858,3 @@ if submit_btn:
             st.success(f"🎉 成功录入 {added} 局战绩！")
             time.sleep(0.6)
             st.rerun()
-
-```
