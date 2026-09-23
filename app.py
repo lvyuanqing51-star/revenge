@@ -20,13 +20,10 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 温润淡粉 (Sakura Pastel) 主题 CSS ----------------
+# ---------------- 温润淡粉 (Sakura Pastel) 精准覆盖 CSS ----------------
 st.markdown("""
 <style>
 /* 1. 全局背景：柔和樱花淡粉渐变 */
-html, body, [class*="st-"], .stApp, .stApp > header {
-    background-color: transparent !important;
-}
 .stApp {
     background: linear-gradient(135deg, #fff5f5 0%, #ffe4e6 50%, #fed7aa 100%) !important;
     background-attachment: fixed !important;
@@ -34,7 +31,7 @@ html, body, [class*="st-"], .stApp, .stApp > header {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 2. 标题文字：草莓玫红与紫粉渐变 */
+/* 2. 顶部主标题渐变 */
 h1 {
     background: linear-gradient(90deg, #e11d48 0%, #db2777 50%, #9333ea 100%) !important;
     -webkit-background-clip: text !important;
@@ -47,11 +44,88 @@ h2, h3 {
     font-weight: 700 !important;
 }
 
-/* 3. 多选框 Tag：定制为草莓晶粉柔和徽章，彻底消灭刺眼大红 */
+/* 3. 核心修复 1：三大连麦作战室专属发光微光按钮（找回美丽的边框与色彩） */
+div[data-testid="stLinkButton"] a {
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    padding: 10px 16px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    backdrop-filter: blur(8px) !important;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+div[data-testid="stLinkButton"] a:hover {
+    transform: translateY(-2px);
+}
+/* 大厅专属：暖金微光 */
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%) !important;
+    border: 2px solid #eab308 !important;
+    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3) !important;
+    color: #854d0e !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5) !important;
+}
+/* 蓝方专属：海蓝微光 */
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+    border: 2px solid #0284c7 !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+    color: #0369a1 !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5) !important;
+}
+/* 红方专属：绯红微光 */
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%) !important;
+    border: 2px solid #e11d48 !important;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3) !important;
+    color: #9f1239 !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5) !important;
+}
+
+/* 4. 核心修复 2：彻底消灭下拉菜单透明！强制纯白实体背景，拒绝文字穿透重叠 */
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] > div,
+ul[data-baseweb="menu"],
+div[data-baseweb="select"] ul {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    opacity: 1 !important;
+    border: 2px solid #f472b6 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 25px rgba(225, 29, 72, 0.18) !important;
+}
+li[data-baseweb="menu-item"] {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+}
+li[data-baseweb="menu-item"]:hover {
+    background-color: #fce7f3 !important;
+    color: #be185d !important;
+}
+
+/* 5. 多选框外壳与选中 Tag */
+div[data-testid="stMultiSelect"] > div > div,
+div[data-baseweb="select"] {
+    background-color: #ffffff !important;
+    border: 1px solid #fbcfe8 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 6px rgba(244, 114, 182, 0.1) !important;
+}
+div[data-baseweb="select"] input {
+    background-color: transparent !important;
+    color: #334155 !important;
+}
 div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
 span[data-baseweb="tag"] {
     background: #fce7f3 !important;
-    background-color: #fce7f3 !important;
     border: 1px solid #f472b6 !important;
     border-radius: 6px !important;
     padding: 2px 8px !important;
@@ -66,51 +140,22 @@ span[data-baseweb="tag"] svg {
     color: #db2777 !important;
 }
 
-/* 4. 多选框与输入框外壳：珍珠白底色，杜绝黑凹槽 */
-div[data-testid="stMultiSelect"] > div > div,
-div[data-baseweb="select"],
+/* 6. 输入框与普通按钮 */
 input, div[data-baseweb="input"] {
     background-color: #ffffff !important;
     border: 1px solid #fbcfe8 !important;
-    border-radius: 8px !important;
-    color: #334155 !important;
-    box-shadow: 0 2px 6px rgba(244, 114, 182, 0.1) !important;
-}
-div[data-baseweb="select"] input {
-    background-color: transparent !important;
+    border-radius: 6px !important;
     color: #334155 !important;
 }
-div[data-baseweb="select"] ul {
-    background-color: #ffffff !important;
-    border: 1px solid #f472b6 !important;
-}
-li[data-baseweb="menu-item"] {
-    color: #475569 !important;
-    background-color: transparent !important;
-}
-li[data-baseweb="menu-item"]:hover {
-    background-color: #fce7f3 !important;
-    color: #be185d !important;
-}
-
-/* 5. 主操作按钮：玫粉暖意渐变 */
 button[data-testid="stBaseButton-primary"],
 button[kind="primary"] {
     background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
-    background-color: #f43f5e !important;
     border: 1px solid #fb7185 !important;
     color: #ffffff !important;
     border-radius: 8px !important;
     font-weight: 700 !important;
     box-shadow: 0 4px 14px rgba(244, 63, 94, 0.3) !important;
-    transition: all 0.2s ease !important;
 }
-button[data-testid="stBaseButton-primary"]:hover {
-    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.45) !important;
-    transform: translateY(-1px);
-}
-
-/* 次级按钮：白底粉边 */
 button[data-testid="stBaseButton-secondary"] {
     background: #ffffff !important;
     border: 1px solid #fbcfe8 !important;
@@ -124,7 +169,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
     background: #fff1f2 !important;
 }
 
-/* 6. 荣誉卡片：纯白透亮 + 粉色微影 */
+/* 7. 卡片系统 (纯白透亮 + 粉色微影) */
 .stat-card {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -150,7 +195,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
 .delta-blue { background: #e0f2fe; color: #0284c7; }
 .delta-gray { background: #f1f5f9; color: #64748b; }
 
-/* 7. 对阵红蓝看板 */
+/* 8. 对阵红蓝看板与复制区 */
 .team-arena-box {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -159,18 +204,8 @@ button[data-testid="stBaseButton-secondary"]:hover {
     box-shadow: 0 4px 16px rgba(244, 63, 94, 0.1);
     margin: 14px 0;
 }
-.team-col-blue {
-    background: #f0f9ff;
-    border: 1px solid #bae6fd;
-    border-radius: 10px;
-    padding: 14px;
-}
-.team-col-red {
-    background: #fff1f2;
-    border: 1px solid #fecdd3;
-    border-radius: 10px;
-    padding: 14px;
-}
+.team-col-blue { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 14px; }
+.team-col-red { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px; padding: 14px; }
 .team-roster-row {
     display: flex;
     justify-content: space-between;
@@ -181,8 +216,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
     padding: 8px 12px;
     margin-bottom: 6px;
 }
-
-/* 8. 微信复制卡片 */
 .wechat-card {
     background: #ffffff;
     border: 1px solid #fbcfe8;
@@ -192,7 +225,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
     box-shadow: 0 4px 12px rgba(244, 114, 182, 0.1);
 }
 
-/* 9. 表格：珍珠白底 + 紧凑单行无缩进 */
+/* 9. 表格 */
 .clean-table-box {
     width: 100%;
     overflow-x: auto;
@@ -224,7 +257,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
     background: #fff5f5;
 }
 
-/* 侧边栏：柔和浅灰粉 */
+/* 侧边栏 */
 section[data-testid="stSidebar"] {
     background-color: #fff5f5 !important;
     border-right: 1px solid #fecdd3 !important;
@@ -432,7 +465,7 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"导入失败: {e}")
 
-# ---------------- 主界面 1：标题 ----------------
+# ---------------- 主界面 1：标题与三大微光语音室 ----------------
 st.title("⚔️ 海克斯内战战绩中心")
 
 cfg = load_config()
