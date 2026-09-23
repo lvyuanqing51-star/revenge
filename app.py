@@ -126,17 +126,26 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkB
     box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3) !important;
     color: #854d0e !important;
 }
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5) !important;
+}
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
     background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
     border: 2px solid #0284c7 !important;
     box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
     color: #0369a1 !important;
 }
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5) !important;
+}
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
     background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%) !important;
     border: 2px solid #e11d48 !important;
     box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3) !important;
     color: #9f1239 !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5) !important;
 }
 
 div[data-testid="stTextInput"] input {
@@ -167,7 +176,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
     background: #fff1f2 !important;
 }
 
-/* 卡片系统 */
 .stat-card {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -355,7 +363,6 @@ def save_records(records):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
 
-# 升级后的 AI 识别引擎：自动提取输出占比与承伤占比
 def analyze_image(img_bytes, api_key):
     client = OpenAI(
         api_key=api_key,
@@ -397,7 +404,6 @@ def generate_radar_svg(values, categories):
     cx, cy, r = size / 2, size / 2, 105
     total = len(values)
     
-    # 绘制背景底网（3层多边形）
     grid_polys = []
     for level in [0.33, 0.66, 1.0]:
         pts = []
@@ -408,7 +414,6 @@ def generate_radar_svg(values, categories):
             pts.append(f"{x:.1f},{y:.1f}")
         grid_polys.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#fecdd3" stroke-width="1.2" stroke-dasharray="3,3"/>')
     
-    # 绘制轴线与标签
     axis_lines = []
     labels = []
     for i in range(total):
@@ -421,7 +426,6 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
-    # 绘制数据多边形
     data_pts = []
     data_dots = []
     for i in range(total):
@@ -455,6 +459,39 @@ with st.sidebar:
 
     records = load_records()
     st.metric("总计收录对局", f"{len(records)} 局")
+
+    # 一键重扫历史截图补充输出/承伤
+    if records:
+        if st.button("🔄 一键重扫历史截图 (补充输出/承伤)", help="读取 records.json 里保存的截图，让 AI 重新提取输出与承伤数据"):
+            if not key:
+                st.warning("⚠️ 请先在上方填入 DashScope API Key！")
+            else:
+                p_bar = st.progress(0)
+                st_msg = st.empty()
+                success_n = 0
+                for idx, r in enumerate(records):
+                    st_msg.info(f"⏳ 正在重新解析第 {idx+1}/{len(records)} 局截图...")
+                    thumb_b64 = r.get("image_thumb", "")
+                    if thumb_b64:
+                        try:
+                            img_b = base64.b64decode(thumb_b64)
+                            new_res = analyze_image(img_b, key)
+                            p_map = {clean_player_name_strict(p["player_name"]): p for p in new_res.get("players", [])}
+                            for old_p in r.get("players", []):
+                                c_name = clean_player_name_strict(old_p.get("player_name", ""))
+                                if c_name in p_map:
+                                    old_p["damage_share"] = p_map[c_name].get("damage_share")
+                                    old_p["taken_share"] = p_map[c_name].get("taken_share")
+                            success_n += 1
+                        except Exception as e:
+                            st.error(f"第 {idx+1} 局解析失败: {e}")
+                    p_bar.progress((idx + 1) / len(records))
+                
+                save_records(records)
+                st_msg.empty()
+                st.success(f"🎉 成功补充更新 {success_n} 局历史对局！")
+                time.sleep(0.6)
+                st.rerun()
 
     if records:
         st.markdown("---")
@@ -572,7 +609,6 @@ else:
         blue_total_k, red_total_k = 0, 0
         blue_total_d, red_total_d = 0, 0
         
-        # 预统计两队总人头与阵亡
         for p in r.get("players", []):
             side = str(p.get("team", "")).upper()
             k = int(p.get("kills", 0))
@@ -601,7 +637,6 @@ else:
             stats[fname]["死亡"] += d
             stats[fname]["助攻"] += a
 
-            # 提取输出占比与承伤占比
             dmg_s = p.get("damage_share")
             if dmg_s is not None:
                 try:
@@ -616,7 +651,6 @@ else:
                 except Exception:
                     pass
 
-            # 提取真实局内击杀贡献率与参团率
             if team_k > 0:
                 stats[fname]["team_kill_shares"].append(k / team_k)
                 stats[fname]["kp_shares"].append((k + a) / team_k)
@@ -1017,7 +1051,7 @@ else:
             p_deaths = float(p_data["死亡"] / p_games) if p_games > 0 else 0.0
             p_assists = float(p_data["助攻"] / p_games) if p_games > 0 else 0.0
 
-            # 1. 核心输出维度 (Damage Output)：优先取截图像素识别的输出占比，若老截图无占比则用击杀收割估算
+            # 1. 绝对火力 (Damage Output)
             dmg_list = p_data["damage_shares"]
             if dmg_list:
                 avg_dmg_share = sum(dmg_list) / len(dmg_list)
@@ -1027,7 +1061,7 @@ else:
                 score_dmg = min(100.0, (p_kills / 10.0) * 90.0)
                 dmg_display_txt = "估算模式 (待新截图录入)"
 
-            # 2. 铁血承伤维度 (Frontline Tanking)：优先取承伤占比，若无则结合场均阵亡控制计算
+            # 2. 铁血承伤 (Frontline Tanking)
             taken_list = p_data["taken_shares"]
             if taken_list:
                 avg_taken_share = sum(taken_list) / len(taken_list)
@@ -1054,7 +1088,6 @@ else:
             categories = ['绝对火力', '铁血承伤', '团战参团', '终结收割', '团队赋能', '生存保命']
             values = [round(score_dmg, 1), round(score_taken, 1), round(score_kp, 1), round(score_finish, 1), round(score_support, 1), round(score_surv, 1)]
 
-            # 战术风格打标
             if score_dmg >= 80 and score_finish >= 80:
                 style_title, style_badge = "🗡️ 绝对主C / 火力终结者", "delta-pink"
             elif score_taken >= 75 and score_support >= 70:
