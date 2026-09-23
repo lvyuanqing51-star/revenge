@@ -21,7 +21,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 温润淡粉 (Sakura Pastel) + 变量覆盖 CSS ----------------
+# ---------------- 页面 CSS ----------------
 st.markdown("""
 <style>
 :root, [data-theme="light"], .stApp {
@@ -396,13 +396,12 @@ def short_name(full_name):
         return "未知"
     return str(full_name).split("#")[0]
 
-# ---------------- 2. 极致反差 SVG 六边形雷达生成器 ----------------
+# ---------------- 2. 动感 SVG 六边形雷达生成器 ----------------
 def generate_radar_svg(values, categories):
     size = 320
     cx, cy, r = size / 2, size / 2, 105
     total = len(values)
     
-    # 绘制背景同心网格
     grid_polys = []
     for level in [0.25, 0.5, 0.75, 1.0]:
         pts = []
@@ -425,18 +424,18 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
-    # 绘制多边形（允许深度下潜至 0.05 凹陷，最高顶到 1.0 边缘）
+    # 绘制多边形：保底给 0.12，杜绝任何数据缩成原点 0
     data_pts = []
     data_dots = []
     for i in range(total):
-        val_ratio = min(max(values[i], 5.0), 100.0) / 100.0
+        val_ratio = min(max(values[i], 12.0), 100.0) / 100.0
         angle = math.pi / 2 - (2 * math.pi * i / total)
         dx = cx + r * val_ratio * math.cos(angle)
         dy = cy - r * val_ratio * math.sin(angle)
         data_pts.append(f"{dx:.1f},{dy:.1f}")
         data_dots.append(f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="4" fill="#be185d"/>')
 
-    polygon_svg = f'<polygon points="{" ".join(data_pts)}" fill="rgba(244, 63, 94, 0.32)" stroke="#e11d48" stroke-width="2.6"/>'
+    polygon_svg = f'<polygon points="{" ".join(data_pts)}" fill="rgba(244, 63, 94, 0.30)" stroke="#e11d48" stroke-width="2.5"/>'
 
     svg_content = f"""
     <div style="display:flex;justify-content:center;align-items:center;padding:10px 0;">
@@ -596,10 +595,9 @@ else:
         "damage_shares": [], "taken_shares": [], "team_kill_shares": [], "kp_shares": []
     })
     
-    # 六边形专属过滤池：仅录入出战总人数 >= 6 的标准局
     radar_stats_pool = defaultdict(lambda: {
         "games_6p": 0, "kills": 0, "deaths": 0, "assists": 0,
-        "damage_shares": [], "taken_shares": [], "kp_shares": [], "death_shares": []
+        "damage_shares": [], "taken_shares": [], "kp_shares": []
     })
 
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
@@ -639,7 +637,6 @@ else:
             is_win = bool(p.get("is_winner"))
             side = str(p.get("team", "")).upper()
             team_k = blue_total_k if side == "BLUE" else red_total_k
-            team_d = blue_total_d if side == "BLUE" else red_total_d
 
             stats[fname]["总场次"] += 1
             stats[fname]["胜场" if is_win else "负场"] += 1
@@ -670,8 +667,6 @@ else:
 
                 if team_k > 0:
                     radar_stats_pool[fname]["kp_shares"].append((k + a) / team_k)
-                if team_d > 0:
-                    radar_stats_pool[fname]["death_shares"].append(d / team_d)
 
             if k > max_single_kill["val"]:
                 max_single_kill = {"player": fname, "val": k, "game_idx": game_idx + 1}
@@ -1051,7 +1046,7 @@ else:
         )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-        # ---------------- 板块 E：极致反差·六维战术图谱 (≥6人局) ----------------
+        # ---------------- 板块 E：合理且风格鲜明的六维战术图谱 (≥6人局) ----------------
         st.markdown("---")
         st.subheader("🎯 选手局内战术图谱 (仅统计 ≥6 人正规对局)")
 
@@ -1072,72 +1067,71 @@ else:
             p_deaths = float(p_radar["deaths"] / valid_g)
             p_assists = float(p_radar["assists"] / valid_g)
 
-            # 1. 伤害输出：低输出狠削到底部，高输出顶满
+            # 1. 伤害输出 (10% ~ 35% 映射到 25 ~ 95 分)
             dmg_list = p_radar["damage_shares"]
             dmg_share = (sum(dmg_list) / len(dmg_list)) if dmg_list else (p_kills * 2.3)
-            # 12% 算 15 分，20% 算 50 分，30% 顶到 98 分
             if dmg_share <= 20.0:
-                score_dmg = max(5.0, 10.0 + (dmg_share / 20.0) * 40.0)
+                score_dmg = 25.0 + (dmg_share / 20.0) * 35.0
             else:
-                score_dmg = min(100.0, 50.0 + ((dmg_share - 20.0) / 10.0) * 48.0)
+                score_dmg = 60.0 + min(1.0, (dmg_share - 20.0) / 14.0) * 35.0
+            score_dmg = max(18.0, min(96.0, score_dmg))
 
-            # 2. 承受伤害：肉盾前排顶满，后排脆皮/混子大幅削减
+            # 2. 承受伤害 (12% ~ 35% 映射到 25 ~ 95 分)
             taken_list = p_radar["taken_shares"]
             taken_share = (sum(taken_list) / len(taken_list)) if taken_list else (p_deaths * 2.4)
-            d_share_list = p_radar["death_shares"]
-            avg_d_share = (sum(d_share_list) / len(d_share_list)) if d_share_list else 0.20
-            
-            eff = min(1.3, taken_share / max(10.0, avg_d_share * 100.0))
             if taken_share <= 20.0:
-                score_tank = max(5.0, (10.0 + (taken_share / 20.0) * 40.0) * eff)
+                score_tank = 25.0 + (taken_share / 20.0) * 35.0
             else:
-                score_tank = min(100.0, (50.0 + ((taken_share - 20.0) / 10.0) * 48.0) * eff)
+                score_tank = 60.0 + min(1.0, (taken_share - 20.0) / 14.0) * 35.0
+            score_tank = max(18.0, min(96.0, score_tank))
 
-            # 3. 参团活跃：孤狼直接凹陷到 10 分，团战核心顶满
+            # 3. 参团活跃 (35% ~ 80% 映射到 25 ~ 95 分)
             kp_list = p_radar["kp_shares"]
             avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
             if avg_kp <= 0.55:
-                score_kp = max(5.0, 10.0 + (avg_kp / 0.55) * 40.0)
+                score_kp = 25.0 + (avg_kp / 0.55) * 35.0
             else:
-                score_kp = min(100.0, 50.0 + ((avg_kp - 0.55) / 0.22) * 48.0)
+                score_kp = 60.0 + min(1.0, (avg_kp - 0.55) / 0.22) * 35.0
+            score_kp = max(18.0, min(96.0, score_kp))
 
-            # 4 & 5. 收割与助攻：超强偏向分化（刺客收割顶满+助攻压低；辅助助攻顶满+收割压低）
+            # 4 & 5. 收割与助攻：解耦偏向计算（拉开刺客与辅助差异，但不惩罚过度）
             ka_total = max(1.0, p_kills + p_assists)
-            kill_bias = p_kills / ka_total  # 偏向比 (0 ~ 1)
+            kill_bias = p_kills / ka_total  # 偏向比 (0.1 ~ 0.8)
             
-            # 收割基础
-            k_base = min(100.0, (p_kills / 9.0) * 75.0)
-            score_kill = max(5.0, min(100.0, k_base * (0.4 + kill_bias * 0.9)))
-            
-            # 助攻基础
-            a_base = min(100.0, (p_assists / 11.0) * 75.0)
-            score_assist = max(5.0, min(100.0, a_base * (1.3 - kill_bias * 0.9)))
+            # 收割分：场均击杀驱动 + 终结占比
+            k_base = min(1.0, p_kills / 10.0)
+            score_kill = 25.0 + k_base * 45.0 + (kill_bias * 25.0)
+            score_kill = max(20.0, min(95.0, score_kill))
 
-            # 6. 保命能力：多死直接砸到底，不死顶天立地
-            if avg_d_share <= 0.20:
-                score_surv = min(100.0, 50.0 + ((0.20 - avg_d_share) / 0.12) * 48.0)
+            # 助攻分：场均助攻驱动 + 团队协助偏向
+            a_base = min(1.0, p_assists / 12.0)
+            score_assist = 25.0 + a_base * 45.0 + ((1.0 - kill_bias) * 25.0)
+            score_assist = max(20.0, min(95.0, score_assist))
+
+            # 6. 保命能力：平滑且严密，绝不归零！
+            # 场均死 <= 3次 得 85~95，场均死 6 次得 60，场均死 >= 10 次得 25~30
+            if p_deaths <= 6.0:
+                score_surv = 60.0 + ((6.0 - p_deaths) / 4.0) * 32.0
             else:
-                score_surv = max(5.0, 50.0 - ((avg_d_share - 0.20) / 0.12) * 45.0)
+                score_surv = 60.0 - ((p_deaths - 6.0) / 5.0) * 32.0
+            score_surv = max(20.0, min(95.0, score_surv))
 
             categories = ['伤害输出', '承受伤害', '参团活跃', '人头收割', '助攻开团', '保命能力']
             values = [round(score_dmg, 1), round(score_tank, 1), round(score_kp, 1), round(score_kill, 1), round(score_assist, 1), round(score_surv, 1)]
 
-            # 极致战术打标
-            avg_v = sum(values) / len(values)
-            if avg_v >= 75:
-                style_title, style_badge = "⚡ 究极全能六边形战士 (拉满)", "delta-pink"
-            elif avg_v <= 32:
-                style_title, style_badge = "🕳️ 黑洞级全面凹陷 / 究极战犯", "delta-pink"
-            elif score_dmg >= 80 and score_kill >= 75 and score_tank <= 40:
-                style_title, style_badge = "🗡️ 毁灭刺客 / 极锋利长矛", "delta-pink"
-            elif score_tank >= 80 and score_assist >= 75 and score_dmg <= 35:
-                style_title, style_badge = "🛡️ 铁血开团 / 叹息之壁", "delta-blue"
-            elif score_surv >= 80 and score_dmg <= 30:
-                style_title, style_badge = "🕊️ 终极保命怪 / KDA打卡大师", "delta-gray"
-            elif score_kp >= 80:
-                style_title, style_badge = "🌐 全图吸铁石 / 节奏发电机", "delta-gold"
+            # 战术风格打标
+            if score_dmg >= 78 and score_kill >= 75:
+                style_title, style_badge = "🗡️ 绝对主C / 团队核心火力", "delta-pink"
+            elif score_tank >= 78 and score_assist >= 70:
+                style_title, style_badge = "🛡️ 铁血开团 / 护航巨盾", "delta-blue"
+            elif score_kp >= 78:
+                style_title, style_badge = "🌐 全图游走 / 节奏发动机", "delta-gold"
+            elif score_surv >= 75 and score_dmg <= 50:
+                style_title, style_badge = "🕊️ 稳健拉扯 / 保命大师", "delta-gray"
+            elif score_kill >= 75 and score_surv <= 45:
+                style_title, style_badge = "🩸 突进刺客 / 绝命换头", "delta-pink"
             else:
-                style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-gold"
+                style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-pink"
 
             dmg_disp = f"{dmg_share:.1f}%"
             tank_disp = f"{taken_share:.1f}%"
