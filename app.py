@@ -20,10 +20,10 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 彻底修复展开栏、文本框与白底 CSS ----------------
+# ---------------- 高级深海蓝微光 + 彻底消灭黑块与白底 CSS ----------------
 st.markdown("""
 <style>
-/* 全局背景：深海蓝渐变 */
+/* 全局背景：深海宝石蓝流光渐变 */
 .stApp {
     background: radial-gradient(circle at 50% 5%, #1d3e63 0%, #122841 50%, #0a192b 100%) !important;
     color: #e2e8f0 !important;
@@ -61,105 +61,33 @@ section[data-testid="stSidebar"] span {
     color: #f1f5f9 !important;
 }
 
-/* 侧边栏输入控件 */
-section[data-testid="stSidebar"] input {
-    background-color: #132438 !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 6px !important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="input"],
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
-    background-color: #132438 !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 8px !important;
-    overflow: hidden !important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
-    background-color: transparent !important;
-    color: #ffffff !important;
-    border: none !important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
-    background-color: transparent !important;
-    border: none !important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
-    fill: #38bdf8 !important;
-    color: #38bdf8 !important;
-}
-
-/* 折叠栏 Expander 彻底深色化 */
-details[data-testid="stExpander"] {
-    background-color: rgba(19, 36, 56, 0.7) !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 10px !important;
-    backdrop-filter: blur(12px) !important;
-}
-details[data-testid="stExpander"] summary {
-    background-color: rgba(19, 36, 56, 0.9) !important;
-    color: #38bdf8 !important;
-    font-weight: 700 !important;
-    border-radius: 10px !important;
-}
-details[data-testid="stExpander"] summary * {
-    color: #38bdf8 !important;
-}
-details[data-testid="stExpander"][open] summary {
-    border-bottom: 1px solid rgba(56, 189, 248, 0.3) !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-}
-
-/* ================= 核心修复：彻底消灭多行文本框 Textarea 白底 ================= */
-textarea,
-div[data-baseweb="textarea"],
-div[data-baseweb="textarea"] > div,
-div[data-baseweb="textarea"] textarea {
-    background-color: #112236 !important;
-    background: #112236 !important;
-    color: #38bdf8 !important;
-    border: 1px solid rgba(56, 189, 248, 0.5) !important;
-    border-radius: 8px !important;
-    font-family: inherit !important;
-    font-size: 0.92rem !important;
-}
-textarea:focus {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
-}
-
-/* 主页面所有输入框 Input 强制深色 */
-input, 
-div[data-baseweb="input"],
-div[data-baseweb="base-input"] {
-    background-color: #132438 !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 8px !important;
-}
-input {
-    color: #ffffff !important;
-}
-
-/* 下拉选框与多选框全局深色微光 */
+/* ================= 核心修复 1：彻底消灭多选框黑块、杂色条纹与红标签 ================= */
+/* 统一步调：把整个 select 容器及其所有内部子层背景全部打平为统一的深蓝半透明 */
+div[data-testid="stMultiSelect"],
+div[data-testid="stMultiSelect"] > div,
 div[data-baseweb="select"],
-div[data-baseweb="select"] > div {
-    background-color: #132438 !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+div[data-baseweb="select"] > div,
+div[data-baseweb="select"] div,
+div[data-baseweb="base-input"] {
+    background-color: rgba(19, 36, 56, 0.75) !important;
+    background: rgba(19, 36, 56, 0.75) !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
-    color: #ffffff !important;
 }
-div[data-baseweb="select"] * {
+
+/* 内部输入光标与搜索文本区域透明化，彻底杜绝黑条 */
+div[data-baseweb="select"] input {
+    background-color: transparent !important;
+    background: transparent !important;
     color: #ffffff !important;
 }
 
-/* 彻底消灭多选框红底标签 */
+/* 强力替换多选气泡标签为微光青蓝，强制剥离红色 */
 div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
 div[data-baseweb="tag"],
 span[data-baseweb="tag"] {
-    background: #193655 !important;
-    background-color: #193655 !important;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.25)) !important;
+    background-color: rgba(14, 165, 233, 0.35) !important;
     border: 1px solid rgba(56, 189, 248, 0.7) !important;
     border-radius: 6px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
@@ -178,7 +106,58 @@ span[data-baseweb="tag"] svg {
     color: #38bdf8 !important;
 }
 
-/* 按钮组件 */
+/* ================= 核心修复 2：外援磨砂条与全局输入框深色化 ================= */
+.guest-bar-container {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+input, 
+div[data-baseweb="input"] {
+    background-color: #132438 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 8px !important;
+}
+input {
+    color: #ffffff !important;
+}
+
+/* ================= 核心修复 3：手写微信战报卡片（彻底告别原生惨白 code 块） ================= */
+.wechat-copy-panel {
+    background: rgba(11, 23, 38, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 14px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    position: relative;
+    user-select: all;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.wechat-copy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    font-size: 0.88rem;
+    color: #94a3b8;
+}
+.wechat-copy-body {
+    font-size: 0.98rem;
+    line-height: 1.7;
+    color: #f1f5f9;
+}
+
+/* 按钮组件修饰 */
 button[data-testid="stBaseButton-secondary"] {
     background: rgba(19, 36, 56, 0.9) !important;
     background-color: rgba(19, 36, 56, 0.9) !important;
@@ -326,7 +305,7 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     backdrop-filter: blur(20px);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
     margin-top: 10px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 .team-column-blue {
     background: linear-gradient(180deg, rgba(14, 165, 233, 0.18) 0%, rgba(15, 23, 42, 0.4) 100%);
@@ -1065,71 +1044,72 @@ else:
         # ---------------- 板块 D：赛前红蓝对阵作战室 ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
+        # 维护可用外援
         if "custom_guests" not in st.session_state:
             st.session_state["custom_guests"] = {}
 
-        # 兼顾向下兼容：清洗旧版可能残留的 float 类型脏数据
+        # 历史脏数据容错
         for k, v in list(st.session_state["custom_guests"].items()):
             if not isinstance(v, dict):
                 st.session_state["custom_guests"][k] = {"mmr": float(v), "tier": "临时外援"}
 
         known_roster = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
         full_available_options = known_roster + list(st.session_state["custom_guests"].keys())
-
         default_selection = known_roster[:10] if len(known_roster) >= 10 else known_roster
 
         # 纯净 ID 多选框
         selected_players = st.multiselect(
-            "选择出战群友名单（支持任意人数，如 6人、8人、10人等）：",
+            "选择出战群友名单（支持任意人数，偶数均分，奇数自适应）：",
             options=full_available_options,
             default=default_selection,
             format_func=lambda x: short_name(x)
         )
 
-        # 临时外援管理区（支持添加与删除）
-        with st.expander("➕ 临时外援与替补管理（支持随时添加与删除）", expanded=False):
-            st.caption("没有历史战绩的新人？在此快速录入或删除，可直接在上方名单中勾选使用：")
-            
-            c_g1, c_g2, c_g3 = st.columns([2.5, 2.5, 1.5])
-            with c_g1:
-                guest_name = st.text_input("输入外援昵称/ID", placeholder="例如: 隔壁老王", key="input_guest_name")
-            with c_g2:
-                guest_tier = st.selectbox(
-                    "预估其实力水平",
-                    options=[80.0, 60.0, 45.0],
-                    format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水平 (60分)", 45.0: "🌱 萌新挂件 (45分)"}[v],
-                    index=1,
-                    key="select_guest_tier"
-                )
-            with c_g3:
-                st.write("")
-                st.write("")
-                if st.button("➕ 确认添加", key="btn_add_guest", use_container_width=True):
-                    if guest_name.strip():
-                        c_name = guest_name.strip()
-                        tier_label = {80.0: "通天大腿", 60.0: "普通水平", 45.0: "萌新挂件"}[guest_tier]
-                        st.session_state["custom_guests"][c_name] = {"mmr": guest_tier, "tier": tier_label}
-                        st.success(f"已添加外援: {c_name}")
-                        time.sleep(0.4)
+        # 极简磨砂外援录入条（彻底干掉原生折叠栏白底）
+        st.markdown("<div class='guest-bar-container'>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:0.9rem;font-weight:700;color:#38bdf8;margin-bottom:8px;'>➕ 快速添加临时外援 / 替补（无需战绩直接参战）：</div>", unsafe_allow_html=True)
+        
+        c_g1, c_g2, c_g3 = st.columns([2.5, 2.5, 1.2])
+        with c_g1:
+            guest_name = st.text_input("外援昵称/ID", placeholder="输入名字直接添加...", key="input_guest_name", label_visibility="collapsed")
+        with c_g2:
+            guest_tier = st.selectbox(
+                "实力评级",
+                options=[80.0, 60.0, 45.0],
+                format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水平 (60分)", 45.0: "🌱 萌新挂件 (45分)"}[v],
+                index=1,
+                key="select_guest_tier",
+                label_visibility="collapsed"
+            )
+        with c_g3:
+            if st.button("➕ 加入名单", key="btn_add_guest", use_container_width=True):
+                if guest_name.strip():
+                    c_name = guest_name.strip()
+                    tier_label = {80.0: "通天大腿", 60.0: "普通水平", 45.0: "萌新挂件"}[guest_tier]
+                    st.session_state["custom_guests"][c_name] = {"mmr": guest_tier, "tier": tier_label}
+                    st.success(f"已加入外援: {c_name}")
+                    time.sleep(0.4)
+                    st.rerun()
+                else:
+                    st.warning("请输入昵称！")
+
+        # 当前已添加外援的轻量管理列表
+        if st.session_state["custom_guests"]:
+            st.markdown("<div style='margin-top:10px;font-size:0.85rem;color:#fef08a;'>已录入外援：</div>", unsafe_allow_html=True)
+            for g_name, g_info in list(st.session_state["custom_guests"].items()):
+                mmr_val = g_info.get("mmr", 60.0) if isinstance(g_info, dict) else float(g_info)
+                tier_str = g_info.get("tier", "外援") if isinstance(g_info, dict) else "外援"
+
+                col_info, col_del = st.columns([5, 1])
+                with col_info:
+                    st.markdown(f"<div style='padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:6px;font-size:0.9rem;margin-bottom:3px;'>"
+                                f"👤 <b style='color:#ffffff;'>{g_name}</b> · <span style='color:#38bdf8;'>战力 {mmr_val} ({tier_str})</span>"
+                                f"</div>", unsafe_allow_html=True)
+                with col_del:
+                    if st.button("🗑️ 删除", key=f"del_guest_{g_name}"):
+                        del st.session_state["custom_guests"][g_name]
                         st.rerun()
-                    else:
-                        st.warning("请输入昵称！")
-
-            if st.session_state["custom_guests"]:
-                st.markdown("<div style='margin-top:12px;font-weight:700;color:#fef08a;'>📋 当前已添加的外援（点右侧删除）：</div>", unsafe_allow_html=True)
-                for g_name, g_info in list(st.session_state["custom_guests"].items()):
-                    mmr_val = g_info.get("mmr", 60.0) if isinstance(g_info, dict) else float(g_info)
-                    tier_str = g_info.get("tier", "外援") if isinstance(g_info, dict) else "外援"
-
-                    col_info, col_del = st.columns([5, 1])
-                    with col_info:
-                        st.markdown(f"<div style='padding:6px 10px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:0.92rem;margin-bottom:4px;'>"
-                                    f"👤 <b style='color:#ffffff;'>{g_name}</b> · <span style='color:#38bdf8;'>战力 {mmr_val} ({tier_str})</span>"
-                                    f"</div>", unsafe_allow_html=True)
-                    with col_del:
-                        if st.button("🗑️ 删除", key=f"del_guest_{g_name}"):
-                            del st.session_state["custom_guests"][g_name]
-                            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
         # 分队操作按钮
         col_b1, col_b2, _ = st.columns([1.5, 1.5, 3])
@@ -1269,15 +1249,25 @@ else:
 
             st.markdown(arena_html, unsafe_allow_html=True)
 
-            # 纯粹优雅的微信复制区（彻底修复白底，使用 code block 样式）
-            copy_text = (
-                f"【海克斯内战·双方对阵阵容】\n"
-                f"🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {'、'.join([short_name(p) for p in blue_team])}\n"
-                f"🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {'、'.join([short_name(p) for p in red_team])}\n"
-                f"⚡ 阵型模式: {st.session_state['split_mode']} | 均分分差: {avg_diff}"
-            )
-            st.caption("📋 点击下方文本框右上角图标即可一键复制阵容名单至微信群：")
-            st.code(copy_text, language="markdown")
+            # 手写深海蓝微光战报卡片（彻底替换掉难看的白底条）
+            blue_line = "、".join([short_name(p) for p in blue_team])
+            red_line = "、".join([short_name(p) for p in red_team])
+            
+            wechat_html = f"""
+                <div class="wechat-copy-panel">
+                    <div class="wechat-copy-header">
+                        <span>📋 微信对阵名单（长按或鼠标轻点即可全选复制）</span>
+                        <span style="color:#38bdf8;">模式: {st.session_state['split_mode']}</span>
+                    </div>
+                    <div class="wechat-copy-body">
+                        <div><b>【海克斯内战·双方对阵阵容】</b></div>
+                        <div style="margin-top:4px;"><span style="color:#38bdf8;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
+                        <div><span style="color:#fb7185;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
+                        <div style="font-size:0.85rem;color:#94a3b8;margin-top:4px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
+                    </div>
+                </div>
+            """
+            st.markdown(wechat_html, unsafe_allow_html=True)
 
         st.markdown("---")
         st.subheader("📊 胜率总榜")
