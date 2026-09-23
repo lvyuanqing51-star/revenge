@@ -248,11 +248,6 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     color: #fb7185;
     border: 1px solid rgba(251, 113, 133, 0.3);
 }
-.delta-purple {
-    background: rgba(192, 132, 252, 0.15);
-    color: #c084fc;
-    border: 1px solid rgba(192, 132, 252, 0.3);
-}
 .delta-gray {
     background: rgba(148, 163, 184, 0.15);
     color: #94a3b8;
@@ -714,50 +709,86 @@ else:
 
         st.write("")
 
-        # ---------------- 板块 B：综合竞技头衔 (4 列) ----------------
-        st.subheader("🎖️ 综合荣誉头衔")
-        kda_candidates = df[df["总场次"] >= 2]
-        if kda_candidates.empty:
-            kda_candidates = df
-            
-        top_kda_name = kda_candidates.sort_values(by="KDA_num", ascending=False).index[0]
-        top_kill_name = df.sort_values(by="击杀", ascending=False).index[0]
-        top_death_name = df.sort_values(by="死亡", ascending=False).index[0]
-        top_assist_name = df.sort_values(by="助攻", ascending=False).index[0]
+        # ---------------- 板块 B：综合竞技头衔 (4 列，严格 >= 10 局门槛) ----------------
+        st.subheader("🎖️ 综合荣誉头衔 (≥10局)")
+        candidates_10 = df[df["总场次"] >= 10]
+        has_veteran = not candidates_10.empty
+
+        if has_veteran:
+            top_kda_name = candidates_10.sort_values(by="KDA_num", ascending=False).index[0]
+            top_kill_name = candidates_10.sort_values(by="击杀", ascending=False).index[0]
+            top_death_name = candidates_10.sort_values(by="死亡", ascending=False).index[0]
+            top_assist_name = candidates_10.sort_values(by="助攻", ascending=False).index[0]
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">KDA王</div>
-                    <div class="esport-card-player">{short_name(top_kda_name)}</div>
-                    <div class="esport-card-delta delta-cyan">KDA {df.loc[top_kda_name, 'KDA_num']}</div>
-                </div>
-            """, unsafe_allow_html=True)
+            if has_veteran:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">KDA王</div>
+                        <div class="esport-card-player">{short_name(top_kda_name)}</div>
+                        <div class="esport-card-delta delta-cyan">KDA {df.loc[top_kda_name, 'KDA_num']}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">KDA王</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
+                    </div>
+                """, unsafe_allow_html=True)
         with col2:
-            st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">累计击杀王</div>
-                    <div class="esport-card-player">{short_name(top_kill_name)}</div>
-                    <div class="esport-card-delta delta-gold">{int(df.loc[top_kill_name, '击杀'])} 杀</div>
-                </div>
-            """, unsafe_allow_html=True)
+            if has_veteran:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">累计击杀王</div>
+                        <div class="esport-card-player">{short_name(top_kill_name)}</div>
+                        <div class="esport-card-delta delta-gold">{int(df.loc[top_kill_name, '击杀'])} 杀</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">累计击杀王</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
+                    </div>
+                """, unsafe_allow_html=True)
         with col3:
-            st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">累计白给王</div>
-                    <div class="esport-card-player">{short_name(top_death_name)}</div>
-                    <div class="esport-card-delta delta-red">{int(df.loc[top_death_name, '死亡'])} 阵亡</div>
-                </div>
-            """, unsafe_allow_html=True)
+            if has_veteran:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">累计白给王</div>
+                        <div class="esport-card-player">{short_name(top_death_name)}</div>
+                        <div class="esport-card-delta delta-red">{int(df.loc[top_death_name, '死亡'])} 阵亡</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">累计白给王</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
+                    </div>
+                """, unsafe_allow_html=True)
         with col4:
-            st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">累计助攻王</div>
-                    <div class="esport-card-player">{short_name(top_assist_name)}</div>
-                    <div class="esport-card-delta delta-cyan">{int(df.loc[top_assist_name, '助攻'])} 助攻</div>
-                </div>
-            """, unsafe_allow_html=True)
+            if has_veteran:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">累计助攻王</div>
+                        <div class="esport-card-player">{short_name(top_assist_name)}</div>
+                        <div class="esport-card-delta delta-cyan">{int(df.loc[top_assist_name, '助攻'])} 助攻</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                    <div class="esport-card">
+                        <div class="esport-card-title">累计助攻王</div>
+                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
+                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
         st.write("")
 
