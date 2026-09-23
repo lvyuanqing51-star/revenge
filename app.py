@@ -20,7 +20,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 侧边栏与按钮组件修复 CSS ----------------
+# ---------------- 高级深海蓝微光 + 全局按钮彻底修复 CSS ----------------
 st.markdown("""
 <style>
 /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
@@ -61,7 +61,7 @@ section[data-testid="stSidebar"] span {
     color: #f1f5f9 !important;
 }
 
-/* 侧边栏交互输入框与下拉框全套深蓝黑一体化 */
+/* 侧边栏交互输入框与下拉框 */
 section[data-testid="stSidebar"] input {
     background-color: #132438 !important;
     color: #ffffff !important;
@@ -90,63 +90,61 @@ section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
 }
 
 /* 下拉选框 */
-section[data-testid="stSidebar"] div[data-baseweb="select"],
-section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+div[data-baseweb="select"],
+div[data-baseweb="select"] > div {
     background-color: #132438 !important;
     border: 1px solid rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
     color: #ffffff !important;
 }
-section[data-testid="stSidebar"] div[data-baseweb="select"] button,
-section[data-testid="stSidebar"] div[data-baseweb="select"] [role="button"] {
+div[data-baseweb="select"] button,
+div[data-baseweb="select"] [role="button"] {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
 }
-section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
+div[data-baseweb="select"] svg {
     fill: #38bdf8 !important;
     color: #38bdf8 !important;
-    width: 18px !important;
-    height: 18px !important;
 }
 
-/* 核心修复：消灭侧边栏下载按钮与所有按钮的白底 */
-section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button,
-section[data-testid="stSidebar"] div.stDownloadButton button,
-section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"],
-section[data-testid="stSidebar"] button {
-    background: #152b45 !important;
-    background-color: #152b45 !important;
+/* ================= 全局按钮彻底修复（消灭白底与白字看不清） ================= */
+/* 1. 次级普通按钮（如随机盲盒按钮） */
+button[data-testid="stBaseButton-secondary"] {
+    background: rgba(19, 36, 56, 0.85) !important;
+    background-color: rgba(19, 36, 56, 0.85) !important;
     color: #ffffff !important;
     border: 1px solid rgba(56, 189, 248, 0.6) !important;
     border-radius: 8px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
 }
-section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button *,
-section[data-testid="stSidebar"] button * {
-    color: #ffffff !important;
-    fill: #ffffff !important;
-    font-weight: 700 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-section[data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover,
-section[data-testid="stSidebar"] button:hover {
+button[data-testid="stBaseButton-secondary"]:hover {
     background: #1e3d63 !important;
     background-color: #1e3d63 !important;
     border-color: #38bdf8 !important;
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.6) !important;
+}
+/* 强制按钮内每一层文字/图标显色 */
+button[data-testid="stBaseButton-secondary"] * {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
-/* 侧边栏折叠面板 (Expander) */
-section[data-testid="stSidebar"] details {
-    background-color: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    border-radius: 8px !important;
+/* 2. 主操作按钮（Primary Button） */
+button[data-testid="stBaseButton-primary"] {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(56, 189, 248, 0.8) !important;
+    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4) !important;
+    font-weight: 700 !important;
 }
-section[data-testid="stSidebar"] summary {
-    color: #fef08a !important;
+button[data-testid="stBaseButton-primary"]:hover {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.7) !important;
+    border-color: #a5f3fc !important;
 }
 
 /* 语音作战室三大专属微光按钮 */
@@ -255,7 +253,7 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-/* ================= 高级红蓝对阵分队器 CSS ================= */
+/* ================= 红蓝对阵分队看板 ================= */
 .team-arena-container {
     background: rgba(15, 23, 42, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -765,17 +763,39 @@ else:
         df["胜率_num"] = (df["胜场"] / df["总场次"] * 100).round(1)
         df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
+        df["场均击杀"] = (df["击杀"] / df["总场次"]).round(1)
 
-        # 战力分 (MMR) 计算模型
-        def calculate_mmr(row):
-            if row["总场次"] < 3:
+        # ---------------- 战力分 (MMR) 科学重构模型（保护尽力局大腿） ----------------
+        # 机制：
+        # 1. 场均击杀 (35%)：衡量 C 位绝对Carry压迫感（基准 10 杀封顶满分）
+        # 2. KDA 战损比 (35%)：衡量综合战损实力（基准 5.0 KDA 封顶满分）
+        # 3. 队伍胜率 (30%)：仅占三成，绝不让败方孤勇者被过度拖累
+        # 4. 杀神大腿加成：若场均击杀 >= 7 且 KDA >= 2.5，直接追加 5 分大腿荣誉分
+        def calculate_mmr_v2(row):
+            if row["总场次"] < 2:
                 return 50.0
-            wr = row["胜率_num"]
-            capped_kda = min(float(row["KDA_num"]), 6.0)
-            score = (wr * 0.6) + ((capped_kda / 6.0) * 100 * 0.4)
-            return round(score, 1)
+            
+            # 杀伤力得分 (0-35)
+            avg_k = float(row["场均击杀"])
+            kill_score = min(avg_k / 10.0, 1.2) * 35.0  # 极度强悍允许溢出至42分
+            
+            # 战损比得分 (0-35)
+            kda_val = float(row["KDA_num"])
+            kda_score = min(kda_val / 5.0, 1.2) * 35.0
+            
+            # 胜率分 (0-30)
+            wr_val = float(row["胜率_num"])
+            wr_score = (wr_val / 100.0) * 30.0
+            
+            total_mmr = kill_score + kda_score + wr_score
 
-        df["MMR"] = df.apply(calculate_mmr, axis=1)
+            # 尽力局大腿保护加分：高击杀选手即便输多，战力依然高企
+            if avg_k >= 7.0 and kda_val >= 2.5:
+                total_mmr += 5.0
+
+            return round(total_mmr, 1)
+
+        df["MMR"] = df.apply(calculate_mmr_v2, axis=1)
 
         # ---------------- 板块 A：单场巅峰纪录 (3 列) ----------------
         st.subheader("🔥 单场最高纪录")
@@ -1084,10 +1104,11 @@ else:
                 p_name = short_name(p)
                 p_wr = df.loc[p, "胜率_num"]
                 p_mmr = df.loc[p, "MMR"]
+                p_ak = df.loc[p, "场均击杀"]
                 blue_items.append(
                     f"<div class='team-roster-item'>"
                     f"<span class='player-tag'>🛡️ {p_name}</span>"
-                    f"<span class='player-score-badge' style='background:rgba(56,189,248,0.2);color:#38bdf8;'>胜率 {p_wr}% · 战力 {p_mmr}</span>"
+                    f"<span class='player-score-badge' style='background:rgba(56,189,248,0.2);color:#38bdf8;'>战力 {p_mmr} · 场均 {p_ak} 杀 (胜率 {p_wr}%)</span>"
                     f"</div>"
                 )
 
@@ -1096,10 +1117,11 @@ else:
                 p_name = short_name(p)
                 p_wr = df.loc[p, "胜率_num"]
                 p_mmr = df.loc[p, "MMR"]
+                p_ak = df.loc[p, "场均击杀"]
                 red_items.append(
                     f"<div class='team-roster-item'>"
                     f"<span class='player-tag'>⚔️ {p_name}</span>"
-                    f"<span class='player-score-badge' style='background:rgba(251,113,133,0.2);color:#fb7185;'>胜率 {p_wr}% · 战力 {p_mmr}</span>"
+                    f"<span class='player-score-badge' style='background:rgba(251,113,133,0.2);color:#fb7185;'>战力 {p_mmr} · 场均 {p_ak} 杀 (胜率 {p_wr}%)</span>"
                     f"</div>"
                 )
 
@@ -1150,6 +1172,7 @@ else:
             kd_str = f"{row['KD']:.2f}"
             kda_str = f"{row['KDA_num']:.2f}"
             mmr_val = f"{row['MMR']:.1f}"
+            avg_kill_str = f"{row['场均击杀']:.1f}"
             p_name = short_name(player_id)
 
             total_games = int(row['总场次'])
@@ -1167,6 +1190,7 @@ else:
                 f"<td>{losses}</td>"
                 f"<td>{wr_badge}</td>"
                 f"<td style='color:#a5f3fc;font-weight:700;'>{mmr_val}</td>"
+                f"<td style='color:#fde047;font-weight:700;'>{avg_kill_str}</td>"
                 f"<td style='color:#38bdf8;font-weight:700;'>{kd_str}</td>"
                 f"<td style='color:#fef08a;font-weight:700;'>{kda_str}</td>"
                 f"<td>{kills}</td>"
@@ -1182,7 +1206,7 @@ else:
             f'<thead><tr>'
             f'<th style="text-align:left;padding-left:20px;">玩家</th>'
             f'<th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>'
-            f'<th>战力(MMR)</th><th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
+            f'<th>战力(MMR)</th><th>场均击杀</th><th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
             f'</tr></thead>'
             f'<tbody>{"".join(table_rows)}</tbody>'
             f'</table></div>'
