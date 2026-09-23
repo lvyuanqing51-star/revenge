@@ -404,8 +404,9 @@ def generate_radar_svg(values, categories):
     cx, cy, r = size / 2, size / 2, 105
     total = len(values)
     
+    # 绘制背景底网（4层同心刻度，增加层次分明感）
     grid_polys = []
-    for level in [0.33, 0.66, 1.0]:
+    for level in [0.25, 0.5, 0.75, 1.0]:
         pts = []
         for i in range(total):
             angle = math.pi / 2 - (2 * math.pi * i / total)
@@ -414,6 +415,7 @@ def generate_radar_svg(values, categories):
             pts.append(f"{x:.1f},{y:.1f}")
         grid_polys.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#fecdd3" stroke-width="1.2" stroke-dasharray="3,3"/>')
     
+    # 绘制轴线与清晰标签
     axis_lines = []
     labels = []
     for i in range(total):
@@ -426,10 +428,11 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
+    # 绘制动态数值多边形
     data_pts = []
     data_dots = []
     for i in range(total):
-        val_ratio = min(max(values[i], 8.0), 100.0) / 100.0
+        val_ratio = min(max(values[i], 15.0), 100.0) / 100.0
         angle = math.pi / 2 - (2 * math.pi * i / total)
         dx = cx + r * val_ratio * math.cos(angle)
         dy = cy - r * val_ratio * math.sin(angle)
@@ -462,7 +465,7 @@ with st.sidebar:
 
     # 一键重扫历史截图补充输出/承伤
     if records:
-        if st.button("🔄 一键重扫历史截图 (补充输出/承伤)", help="读取 records.json 里保存的截图，让 AI 重新提取输出与承伤数据"):
+        if st.button("🔄 一键重扫历史截图 (补充输出/承伤)", help="读取 records.json 里的截图，让 AI 提取输出与承伤"):
             if not key:
                 st.warning("⚠️ 请先在上方填入 DashScope API Key！")
             else:
@@ -570,7 +573,7 @@ with c2:
 with c3:
     st.link_button("🔴 红方作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
 
-# ---------------- 主界面 2：数据汇总与局内硬核统计 ----------------
+# ---------------- 主界面 2：数据汇总与硬核指标提取 ----------------
 records = load_records()
 
 if not records:
@@ -1034,9 +1037,9 @@ else:
         )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-        # ---------------- 板块 E：选手六维战术局内雷达 (含输出/承伤占比) ----------------
+        # ---------------- 板块 E：全新群内动态相对标定·六维图谱 ----------------
         st.markdown("---")
-        st.subheader("🎯 选手局内战术图谱 (输出/承伤占比驱动)")
+        st.subheader("🎯 选手局内战术图谱")
 
         active_player_options = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
 
@@ -1045,59 +1048,80 @@ else:
             with c_sel:
                 target_p = st.selectbox("选择要分析的群友档案：", active_player_options, format_func=lambda x: short_name(x))
             
+            # 1. 预计算群内所有出场玩家的基础战术均值，用于动态拉扯（彻底拉开差异）
+            all_metrics = {}
+            for p_name_key in active_player_options:
+                row_item = df.loc[p_name_key]
+                t_games = int(row_item["总场次"])
+                if t_games == 0:
+                    continue
+                
+                # 伤害输出
+                d_list = row_item["damage_shares"]
+                d_val = (sum(d_list) / len(d_list)) if d_list else (float(row_item["击杀"]) / t_games * 2.2)
+                
+                # 承受伤害
+                tk_list = row_item["taken_shares"]
+                tk_val = (sum(tk_list) / len(tk_list)) if tk_list else (float(row_item["死亡"]) / t_games * 2.5)
+                
+                # 参团率
+                kp_l = row_item["kp_shares"]
+                kp_val = (sum(kp_l) / len(kp_l)) if kp_l else (float(row_item["击杀"] + row_item["助攻"]) / max(1.0, float(row_item["击杀"] + row_item["助攻"] + 6.0)))
+                
+                # 击杀、助攻、保命
+                k_val = float(row_item["击杀"]) / t_games
+                a_val = float(row_item["助攻"]) / t_games
+                d_rate = float(row_item["死亡"]) / t_games
+                surv_val = 15.0 - min(d_rate, 12.0)  # 死亡越少，分值越高
+                
+                all_metrics[p_name_key] = {
+                    "dmg": d_val, "tank": tk_val, "kp": kp_val,
+                    "kill": k_val, "assist": a_val, "surv": surv_val
+                }
+
+            # 提取群内极值做 Min-Max 相对归一化，拉开 30 ~ 95 分梯度
+            def get_scaled_score(val, key_name):
+                vals = [m[key_name] for m in all_metrics.values()]
+                min_v, max_v = min(vals), max(vals)
+                if max_v == min_v:
+                    return 65.0
+                ratio = (val - min_v) / (max_v - min_v)
+                return round(30.0 + ratio * 65.0, 1)
+
+            curr = all_metrics[target_p]
+            score_dmg = get_scaled_score(curr["dmg"], "dmg")
+            score_tank = get_scaled_score(curr["tank"], "tank")
+            score_kp = get_scaled_score(curr["kp"], "kp")
+            score_kill = get_scaled_score(curr["kill"], "kill")
+            score_assist = get_scaled_score(curr["assist"], "assist")
+            score_surv = get_scaled_score(curr["surv"], "surv")
+
+            # 通俗直观、标准电竞的六大维度标签
+            categories = ['伤害输出', '承受伤害', '参团活跃', '人头收割', '助攻开团', '保命能力']
+            values = [score_dmg, score_tank, score_kp, score_kill, score_assist, score_surv]
+
+            # 战术风格打标
+            if score_dmg >= 75 and score_kill >= 75:
+                style_title, style_badge = "🗡️ 绝对主C / 团队火力核心", "delta-pink"
+            elif score_tank >= 75 and score_assist >= 70:
+                style_title, style_badge = "🛡️ 铁血开团 / 护航巨盾", "delta-blue"
+            elif score_kp >= 75:
+                style_title, style_badge = "🌐 全图游走 / 节奏发动机", "delta-gold"
+            elif score_surv >= 75 and score_dmg <= 50:
+                style_title, style_badge = "🕊️ 稳健拉扯 / 保命大师", "delta-gray"
+            else:
+                style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-pink"
+
             p_data = df.loc[target_p]
             p_games = int(p_data["总场次"])
             p_kills = float(p_data["场均击杀"])
             p_deaths = float(p_data["死亡"] / p_games) if p_games > 0 else 0.0
             p_assists = float(p_data["助攻"] / p_games) if p_games > 0 else 0.0
 
-            # 1. 绝对火力 (Damage Output)
-            dmg_list = p_data["damage_shares"]
-            if dmg_list:
-                avg_dmg_share = sum(dmg_list) / len(dmg_list)
-                score_dmg = min(100.0, (avg_dmg_share / 30.0) * 100.0)
-                dmg_display_txt = f"{avg_dmg_share:.1f}% (截图真实采样)"
-            else:
-                score_dmg = min(100.0, (p_kills / 10.0) * 90.0)
-                dmg_display_txt = "估算模式 (待新截图录入)"
-
-            # 2. 铁血承伤 (Frontline Tanking)
-            taken_list = p_data["taken_shares"]
-            if taken_list:
-                avg_taken_share = sum(taken_list) / len(taken_list)
-                score_taken = min(100.0, (avg_taken_share / 30.0) * 100.0)
-                taken_display_txt = f"{avg_taken_share:.1f}% (截图真实采样)"
-            else:
-                score_taken = max(20.0, min(100.0, 40.0 + p_deaths * 6.0))
-                taken_display_txt = "估算模式 (待新截图录入)"
-
-            # 3. 团队参团率 (KP)
-            kp_list = p_data["kp_shares"]
-            avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else min(0.9, (p_kills + p_assists) / max(1.0, (p_kills + p_assists + 5.0)))
-            score_kp = min(100.0, (avg_kp / 0.75) * 100.0)
-
-            # 4. 绝对终结 (Finishing)
-            score_finish = min(100.0, (p_kills / 10.0) * 100.0)
-
-            # 5. 团队赋能 (Team Support)
-            score_support = min(100.0, (p_assists / 12.0) * 100.0)
-
-            # 6. 生存意志 (Survival)
-            score_surv = max(10.0, min(100.0, 100.0 - (p_deaths - 2.0) * 11.0)) if p_deaths >= 2 else 100.0
-
-            categories = ['绝对火力', '铁血承伤', '团战参团', '终结收割', '团队赋能', '生存保命']
-            values = [round(score_dmg, 1), round(score_taken, 1), round(score_kp, 1), round(score_finish, 1), round(score_support, 1), round(score_surv, 1)]
-
-            if score_dmg >= 80 and score_finish >= 80:
-                style_title, style_badge = "🗡️ 绝对主C / 火力终结者", "delta-pink"
-            elif score_taken >= 75 and score_support >= 70:
-                style_title, style_badge = "🛡️ 铁血开团 / 护航巨盾", "delta-blue"
-            elif score_kp >= 80:
-                style_title, style_badge = "🌐 全图游走 / 节奏发动机", "delta-gold"
-            elif score_surv >= 80 and score_dmg <= 60:
-                style_title, style_badge = "🕊️ 稳健拉扯 / 保命大师", "delta-gray"
-            else:
-                style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-pink"
+            # 简洁直白呈现，不再带“采样”字样
+            dmg_disp = f"{curr['dmg']:.1f}%"
+            tank_disp = f"{curr['tank']:.1f}%"
+            kp_disp = f"{round(curr['kp'] * 100, 1)}%"
 
             col_radar, col_detail = st.columns([1.2, 1])
 
@@ -1110,12 +1134,12 @@ else:
                         <div class="stat-card-title">局内战术角色画像</div>
                         <div class="stat-card-player">{short_name(target_p)}</div>
                         <div class="stat-card-delta {style_badge}">{style_title}</div>
-                        <div style="font-size:0.86rem;color:#475569;line-height:1.9;margin-top:10px;">
-                            <div>• <b>场均火力占比</b>: <span style="color:#e11d48;font-weight:700;">{dmg_display_txt}</span></div>
-                            <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{taken_display_txt}</span></div>
-                            <div>• <b>局均团战参团率</b>: <span style="color:#ca8a04;font-weight:700;">{round(avg_kp*100, 1)}%</span></div>
+                        <div style="font-size:0.88rem;color:#475569;line-height:2.0;margin-top:10px;">
+                            <div>• <b>场均伤害占比</b>: <span style="color:#e11d48;font-weight:700;">{dmg_disp}</span></div>
+                            <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{tank_disp}</span></div>
+                            <div>• <b>平均团战参团率</b>: <span style="color:#ca8a04;font-weight:700;">{kp_disp}</span></div>
                             <div>• <b>局内基础场均</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
-                            <div>• <b>实力评分 (MMR)</b>: <span style="color:#be185d;font-weight:800;">{p_data['MMR']:.1f} 分</span></div>
+                            <div>• <b>综合战力 (MMR)</b>: <span style="color:#be185d;font-weight:800;">{p_data['MMR']:.1f} 分</span></div>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
