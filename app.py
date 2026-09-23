@@ -20,19 +20,19 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 清爽明亮浅色主题 CSS (杜绝样式打架与黑块) ----------------
+# ---------------- 高级冰川冷灰 (Glacier Slate) 电竞主题 CSS ----------------
 st.markdown("""
 <style>
-/* 全局浅灰冰蓝背景，文字清晰锐利 */
+/* 全局背景：高级冰川冷灰渐变，既护眼柔和，又杜绝纯白刺眼与纯黑杂色 */
 .stApp {
-    background: #f8fafc !important;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 50%, #e2e8f0 100%) !important;
     color: #0f172a !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 顶部标题渐变与副标题 */
+/* 顶部标题渐变 */
 h1 {
-    background: linear-gradient(90deg, #0284c7 0%, #2563eb 100%) !important;
+    background: linear-gradient(90deg, #0284c7 0%, #1e40af 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     font-weight: 800 !important;
@@ -43,13 +43,41 @@ h2, h3 {
     font-weight: 700 !important;
 }
 
+/* 核心修复 2：彻底消灭多选框刺眼红色 Tag，替换为清爽的海克斯冰青蓝标签 */
+div[data-baseweb="tag"], 
+span[data-baseweb="tag"] {
+    background-color: #e0f2fe !important;
+    background: #e0f2fe !important;
+    border: 1px solid #7dd3fc !important;
+    border-radius: 6px !important;
+    color: #0369a1 !important;
+    font-weight: 600 !important;
+    padding: 2px 6px !important;
+}
+div[data-baseweb="tag"] span,
+span[data-baseweb="tag"] span {
+    color: #0369a1 !important;
+    font-weight: 700 !important;
+}
+div[data-baseweb="tag"] svg,
+span[data-baseweb="tag"] svg {
+    fill: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+/* 侧边栏 */
+section[data-testid="stSidebar"] {
+    background-color: #ffffff !important;
+    border-right: 1px solid #cbd5e1 !important;
+}
+
 /* 独立清爽卡片系统 */
 .stat-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     border-radius: 12px;
     padding: 14px 18px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -58,7 +86,7 @@ h2, h3 {
 }
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
     border-color: #38bdf8;
 }
 .stat-card-title {
@@ -89,13 +117,13 @@ h2, h3 {
 .delta-red { background: #ffe4e6; color: #e11d48; }
 .delta-gray { background: #f1f5f9; color: #64748b; }
 
-/* 红蓝对阵分队看板 */
+/* 红蓝对阵看板 */
 .team-arena-box {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     border-radius: 14px;
     padding: 18px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
     margin: 14px 0;
 }
 .team-col-blue {
@@ -128,18 +156,18 @@ h2, h3 {
     border-radius: 10px;
     padding: 14px 18px;
     margin-top: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }
 
-/* 原生表格美化 */
-.custom-table-box {
+/* 表格容器规范（核心修复 1：纯顶格无多余缩进） */
+.clean-table-box {
     width: 100%;
     overflow-x: auto;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
     background: #ffffff;
     margin: 14px 0 25px 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 .clean-table {
     width: 100%;
@@ -166,7 +194,7 @@ h2, h3 {
 """, unsafe_allow_html=True)
 
 
-# ---------------- 0. 基础配置与图片压缩 ----------------
+# ---------------- 0. 配置与图片压缩 ----------------
 def load_config():
     if os.path.exists(CONFIG_FILE):
         try:
@@ -651,9 +679,9 @@ else:
         full_options = known_roster + list(st.session_state["custom_guests"].keys())
         default_selection = known_roster[:10] if len(known_roster) >= 10 else known_roster
 
-        # 回归原生多选框：一次选完，不再频繁触发全局重新渲染转圈
+        # 原生多选框（搭配冰青蓝高亮 CSS，彻底告别西瓜红）
         selected_players = st.multiselect(
-            "选择出战群友名单（可在下拉框中直接搜索或多选，不转圈卡顿）：",
+            "选择出战群友名单（可在下拉框中直接搜索或多选）：",
             options=full_options,
             default=default_selection,
             format_func=lambda x: short_name(x)
@@ -800,7 +828,7 @@ else:
             """
             st.markdown(arena_html, unsafe_allow_html=True)
 
-            # 微信战报卡片（支持点击一键复制）
+            # 微信对战战报（一键复制按钮）
             blue_line = "、".join([short_name(p) for p in blue_team])
             red_line = "、".join([short_name(p) for p in red_team])
             raw_copy_text = f"【海克斯内战·双方对阵阵容】\\n🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {blue_line}\\n🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {red_line}\\n⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)"
@@ -838,39 +866,40 @@ else:
 
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
+        # 核心修复 1：使用单行无缩进字符串拼接，彻底杜绝 Markdown 识别为代码块
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
             wr_badge = f"<span style='color:#0284c7;font-weight:700;'>{wr_val}%</span>" if wr_val >= 50 else f"<span style='color:#e11d48;font-weight:700;'>{wr_val}%</span>"
-            table_rows.append(f"""
-                <tr>
-                    <td style="text-align:left;padding-left:16px;font-weight:700;">{short_name(player_id)}</td>
-                    <td>{int(row['总场次'])}</td>
-                    <td>{int(row['胜场'])}</td>
-                    <td>{int(row['负场'])}</td>
-                    <td>{wr_badge}</td>
-                    <td style="font-weight:700;color:#0284c7;">{row['MMR']:.1f}</td>
-                    <td>{row['场均击杀']:.1f}</td>
-                    <td>{row['KD']:.2f}</td>
-                    <td style="font-weight:700;">{row['KDA_num']:.2f}</td>
-                    <td>{int(row['击杀'])}</td>
-                    <td>{int(row['死亡'])}</td>
-                    <td>{int(row['助攻'])}</td>
-                </tr>
-            """)
+            row_html = (
+                f"<tr>"
+                f"<td style='text-align:left;padding-left:16px;font-weight:700;'>{short_name(player_id)}</td>"
+                f"<td>{int(row['总场次'])}</td>"
+                f"<td>{int(row['胜场'])}</td>"
+                f"<td>{int(row['负场'])}</td>"
+                f"<td>{wr_badge}</td>"
+                f"<td style='font-weight:700;color:#0284c7;'>{row['MMR']:.1f}</td>"
+                f"<td>{row['场均击杀']:.1f}</td>"
+                f"<td>{row['KD']:.2f}</td>"
+                f"<td style='font-weight:700;'>{row['KDA_num']:.2f}</td>"
+                f"<td>{int(row['击杀'])}</td>"
+                f"<td>{int(row['死亡'])}</td>"
+                f"<td>{int(row['助攻'])}</td>"
+                f"</tr>"
+            )
+            table_rows.append(row_html)
 
-        custom_table_html = f"""
-            <div class="custom-table-box">
-                <table class="clean-table">
-                    <thead><tr>
-                        <th style="text-align:left;padding-left:16px;">玩家</th>
-                        <th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>
-                        <th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>
-                    </tr></thead>
-                    <tbody>{''.join(table_rows)}</tbody>
-                </table>
-            </div>
-        """
+        custom_table_html = (
+            f'<div class="clean-table-box">'
+            f'<table class="clean-table">'
+            f'<thead><tr>'
+            f'<th style="text-align:left;padding-left:16px;">玩家</th>'
+            f'<th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>'
+            f'<th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
+            f'</tr></thead>'
+            f'<tbody>{"".join(table_rows)}</tbody>'
+            f'</table></div>'
+        )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
 # ---------------- 主界面 3：战绩录入 (置底) ----------------
