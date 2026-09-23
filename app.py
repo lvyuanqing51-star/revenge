@@ -199,7 +199,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
 .delta-blue { background: #e0f2fe; color: #0284c7; }
 .delta-gray { background: #f1f5f9; color: #64748b; }
 
-/* 勋章微光悬停样式 */
 .badge-tag {
     display: inline-block;
     background: #fff1f2;
@@ -478,7 +477,8 @@ with st.sidebar:
     key = st.text_input("DashScope API Key", value=default_key, type="password")
 
     records = load_records()
-    st.metric("总计收录对局", f"{len(records)} 局")
+    total_games_all = len(records)
+    st.metric("总计收录对局", f"{total_games_all} 局")
 
     if records:
         if st.button("🔄 一键重扫历史截图 (补充输出/承伤)", help="读取 records.json 里的截图，让 AI 提取输出与承伤"):
@@ -621,13 +621,16 @@ else:
         "damage_shares": [], "taken_shares": [], "kp_shares": []
     })
 
-    # 个人荣誉与高光（绑定 >= 6 人的正规对局，杜绝残局 65% 占比虚高污染）
+    # 深度追踪：成就、梗标签与单场极限行为
     player_history = defaultdict(lambda: {
         "outcomes": [], 
         "max_kill": 0,
+        "max_death": 0,
+        "max_assist": 0,
         "max_dmg_share": 0.0,
         "max_taken_share": 0.0,
-        "min_death_win": 999
+        "min_death_win": 999,
+        "svp_cnt": 0 # 尽力局次数
     })
 
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
@@ -679,19 +682,24 @@ else:
 
             player_history[fname]["outcomes"].append(is_win)
 
-            # 核心修正：仅将 >= 6 人的正规对局作为最高记录采样，避免 1v1 或 2v2 虚高数据
+            # 仅在 >= 6 人正规局中统计极端指标，避免残局失真
             if is_valid_6p_game:
                 if k > player_history[fname]["max_kill"]:
                     player_history[fname]["max_kill"] = k
+                if d > player_history[fname]["max_death"]:
+                    player_history[fname]["max_death"] = d
+                if a > player_history[fname]["max_assist"]:
+                    player_history[fname]["max_assist"] = a
                 if is_win and d < player_history[fname]["min_death_win"]:
                     player_history[fname]["min_death_win"] = d
-                if dmg_s is not None:
-                    try:
-                        ds_val = float(dmg_s)
-                        if ds_val > player_history[fname]["max_dmg_share"]:
-                            player_history[fname]["max_dmg_share"] = ds_val
-                    except Exception:
-                        pass
+                
+                # 败方尽力局判定（输了但输出占比高或击杀超多）
+                ds_val = float(dmg_s) if dmg_s is not None else 0.0
+                if (not is_win) and (ds_val >= 35.0 or k >= 11):
+                    player_history[fname]["svp_cnt"] += 1
+
+                if ds_val > player_history[fname]["max_dmg_share"]:
+                    player_history[fname]["max_dmg_share"] = ds_val
                 if taken_s is not None:
                     try:
                         ts_val = float(taken_s)
@@ -1113,6 +1121,7 @@ else:
             
             p_radar = radar_stats_pool[target_p]
             valid_g = p_radar["games_6p"]
+            p_g_total = int(df.loc[target_p, "总场次"])
             
             if valid_g > 0:
                 p_kills = float(p_radar["kills"] / valid_g)
@@ -1126,7 +1135,6 @@ else:
                 avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
                 sample_desc = f"{valid_g} 局 (已剔除残局)"
             else:
-                p_g_total = int(df.loc[target_p, "总场次"])
                 p_kills = float(df.loc[target_p, "击杀"] / p_g_total)
                 p_deaths = float(df.loc[target_p, "死亡"] / p_g_total)
                 p_assists = float(df.loc[target_p, "助攻"] / p_g_total)
@@ -1195,7 +1203,7 @@ else:
             tank_disp = f"{taken_share:.1f}%"
             kp_disp = f"{round(avg_kp * 100, 1)}%"
 
-            # 近期状态判定与提示文本
+            # 近期状态判定 (取最近3场有效对局)
             p_hist = player_history[target_p]
             recent_games = p_hist["outcomes"][-3:] if p_hist["outcomes"] else []
             if len(recent_games) >= 2 and all(recent_games):
@@ -1211,40 +1219,72 @@ else:
                 status_tip = "发挥稳定：胜负交替，在场上保持中流砥柱表现。"
                 status_color = "#64748b"
 
-            # 成就勋章判定与精准 Tooltip 提示词
+            # ---------------- 核心升级：严格且趣味满分的勋章体系 ----------------
             badges_data = []
-            if p_hist["max_dmg_share"] >= 33.0 or score_dmg >= 85:
+
+            # 1. 极致高光类（严格门槛）
+            if p_hist["max_dmg_share"] >= 38.0 or score_dmg >= 92:
                 badges_data.append((
                     "💥 血条消失术",
-                    "【伤害制造机】曾单场打出 33%+ 输出占比，伤害瞬间融化对手血条"
+                    "【核爆级主C】曾在正规局单场打出 38%+ 恐怖输出占比，瞬间融化对手血条"
                 ))
-            if p_hist["max_taken_share"] >= 33.0 or score_tank >= 85:
+            if p_hist["max_taken_share"] >= 38.0 or score_tank >= 92:
                 badges_data.append((
                     "🛡️ 叹息之壁",
-                    "【铁血真前排】曾单场吸收 33%+ 伤害，如高山般护卫全队"
+                    "【铁血不坏身】曾在正规局单场吸收 38%+ 承伤占比，如高山般掩护全队"
                 ))
-            if p_hist["max_kill"] >= 13 or score_kill >= 85:
+            if p_hist["max_kill"] >= 16 or score_kill >= 92:
                 badges_data.append((
                     "🩸 绝命赏金客",
-                    "【致命终结者】曾单场豪取 13+ 击杀，无情收割敌方悬赏"
+                    "【超神收割机】曾在正规局单场斩获 16+ 击杀，无情屠戮敌阵"
                 ))
-            if p_hist["min_death_win"] <= 3 or score_surv >= 80:
+
+            # 2. 趣味行为 & 梗标签
+            if p_hist["max_death"] >= 10:
                 badges_data.append((
-                    "🕊️ 保分艺术家",
-                    "【拉扯大师】获胜局阵亡不超过 3 次，把防守与活着玩成了艺术"
+                    "🎰 慈善赌圣",
+                    "【全自动取款机】曾单场阵亡 10+ 次，给对手送出巨额悬赏经济！"
                 ))
-            if int(df.loc[target_p, "总场次"]) >= 8:
+            if p_hist["min_death_win"] <= 1 and p_g_total >= 3:
                 badges_data.append((
-                    "🎰 全勤老将",
-                    "【定海神针】出战满 8 局，是内战不可或缺的基石选手"
+                    "🏕️ 泉水指挥官",
+                    "【保分艺术家】胜局中曾打出 0 阵亡或仅死 1 次，拉扯保命玩成艺术"
                 ))
+            if p_hist["max_assist"] >= 18 or score_assist >= 90:
+                badges_data.append((
+                    "🚑 全图救护车",
+                    "【团战发动机】单场豪取 18+ 助攻，全图到处都有他的控制与掩护"
+                ))
+            if p_hist["svp_cnt"] >= 2:
+                badges_data.append((
+                    "🪓 悲情孤勇者",
+                    "【尽力局局长】多次在落败局打出 35%+ 火力或 11+ 杀，奈何带不动队友"
+                ))
+            if p_kills >= 6.0 and dmg_share <= 18.0:
+                badges_data.append((
+                    "🎯 致命K头怪",
+                    "【经济吸收器】击杀数名列前茅但输出占比偏低，人头收割手艺纯熟"
+                ))
+
+            # 3. 真实全勤老将（杜绝 8 局就全勤的草率标准）
+            # 必须全群总对局 >= 12 局，且个人出勤率 >= 80%
+            if total_games_all >= 12 and (p_g_total / total_games_all) >= 0.80:
+                badges_data.append((
+                    "🏛️ 内战活化石",
+                    f"【真·全勤标兵】在总计 {total_games_all} 场内战中出战 {p_g_total} 场 (出勤率 {(p_g_total/total_games_all)*100:.0f}%)"
+                ))
+            elif p_g_total >= 10:
+                badges_data.append((
+                    "🎖️ 资深百战将",
+                    f"【久经沙场】内战累计出战已达 {p_g_total} 局，经验老道的中流砥柱"
+                ))
+
             if not badges_data:
                 badges_data.append((
                     "🌱 未来可期",
-                    "【新晋潜能股】正在积蓄战力，距离解锁首个高光勋章仅差一步"
+                    "【新晋潜能股】正在积蓄战力，距离解锁首个高光/趣味勋章仅差一步"
                 ))
 
-            # 渲染带 title 浮窗的勋章 HTML
             badges_html = "".join([
                 f'<span class="badge-tag" title="{tip}">{name}</span>' 
                 for name, tip in badges_data
@@ -1271,7 +1311,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
 
-            # 专属个人档案与荣誉勋章卡（配备鼠标悬停 Tooltip）
+            # 个人专属档案与趣味成就勋章馆
             st.markdown(f"""
                 <div class="stat-card" style="margin-top:6px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecdd3;padding-bottom:8px;margin-bottom:10px;">
@@ -1279,27 +1319,31 @@ else:
                         <span class="badge-tag" title="{status_tip}" style="font-size:0.82rem;font-weight:700;color:{status_color};background:#ffffff;margin:0;">{recent_status}</span>
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:0.88rem;color:#334155;margin-bottom:10px;">
-                        <div>⚡ <b>生涯单场最高击杀</b>: <span style="color:#e11d48;font-weight:700;">{p_hist['max_kill'] if p_hist['max_kill'] > 0 else '--'} 杀</span></div>
-                        <div>💥 <b>单场最高输出占比</b>: <span style="color:#e11d48;font-weight:700;">{f"{p_hist['max_dmg_share']:.1f}%" if p_hist['max_dmg_share'] > 0 else '--'}</span></div>
-                        <div>🛡️ <b>单场最高承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{f"{p_hist['max_taken_share']:.1f}%" if p_hist['max_taken_share'] > 0 else '--'}</span></div>
+                        <div>⚡ <b>正规局单场最高击杀</b>: <span style="color:#e11d48;font-weight:700;">{p_hist['max_kill'] if p_hist['max_kill'] > 0 else '--'} 杀</span></div>
+                        <div>💥 <b>正规局最高输出占比</b>: <span style="color:#e11d48;font-weight:700;">{f"{p_hist['max_dmg_share']:.1f}%" if p_hist['max_dmg_share'] > 0 else '--'}</span></div>
+                        <div>🛡️ <b>正规局最高承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{f"{p_hist['max_taken_share']:.1f}%" if p_hist['max_taken_share'] > 0 else '--'}</span></div>
                         <div>🕊️ <b>胜局最低阵亡纪录</b>: <span style="color:#0284c7;font-weight:700;">{p_hist['min_death_win'] if p_hist['min_death_win'] != 999 else '--'} 次</span></div>
                     </div>
                     <div style="border-top:1px dashed #fecdd3;padding-top:8px;">
-                        <span style="font-size:0.82rem;color:#881337;font-weight:700;margin-right:6px;">已解锁成就勋章 (鼠标悬停查看含义):</span>
+                        <span style="font-size:0.82rem;color:#881337;font-weight:700;margin-right:6px;">已解锁成就勋章 (鼠标悬停查看详情):</span>
                         {badges_html}
                     </div>
                 </div>
             """, unsafe_allow_html=True)
 
-            # 方案二增强：配套专属勋章图鉴折叠栏，一目了然看完全部达成规则
             with st.expander("📖 查阅全部勋章达成标准与图鉴指南"):
-                st.markdown("""
-                - 💥 **「血条消失术」**：曾单场正规对局打出 **$\ge 33\%$ 输出占比** 或局内输出评分达 85 分以上。
-                - 🛡️ **「叹息之壁」**：曾单场正规对局吸收 **$\ge 33\%$ 承伤占比** 或前排承伤评分达 85 分以上。
-                - 🩸 **「绝命赏金客」**：曾单场正规对局砍下 **$\ge 13$ 次击杀** 或人头收割评分达 85 分以上。
-                - 🕊️ **「保分艺术家」**：在胜利局中**阵亡 $\le 3$ 次**，或局内生存保命评分达 80 分以上。
-                - 🎰 **「全勤老将」**：内战累计总出战局数满 **8 局**。
-                - 🌱 **「未来可期」**：新晋出战群友，各项数据正在飞速成长中。
+                st.markdown(f"""
+                - 💥 **「血条消失术」**：曾单场正规对局打出 **$\ge 38\%$ 输出占比** 或局内输出评分达 92 分以上。
+                - 🛡️ **「叹息之壁」**：曾单场正规对局吸收 **$\ge 38\%$ 承伤占比** 或前排承伤评分达 92 分以上。
+                - 🩸 **「绝命赏金客」**：曾单场正规对局砍下 **$\ge 16$ 次击杀** 或人头收割评分达 92 分以上。
+                - 🎰 **「慈善赌圣」**：曾单场阵亡 **$\ge 10$ 次**，对面发家致富的幕后功臣。
+                - 🏕️ **「泉水指挥官」**：在胜利局中**阵亡 $\le 1$ 次**，生存保命的拉扯大师。
+                - 🚑 **「全图救护车」**：单场豪取 **$\ge 18$ 次助攻**，哪里打架哪里有他。
+                - 🪓 **「悲情孤勇者」**：累计至少 2 场在**落败局打出 $\ge 35\%$ 火力或 11+ 击杀**。
+                - 🎯 **「致命K头怪」**：场均击杀 $\ge 6$ 但场均输出占比 $\le 18\%$，收残血绝活哥。
+                - 🏛️ **「内战活化石」**：全群总场次 $\ge 12$ 局且出勤率 $\ge 80\%$ 的真·全勤元老（当前全群已录入 **{total_games_all}** 局）。
+                - 🎖️ **「资深百战将」**：内战累计总出战局数满 **10 局**。
+                - 🌱 **「未来可期」**：新晋出战群友，各项高光数据正在积蓄中。
                 """)
 
 # ---------------- 主界面 3：战绩录入 (置底) ----------------
