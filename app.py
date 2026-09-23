@@ -26,123 +26,221 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------------- 专业电竞级·现代化淡粉 UI 变量与组件样式 ----------------
+# ---------------- 专业级·黑金与醇厚酒红 (Burgundy & Obsidian Gold) 视觉系统 ----------------
 st.markdown("""
 <style>
 :root, [data-theme="light"], .stApp {
-    --primary-color: #f43f5e !important;
+    --primary-color: #881337 !important;
 }
 
 .stApp {
-    background: radial-gradient(circle at top right, #fff1f2 0%, #fff5f5 40%, #ffe4e6 100%) !important;
+    background: radial-gradient(circle at 10% 20%, #fff1f2 0%, #fff5f5 45%, #fed7aa 100%) !important;
     background-attachment: fixed !important;
     color: #334155 !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* 顶部导航控制台 */
+/* 顶部导航控制台（沉稳奢华酒红微光） */
 .app-header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    border: 1px solid #fecdd3;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(254, 242, 242, 0.92) 100%);
+    backdrop-filter: blur(14px);
+    border: 1.5px solid #fecdd3;
+    border-left: 6px solid #881337;
     border-radius: 16px;
-    padding: 14px 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(244, 63, 94, 0.08);
+    padding: 16px 26px;
+    margin-bottom: 22px;
+    box-shadow: 0 6px 24px rgba(114, 9, 44, 0.08);
 }
 .header-title {
-    font-size: 1.55rem;
+    font-size: 1.65rem;
     font-weight: 900;
-    background: linear-gradient(90deg, #e11d48 0%, #db2777 50%, #9333ea 100%);
+    background: linear-gradient(90deg, #881337 0%, #b91c1c 45%, #d97706 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    letter-spacing: 0.5px;
 }
 .header-sub {
     font-size: 0.82rem;
-    color: #9f1239;
-    font-weight: 600;
-    margin-top: 2px;
+    color: #701a75;
+    font-weight: 700;
+    margin-top: 3px;
+    letter-spacing: 1.2px;
 }
 
-/* 现代化卡片容器 */
+/* 🎙️ 三大微光语音作战室：重铸专属【黑金 / 曜石金箔边框】 */
+div[data-testid="stLinkButton"] a {
+    border-radius: 14px !important;
+    font-weight: 800 !important;
+    font-size: 0.96rem !important;
+    padding: 12px 18px !important;
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    backdrop-filter: blur(10px) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    text-align: center;
+}
+div[data-testid="stLinkButton"] a:hover {
+    transform: translateY(-3px) scale(1.015);
+}
+
+/* 1. 大厅语音：黑金流光殿堂 (Black Obsidian & Gold) */
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #1e1b18 0%, #292524 50%, #1c1917 100%) !important;
+    border: 2px solid #d97706 !important;
+    box-shadow: 0 0 0 1px #78350f, 0 6px 18px rgba(217, 119, 6, 0.45) !important;
+    color: #fef08a !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 0 2px #d97706, 0 8px 24px rgba(245, 158, 11, 0.65) !important;
+    color: #ffffff !important;
+}
+
+/* 2. 蓝方语音：星辰曜蓝 (Obsidian Azure) */
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #0c1e33 0%, #1e293b 50%, #0f172a 100%) !important;
+    border: 2px solid #38bdf8 !important;
+    box-shadow: 0 0 0 1px #0369a1, 0 6px 18px rgba(56, 189, 248, 0.45) !important;
+    color: #e0f2fe !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
+    border-color: #7dd3fc !important;
+    box-shadow: 0 0 0 2px #0284c7, 0 8px 24px rgba(56, 189, 248, 0.65) !important;
+    color: #ffffff !important;
+}
+
+/* 3. 红方语音：暗渊绯红 (Obsidian Crimson / Burgundy) */
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #380718 0%, #4c0519 50%, #1f040d 100%) !important;
+    border: 2px solid #f43f5e !important;
+    box-shadow: 0 0 0 1px #9f1239, 0 6px 18px rgba(244, 63, 94, 0.45) !important;
+    color: #ffe4e6 !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
+    border-color: #fb7185 !important;
+    box-shadow: 0 0 0 2px #e11d48, 0 8px 24px rgba(244, 63, 94, 0.65) !important;
+    color: #ffffff !important;
+}
+
+/* 标签切换栏 (st.tabs) 全面放大与酒红字体升级 */
+div[data-baseweb="tab-list"] {
+    gap: 12px !important;
+    background: transparent !important;
+    border-bottom: 2.5px solid #fecdd3 !important;
+    margin-bottom: 22px !important;
+}
+div[data-baseweb="tab"] {
+    background: #ffffff !important;
+    border: 1.5px solid #fbcfe8 !important;
+    border-bottom: none !important;
+    border-radius: 12px 12px 0 0 !important;
+    color: #881337 !important;
+    font-weight: 800 !important;
+    font-size: 1.06rem !important; /* 字体加大 */
+    padding: 11px 22px !important;
+    letter-spacing: 0.4px !important;
+    transition: all 0.22s ease !important;
+}
+div[data-baseweb="tab"]:hover {
+    background: #ffe4e6 !important;
+    color: #9f1239 !important;
+    transform: translateY(-2px);
+}
+div[data-baseweb="tab"][aria-selected="true"] {
+    background: linear-gradient(180deg, #fff1f2 0%, #ffffff 100%) !important;
+    color: #72092c !important;
+    border-top: 3.5px solid #72092c !important; /* 酒红指示线 */
+    border-left: 1.5px solid #fbcfe8 !important;
+    border-right: 1.5px solid #fbcfe8 !important;
+    box-shadow: 0 -4px 12px rgba(114, 9, 44, 0.08);
+}
+div[data-baseweb="tab"] p {
+    font-size: 1.06rem !important;
+    font-weight: 800 !important;
+}
+
+/* 卡片容器 */
 .card-panel {
     background: #ffffff;
-    border: 1px solid #fecdd3;
+    border: 1.2px solid #fecdd3;
     border-radius: 14px;
-    padding: 18px 22px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 14px rgba(244, 114, 182, 0.07);
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 16px rgba(114, 9, 44, 0.06);
     transition: all 0.25s ease;
 }
 .card-panel:hover {
-    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.12);
+    box-shadow: 0 8px 24px rgba(136, 19, 55, 0.12);
     border-color: #fb7185;
 }
 
 .panel-header-title {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 800;
-    color: #881337;
-    margin-bottom: 12px;
+    color: #72092c; /* 酒红 */
+    margin-bottom: 14px;
     display: flex;
     align-items: center;
     gap: 8px;
+    border-left: 4px solid #72092c;
+    padding-left: 10px;
 }
 
-/* 指标卡系统 */
+/* 统计卡指标 */
 .metric-stat-box {
     background: #ffffff;
-    border: 1px solid #fecdd3;
-    border-radius: 12px;
-    padding: 14px 16px;
-    box-shadow: 0 2px 8px rgba(244, 114, 182, 0.06);
-    transition: transform 0.2s ease;
+    border: 1.2px solid #fecdd3;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 3px 10px rgba(114, 9, 44, 0.05);
+    transition: all 0.22s ease;
 }
 .metric-stat-box:hover {
     transform: translateY(-2px);
-    border-color: #f43f5e;
+    border-color: #72092c;
+    box-shadow: 0 6px 18px rgba(114, 9, 44, 0.12);
 }
-.metric-title { font-size: 0.82rem; font-weight: 700; color: #9f1239; margin-bottom: 4px; }
-.metric-val-main { font-size: 1.35rem; font-weight: 900; color: #1e293b; }
+.metric-title { font-size: 0.85rem; font-weight: 700; color: #881337; margin-bottom: 4px; }
+.metric-val-main { font-size: 1.45rem; font-weight: 900; color: #1e293b; }
 .metric-badge {
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 2px 8px;
+    font-size: 0.80rem;
+    font-weight: 800;
+    padding: 3px 9px;
     border-radius: 6px;
     display: inline-block;
-    margin-top: 4px;
+    margin-top: 5px;
 }
-.badge-pink { background: #ffe4e6; color: #e11d48; }
-.badge-gold { background: #fef9c3; color: #ca8a04; }
-.badge-blue { background: #e0f2fe; color: #0284c7; }
+.badge-pink { background: #ffe4e6; color: #9f1239; }
+.badge-gold { background: #fef9c3; color: #b45309; }
+.badge-blue { background: #e0f2fe; color: #0369a1; }
 .badge-gray { background: #f1f5f9; color: #64748b; }
+.badge-burgundy { background: #fce7f3; color: #72092c; border: 1px solid #f472b6; }
 
-/* 标签与勋章 */
+/* 勋章微光悬停样式 */
 .badge-tag {
     display: inline-block;
     background: #fff1f2;
     border: 1px solid #fecdd3;
-    color: #9f1239;
-    font-size: 0.82rem;
+    color: #72092c;
+    font-size: 0.84rem;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 4px 11px;
     border-radius: 8px;
     margin: 3px 6px 3px 0;
-    box-shadow: 0 1px 3px rgba(244, 114, 182, 0.1);
+    box-shadow: 0 1px 3px rgba(114, 9, 44, 0.08);
     cursor: help;
     transition: all 0.2s ease;
 }
 .badge-tag:hover {
     background: #ffe4e6;
-    border-color: #fb7185;
+    border-color: #72092c;
     transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(244, 63, 94, 0.2);
+    box-shadow: 0 4px 10px rgba(114, 9, 44, 0.2);
 }
 
 .rule-chip-card {
@@ -152,119 +250,68 @@ st.markdown("""
     background: #fff1f2;
     border: 1px solid #fecdd3;
     border-radius: 8px;
-    padding: 6px 12px;
+    padding: 7px 14px;
     margin-bottom: 6px;
-    font-size: 0.86rem;
+    font-size: 0.88rem;
 }
 
-/* 标签栏美化 (st.tabs) */
-div[data-baseweb="tab-list"] {
-    gap: 8px !important;
-    background: transparent !important;
-    border-bottom: 2px solid #fecdd3 !important;
-    margin-bottom: 20px !important;
-}
-div[data-baseweb="tab"] {
-    background: #ffffff !important;
-    border: 1px solid #fbcfe8 !important;
-    border-bottom: none !important;
-    border-radius: 10px 10px 0 0 !important;
-    color: #881337 !important;
-    font-weight: 700 !important;
-    padding: 8px 18px !important;
-    font-size: 0.95rem !important;
-    transition: all 0.2s ease !important;
-}
-div[data-baseweb="tab"]:hover {
-    background: #fff1f2 !important;
-    color: #e11d48 !important;
-}
-div[data-baseweb="tab"][aria-selected="true"] {
-    background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%) !important;
-    color: #e11d48 !important;
-    border-top: 3px solid #e11d48 !important;
-    border-left: 1px solid #fecdd3 !important;
-    border-right: 1px solid #fecdd3 !important;
-}
-
-/* 表格全局定制 */
-.clean-table-box {
+/* 现代化电竞胜率天梯榜定制 (突出重点数据) */
+.ladder-table-box {
     width: 100%;
     overflow-x: auto;
-    border: 1px solid #fecdd3;
-    border-radius: 12px;
+    border: 1.5px solid #fecdd3;
+    border-radius: 14px;
     background: #ffffff;
-    margin: 12px 0 20px 0;
-    box-shadow: 0 4px 14px rgba(244, 114, 182, 0.06);
+    margin: 14px 0 25px 0;
+    box-shadow: 0 6px 20px rgba(114, 9, 44, 0.07);
 }
-.clean-table {
+.ladder-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.92rem;
+    font-size: 0.94rem;
     text-align: center;
     color: #334155;
 }
-.clean-table th {
-    background: #fff1f2;
-    color: #9f1239;
-    font-weight: 700;
-    padding: 12px 10px;
-    border-bottom: 2px solid #fecdd3;
+.ladder-table th {
+    background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+    color: #72092c; /* 酒红表头 */
+    font-weight: 800;
+    padding: 14px 10px;
+    border-bottom: 2px solid #fbcfe8;
+    letter-spacing: 0.3px;
 }
-.clean-table td {
-    padding: 10px 8px;
+.ladder-table td {
+    padding: 12px 8px;
     border-bottom: 1px solid #fff1f2;
 }
-.clean-table tr:hover td {
+.ladder-table tr:hover td {
     background: #fff8f8;
 }
 
-/* 多选框粉晶化 */
-div[data-baseweb="tag"],
-span[data-baseweb="tag"],
-div[data-testid="stMultiSelect"] [data-baseweb="tag"] {
-    background: #fce7f3 !important;
-    background-color: #fce7f3 !important;
-    border: 1px solid #f472b6 !important;
-    border-radius: 6px !important;
-    margin: 2px 4px !important;
-}
-div[data-baseweb="tag"] *,
-div[data-testid="stMultiSelect"] [data-baseweb="tag"] * {
-    color: #9d174d !important;
-    font-weight: 700 !important;
-    fill: #db2777 !important;
-}
+/* 胜率天梯排名前三行底纹 */
+.rank-1 { background: rgba(254, 240, 138, 0.25) !important; }
+.rank-2 { background: rgba(241, 245, 249, 0.4) !important; }
+.rank-3 { background: rgba(254, 215, 170, 0.22) !important; }
 
 /* 按钮通用 */
 button[data-testid="stBaseButton-primary"], button[kind="primary"] {
-    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
-    border: 1px solid #fb7185 !important;
+    background: linear-gradient(135deg, #72092c 0%, #9f1239 100%) !important;
+    border: 1px solid #be123c !important;
     color: #ffffff !important;
     border-radius: 10px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.28) !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 14px rgba(114, 9, 44, 0.35) !important;
 }
 button[data-testid="stBaseButton-secondary"] {
     background: #ffffff !important;
-    border: 1px solid #fbcfe8 !important;
-    color: #be185d !important;
+    border: 1.5px solid #fbcfe8 !important;
+    color: #72092c !important;
     border-radius: 10px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
 }
 button[data-testid="stBaseButton-secondary"]:hover {
-    border-color: #f43f5e !important;
+    border-color: #72092c !important;
     background: #fff1f2 !important;
-}
-
-/* 侧边栏微调 */
-section[data-testid="stSidebar"] {
-    background: #fff8f8 !important;
-    border-right: 1px solid #fecdd3 !important;
-}
-section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 {
-    color: #881337 !important;
-    font-size: 1.05rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -406,17 +453,17 @@ def generate_radar_svg(values, categories):
             x = cx + r * level * math.cos(angle)
             y = cy - r * level * math.sin(angle)
             pts.append(f"{x:.1f},{y:.1f}")
-        grid_polys.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#fecdd3" stroke-width="1.2" stroke-dasharray="3,3"/>')
+        grid_polys.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#fbcfe8" stroke-width="1.2" stroke-dasharray="3,3"/>')
     axis_lines = []
     labels = []
     for i in range(total):
         angle = math.pi / 2 - (2 * math.pi * i / total)
         x = cx + r * math.cos(angle)
         y = cy - r * math.sin(angle)
-        axis_lines.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#fecdd3" stroke-width="1.2"/>')
+        axis_lines.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#fbcfe8" stroke-width="1.2"/>')
         tx = cx + (r + 26) * math.cos(angle)
         ty = cy - (r + 14) * math.sin(angle)
-        labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
+        labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="800" fill="#72092c" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
     data_pts = []
     data_dots = []
     for i in range(total):
@@ -425,8 +472,8 @@ def generate_radar_svg(values, categories):
         dx = cx + r * val_ratio * math.cos(angle)
         dy = cy - r * val_ratio * math.sin(angle)
         data_pts.append(f"{dx:.1f},{dy:.1f}")
-        data_dots.append(f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="4" fill="#be185d"/>')
-    polygon_svg = f'<polygon points="{" ".join(data_pts)}" fill="rgba(244, 63, 94, 0.28)" stroke="#e11d48" stroke-width="2.5"/>'
+        data_dots.append(f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="4" fill="#881337"/>')
+    polygon_svg = f'<polygon points="{" ".join(data_pts)}" fill="rgba(114, 9, 44, 0.25)" stroke="#72092c" stroke-width="2.6"/>'
     return f"""
     <div style="display:flex;justify-content:center;align-items:center;padding:6px 0;">
         <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" style="max-width:100%;height:auto;display:block;">
@@ -451,9 +498,9 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("#### ⚡ 智能数据工具")
     if records:
-        if st.button("🔄 一键重新扫描历史截图", help="使用新 Prompt 提取输出与承伤占比并补齐到数据库", use_container_width=True):
+        if st.button("🔄 重新扫描历史截图", help="使用新 Prompt 提取输出与承伤占比并补齐到数据库", use_container_width=True):
             if not key:
-                st.warning("请先在上方填入 DashScope API Key！")
+                st.warning("请先填入 DashScope API Key！")
             else:
                 p_bar = st.progress(0)
                 st_msg = st.empty()
@@ -549,12 +596,12 @@ st.markdown(f"""
         <div class="header-sub">HEX LEAGUE ANALYTICS CONSOLE</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
-        <span class="badge-tag" style="background:#ffffff;margin:0;">📦 已收录 <b>{total_games_all}</b> 场对局</span>
+        <span class="badge-tag" style="background:#ffffff;border-color:#72092c;color:#72092c;margin:0;">📦 已收录 <b>{total_games_all}</b> 场对局</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# 顶部三大语音室微光直达通道
+# 顶部三大微光语音室
 vc1, vc2, vc3 = st.columns(3)
 with vc1:
     st.link_button("🎙️ 大厅语音作战室", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
@@ -726,16 +773,177 @@ if not df.empty:
 
     df["MMR"] = df.apply(calculate_mmr, axis=1)
 
-# ---------------- 主界面 2：多 Tab 视图架构 ----------------
-tab_match, tab_ladder, tab_radar, tab_upload = st.tabs([
-    "⚔️ 赛前阵营分队系统",
+# ---------------- 主界面 2：多 Tab 视图架构 (胜率天梯首位展示) ----------------
+tab_ladder, tab_match, tab_radar, tab_upload = st.tabs([
     "📊 胜率天梯与荣誉榜",
+    "⚔️ 赛前阵营分队系统",
     "🎯 局内战术图谱与成就馆",
     "📥 战绩智能录入"
 ])
 
 # ==========================================
-# Tab 1: 赛前阵营分队系统
+# Tab 1: 胜率天梯与荣誉榜 (重磅置顶并深度美化)
+# ==========================================
+with tab_ladder:
+    if df.empty:
+        st.info("💡 暂无选手数据。请在战绩智能录入页面上传掌盟战绩截图！")
+    else:
+        # 单场高光纪录
+        st.markdown('<div class="panel-header-title">🔥 单场巅峰纪录</div>', unsafe_allow_html=True)
+        col_p1, col_p2, col_p3 = st.columns(3)
+        with col_p1:
+            st.markdown(f"""
+                <div class="metric-stat-box">
+                    <div class="metric-title">单场最高击杀</div>
+                    <div class="metric-val-main">{short_name(max_single_kill['player'])}</div>
+                    <div class="metric-badge badge-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_p2:
+            st.markdown(f"""
+                <div class="metric-stat-box">
+                    <div class="metric-title">单场最高阵亡</div>
+                    <div class="metric-val-main">{short_name(max_single_death['player'])}</div>
+                    <div class="metric-badge badge-pink">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_p3:
+            st.markdown(f"""
+                <div class="metric-stat-box">
+                    <div class="metric-title">单场最高助攻</div>
+                    <div class="metric-val-main">{short_name(max_single_assist['player'])}</div>
+                    <div class="metric-badge badge-blue">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+        # 胜率天梯总榜（突出重点数据：排名前三高亮、胜率/MMR/KDA醒目标注）
+        st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
+        df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
+        
+        table_rows = []
+        for rank_idx, (player_id, row) in enumerate(df_sorted.iterrows()):
+            wr_val = row["胜率_num"]
+            kda_val = row["KDA_num"]
+            mmr_val = row["MMR"]
+            
+            # 胜率标签染色
+            if wr_val >= 60.0:
+                wr_badge = f"<span style='background:#72092c;color:#ffffff;font-weight:900;padding:2px 8px;border-radius:6px;'>{wr_val}% 👑</span>"
+            elif wr_val >= 50.0:
+                wr_badge = f"<span style='color:#0284c7;font-weight:800;'>{wr_val}%</span>"
+            else:
+                wr_badge = f"<span style='color:#be123c;font-weight:700;'>{wr_val}%</span>"
+
+            # KDA 突出
+            kda_badge = f"<span style='color:#b45309;font-weight:900;background:#fef9c3;padding:1px 6px;border-radius:4px;'>{kda_val:.2f}</span>" if kda_val >= 3.5 else f"<b>{kda_val:.2f}</b>"
+            
+            # MMR 突出
+            mmr_badge = f"<span style='color:#72092c;font-weight:900;'>{mmr_val:.1f}</span>"
+
+            # 奖牌
+            medal = "🥇 " if rank_idx == 0 else ("🥈 " if rank_idx == 1 else ("🥉 " if rank_idx == 2 else f"{rank_idx+1} "))
+            row_class = "rank-1" if rank_idx == 0 else ("rank-2" if rank_idx == 1 else ("rank-3" if rank_idx == 2 else ""))
+
+            row_html = (
+                f"<tr class='{row_class}'>"
+                f"<td style='text-align:left;padding-left:16px;font-weight:800;color:#1e293b;'>{medal}{short_name(player_id)}</td>"
+                f"<td>{int(row['总场次'])}</td>"
+                f"<td style='color:#0284c7;font-weight:700;'>{int(row['胜场'])}</td>"
+                f"<td style='color:#e11d48;font-weight:700;'>{int(row['负场'])}</td>"
+                f"<td>{wr_badge}</td>"
+                f"<td>{mmr_badge}</td>"
+                f"<td style='font-weight:700;'>{row['场均击杀']:.1f}</td>"
+                f"<td>{row['KD']:.2f}</td>"
+                f"<td>{kda_badge}</td>"
+                f"<td>{int(row['击杀'])}</td>"
+                f"<td>{int(row['死亡'])}</td>"
+                f"<td>{int(row['助攻'])}</td>"
+                f"</tr>"
+            )
+            table_rows.append(row_html)
+
+        ladder_table_html = (
+            f'<div class="ladder-table-box">'
+            f'<table class="ladder-table">'
+            f'<thead><tr>'
+            f'<th style="text-align:left;padding-left:16px;">选手排位</th>'
+            f'<th>总场次</th><th>胜局</th><th>负局</th><th>胜率</th>'
+            f'<th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th>'
+            f'</tr></thead>'
+            f'<tbody>{"".join(table_rows)}</tbody>'
+            f'</table></div>'
+        )
+        st.markdown(ladder_table_html, unsafe_allow_html=True)
+
+        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+        # 综合荣誉头衔
+        st.markdown('<div class="panel-header-title">🎖️ 综合荣誉名人堂 (≥10局)</div>', unsafe_allow_html=True)
+        candidates_10 = df[df["总场次"] >= 10]
+        has_vet = not candidates_10.empty
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            t_name = candidates_10.sort_values(by="KDA_num", ascending=False).index[0] if has_vet else "虚位以待"
+            val_str = f"KDA {df.loc[t_name, 'KDA_num']}" if has_vet else "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">KDA之王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-blue">{val_str}</div></div>', unsafe_allow_html=True)
+        with col2:
+            t_name = candidates_10.sort_values(by="击杀", ascending=False).index[0] if has_vet else "虚位以待"
+            val_str = f"{int(df.loc[t_name, '击杀'])} 杀" if has_vet else "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计击杀王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-gold">{val_str}</div></div>', unsafe_allow_html=True)
+        with col3:
+            t_name = candidates_10.sort_values(by="死亡", ascending=False).index[0] if has_vet else "虚位以待"
+            val_str = f"{int(df.loc[t_name, '死亡'])} 阵亡" if has_vet else "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计白给王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-pink">{val_str}</div></div>', unsafe_allow_html=True)
+        with col4:
+            t_name = candidates_10.sort_values(by="助攻", ascending=False).index[0] if has_vet else "虚位以待"
+            val_str = f"{int(df.loc[t_name, '助攻'])} 助攻" if has_vet else "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计助攻王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-blue">{val_str}</div></div>', unsafe_allow_html=True)
+
+        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+        # 羁绊看板
+        st.markdown('<div class="panel-header-title">🔗 阵营羁绊与宿敌</div>', unsafe_allow_html=True)
+        syn_list = []
+        for (p1, p2), v in synergy_stats.items():
+            tg, wg, lg = int(v["同队场次"]), int(v["胜场"]), int(v["负场"])
+            syn_list.append({"pair": f"{short_name(p1)} & {short_name(p2)}", "games": tg, "wins": wg, "losses": lg, "wr": wg/tg if tg>0 else 0})
+        syn_df = pd.DataFrame(syn_list)
+        best_pair, worst_pair = None, None
+        if not syn_df.empty:
+            cand = syn_df[syn_df["games"] >= 5]
+            if not cand.empty:
+                best_pair = cand.sort_values(by=["wr", "games"], ascending=[False, False]).iloc[0]
+                worst_pair = cand.sort_values(by=["wr", "games"], ascending=[True, False]).iloc[0]
+
+        nem_list = []
+        for (p1, p2), v in nemesis_stats.items():
+            tg, p1_w, p2_w = int(v["交手场次"]), int(v["p1_wins"]), int(v["p2_wins"])
+            if tg > 0:
+                winner, loser = (p1, p2) if p1_w >= p2_w else (p2, p1)
+                w_cnt, l_cnt = max(p1_w, p2_w), min(p1_w, p2_w)
+                nem_list.append({"display": f"{short_name(winner)} ➔ {short_name(loser)}", "wins": w_cnt, "losses": l_cnt, "dom": w_cnt/tg, "diff": abs(p1_w-p2_w), "games": tg})
+        nem_df = pd.DataFrame(nem_list)
+        rival_pair = None
+        if not nem_df.empty:
+            n_cand = nem_df[nem_df["games"] >= 5]
+            if not n_cand.empty:
+                rival_pair = n_cand.sort_values(by=["dom", "diff", "games"], ascending=[False, False, False]).iloc[0]
+
+        cs1, cs2, cs3 = st.columns(3)
+        with cs1:
+            p_text, d_text = (best_pair['pair'], f"{int(best_pair['wins'])}胜{int(best_pair['losses'])}负") if best_pair is not None else ("虚位以待", "同队需满 5 局")
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">黄金搭档 (≥5局)</div><div class="metric-val-main">{p_text}</div><div class="metric-badge badge-blue">{d_text}</div></div>', unsafe_allow_html=True)
+        with cs2:
+            p_text, d_text = (worst_pair['pair'], f"{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负") if worst_pair is not None else ("虚位以待", "同队需满 5 局")
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">难兄难弟 (≥5局)</div><div class="metric-val-main">{p_text}</div><div class="metric-badge badge-pink">{d_text}</div></div>', unsafe_allow_html=True)
+        with cs3:
+            p_text, d_text = (rival_pair['display'], f"{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负") if rival_pair is not None else ("虚位以待", "交手需满 5 局")
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">一生之敌 (≥5局)</div><div class="metric-val-main">{p_text}</div><div class="metric-badge badge-gold">{d_text}</div></div>', unsafe_allow_html=True)
+
+# ==========================================
+# Tab 2: 赛前阵营分队系统
 # ==========================================
 with tab_match:
     if df.empty:
@@ -822,11 +1030,11 @@ with tab_match:
                         st.rerun()
 
             if st.session_state["lock_rules"]:
-                st.markdown("<div style='margin-top:10px;font-size:0.86rem;font-weight:700;color:#9f1239;'>已生效的规则列表：</div>", unsafe_allow_html=True)
+                st.markdown("<div style='margin-top:10px;font-size:0.86rem;font-weight:700;color:#72092c;'>已生效的羁绊规则：</div>", unsafe_allow_html=True)
                 del_idx_target = None
                 for idx, r in enumerate(st.session_state["lock_rules"]):
                     lbl_text = "🔗 必须同队 (连体)" if r["type"] == "same" else "⚔️ 必须对立 (宿敌)"
-                    lbl_color = "#e11d48" if r["type"] == "same" else "#0284c7"
+                    lbl_color = "#72092c" if r["type"] == "same" else "#0284c7"
                     col_txt, col_del = st.columns([5, 1])
                     with col_txt:
                         st.markdown(f"<div class='rule-chip-card'><span>👤 <b>{short_name(r['p1'])}</b> <span style='color:{lbl_color};font-weight:800;margin:0 4px;'>{lbl_text}</span> 👤 <b>{short_name(r['p2'])}</b></span></div>", unsafe_allow_html=True)
@@ -990,19 +1198,19 @@ with tab_match:
             for p in red_team:
                 p_mmr = get_player_mmr(p)
                 desc = f"胜率 {df.loc[p, '胜率_num']}% · 场均 {df.loc[p, '场均击杀']} 杀" if p in df.index else f"外援 · {st.session_state['custom_guests'].get(p,{}).get('tier','外援')}"
-                r_htmls.append(f"<div class='team-roster-row'><b>🔴 {short_name(p)}</b><span style='color:#e11d48;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
+                r_htmls.append(f"<div class='team-roster-row'><b>🔴 {short_name(p)}</b><span style='color:#72092c;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
 
             arena_html = f"""
-                <div class="team-arena-box">
+                <div class="team-arena-box" style="background:#ffffff;border:1.5px solid #fecdd3;border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(114, 9, 44, 0.08);margin:14px 0;">
                     <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:280px;" class="team-col-blue">
+                        <div style="flex:1;min-width:280px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;">
                             <div style="font-size:1.1rem;font-weight:800;color:#0284c7;margin-bottom:10px;display:flex;justify-content:space-between;">
                                 <span>🔵 蓝色方 ({len(blue_team)}人)</span><span>均分: {blue_avg}</span>
                             </div>
                             {''.join(b_htmls)}
                         </div>
-                        <div style="flex:1;min-width:280px;" class="team-col-red">
-                            <div style="font-size:1.1rem;font-weight:800;color:#e11d48;margin-bottom:10px;display:flex;justify-content:space-between;">
+                        <div style="flex:1;min-width:280px;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:14px;">
+                            <div style="font-size:1.1rem;font-weight:800;color:#72092c;margin-bottom:10px;display:flex;justify-content:space-between;">
                                 <span>🔴 红色方 ({len(red_team)}人)</span><span>均分: {red_avg}</span>
                             </div>
                             {''.join(r_htmls)}
@@ -1017,174 +1225,34 @@ with tab_match:
             raw_copy_text = f"【海克斯内战·双方对阵阵容】\\n🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {blue_line}\\n🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {red_line}\\n⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)"
 
             wechat_html = f"""
-                <div class="wechat-card">
+                <div class="wechat-card" style="background:#ffffff;border:1px solid #fbcfe8;border-radius:12px;padding:14px 18px;margin-top:14px;box-shadow:0 4px 12px rgba(114, 9, 44, 0.08);">
                     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecdd3;padding-bottom:6px;margin-bottom:8px;">
-                        <span style="font-size:0.9rem;font-weight:700;color:#9f1239;">📋 微信名单快捷复制</span>
+                        <span style="font-size:0.92rem;font-weight:800;color:#72092c;">📋 微信名单快捷复制</span>
                         <button id="btn_copy_wechat" onclick="
                             navigator.clipboard.writeText('{raw_copy_text}').then(() => {{
                                 const btn = document.getElementById('btn_copy_wechat');
                                 btn.innerText = '✅ 已成功复制！';
                                 btn.style.background = '#fce7f3';
-                                btn.style.borderColor = '#f43f5e';
-                                btn.style.color = '#be185d';
+                                btn.style.borderColor = '#72092c';
+                                btn.style.color = '#72092c';
                                 setTimeout(() => {{
                                     btn.innerText = '📋 点击一键复制';
                                     btn.style.background = '#ffffff';
                                     btn.style.borderColor = '#fbcfe8';
-                                    btn.style.color = '#be185d';
+                                    btn.style.color = '#72092c';
                                 }}, 2000);
                             }}).catch(() => {{ alert('请手动长按复制'); }});
-                        " style="background:#ffffff;border:1px solid #fbcfe8;color:#be185d;padding:4px 10px;border-radius:6px;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 点击一键复制</button>
+                        " style="background:#ffffff;border:1.5px solid #fbcfe8;color:#72092c;padding:5px 12px;border-radius:8px;font-size:0.84rem;font-weight:800;cursor:pointer;">📋 点击一键复制</button>
                     </div>
-                    <div style="font-size:0.92rem;line-height:1.6;color:#334155;">
+                    <div style="font-size:0.94rem;line-height:1.6;color:#334155;">
                         <div><b>【海克斯内战·双方对阵阵容】</b></div>
-                        <div><span style="color:#0284c7;font-weight:700;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
-                        <div><span style="color:#e11d48;font-weight:700;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
-                        <div style="font-size:0.83rem;color:#64748b;margin-top:2px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
+                        <div><span style="color:#0284c7;font-weight:800;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
+                        <div><span style="color:#72092c;font-weight:800;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
+                        <div style="font-size:0.84rem;color:#64748b;margin-top:2px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
                     </div>
                 </div>
             """
             st.markdown(wechat_html, unsafe_allow_html=True)
-
-# ==========================================
-# Tab 2: 胜率天梯与荣誉榜
-# ==========================================
-with tab_ladder:
-    if df.empty:
-        st.info("💡 暂无选手数据。")
-    else:
-        # 单场高光纪录
-        st.markdown('<div class="panel-header-title">🔥 单场巅峰纪录</div>', unsafe_allow_html=True)
-        col_p1, col_p2, col_p3 = st.columns(3)
-        with col_p1:
-            st.markdown(f"""
-                <div class="metric-stat-box">
-                    <div class="metric-title">单场最高击杀</div>
-                    <div class="metric-val-main">{short_name(max_single_kill['player'])}</div>
-                    <div class="metric-badge badge-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with col_p2:
-            st.markdown(f"""
-                <div class="metric-stat-box">
-                    <div class="metric-title">单场最高阵亡</div>
-                    <div class="metric-val-main">{short_name(max_single_death['player'])}</div>
-                    <div class="metric-badge badge-pink">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
-                </div>
-            """, unsafe_allow_html=True)
-        with col_p3:
-            st.markdown(f"""
-                <div class="metric-stat-box">
-                    <div class="metric-title">单场最高助攻</div>
-                    <div class="metric-val-main">{short_name(max_single_assist['player'])}</div>
-                    <div class="metric-badge badge-blue">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
-                </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
-
-        # 综合荣誉头衔
-        st.markdown('<div class="panel-header-title">🎖️ 综合荣誉名人堂 (≥10局)</div>', unsafe_allow_html=True)
-        candidates_10 = df[df["总场次"] >= 10]
-        has_vet = not candidates_10.empty
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            t_name = candidates_10.sort_values(by="KDA_num", ascending=False).index[0] if has_vet else "虚位以待"
-            val_str = f"KDA {df.loc[t_name, 'KDA_num']}" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">KDA之王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-blue">{val_str}</div></div>', unsafe_allow_html=True)
-        with col2:
-            t_name = candidates_10.sort_values(by="击杀", ascending=False).index[0] if has_vet else "虚位以待"
-            val_str = f"{int(df.loc[t_name, '击杀'])} 杀" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计击杀王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-gold">{val_str}</div></div>', unsafe_allow_html=True)
-        with col3:
-            t_name = candidates_10.sort_values(by="死亡", ascending=False).index[0] if has_vet else "虚位以待"
-            val_str = f"{int(df.loc[t_name, '死亡'])} 阵亡" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计白给王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-pink">{val_str}</div></div>', unsafe_allow_html=True)
-        with col4:
-            t_name = candidates_10.sort_values(by="助攻", ascending=False).index[0] if has_vet else "虚位以待"
-            val_str = f"{int(df.loc[t_name, '助攻'])} 助攻" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计助攻王</div><div class="metric-val-main">{short_name(t_name)}</div><div class="metric-badge badge-blue">{val_str}</div></div>', unsafe_allow_html=True)
-
-        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
-
-        # 羁绊看板
-        st.markdown('<div class="panel-header-title">🔗 阵营羁绊与宿敌</div>', unsafe_allow_html=True)
-        syn_list = []
-        for (p1, p2), v in synergy_stats.items():
-            tg, wg, lg = int(v["同队场次"]), int(v["胜场"]), int(v["负场"])
-            syn_list.append({"pair": f"{short_name(p1)} & {short_name(p2)}", "games": tg, "wins": wg, "losses": lg, "wr": wg/tg if tg>0 else 0})
-        syn_df = pd.DataFrame(syn_list)
-        best_pair, worst_pair = None, None
-        if not syn_df.empty:
-            cand = syn_df[syn_df["games"] >= 5]
-            if not cand.empty:
-                best_pair = cand.sort_values(by=["wr", "games"], ascending=[False, False]).iloc[0]
-                worst_pair = cand.sort_values(by=["wr", "games"], ascending=[True, False]).iloc[0]
-
-        nem_list = []
-        for (p1, p2), v in nemesis_stats.items():
-            tg, p1_w, p2_w = int(v["交手场次"]), int(v["p1_wins"]), int(v["p2_wins"])
-            if tg > 0:
-                winner, loser = (p1, p2) if p1_w >= p2_w else (p2, p1)
-                w_cnt, l_cnt = max(p1_w, p2_w), min(p1_w, p2_w)
-                nem_list.append({"display": f"{short_name(winner)} ➔ {short_name(loser)}", "wins": w_cnt, "losses": l_cnt, "dom": w_cnt/tg, "diff": abs(p1_w-p2_w), "games": tg})
-        nem_df = pd.DataFrame(nem_list)
-        rival_pair = None
-        if not nem_df.empty:
-            n_cand = nem_df[nem_df["games"] >= 5]
-            if not n_cand.empty:
-                rival_pair = n_cand.sort_values(by=["dom", "diff", "games"], ascending=[False, False, False]).iloc[0]
-
-        cs1, cs2, cs3 = st.columns(3)
-        with cs1:
-            p_text, d_text = (best_pair['pair'], f"{int(best_pair['wins'])}胜{int(best_pair['losses'])}负") if best_pair is not None else ("虚位以待", "同队需满 5 局")
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">黄金搭档 (≥5局)</div><div class="metric-val-main">{p_text}</div><div class="metric-badge badge-blue">{d_text}</div></div>', unsafe_allow_html=True)
-        with cs2:
-            p_text, d_text = (worst_pair['pair'], f"{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负") if worst_pair is not None else ("虚位以待", "同队需满 5 局")
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">难兄难弟 (≥5局)</div><div class="metric-val-main">{p_text}</div><div class="metric-badge badge-pink">{d_text}</div></div>', unsafe_allow_html=True)
-        with cs3:
-            p_text, d_text = (rival_pair['display'], f"{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负") if rival_pair is not None else ("虚位以待", "交手需满 5 局")
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">一生之敌 (≥5局)</div><div class="metric-val-main">{p_text}</div><div class="metric-badge badge-gold">{d_text}</div></div>', unsafe_allow_html=True)
-
-        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
-
-        # 胜率天梯总榜
-        st.markdown('<div class="panel-header-title">📊 选手胜率总排行榜</div>', unsafe_allow_html=True)
-        df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
-        table_rows = []
-        for player_id, row in df_sorted.iterrows():
-            wr_val = row["胜率_num"]
-            wr_badge = f"<span style='color:#0284c7;font-weight:700;'>{wr_val}%</span>" if wr_val >= 50 else f"<span style='color:#e11d48;font-weight:700;'>{wr_val}%</span>"
-            row_html = (
-                f"<tr>"
-                f"<td style='text-align:left;padding-left:16px;font-weight:800;color:#1e293b;'>{short_name(player_id)}</td>"
-                f"<td>{int(row['总场次'])}</td>"
-                f"<td>{int(row['胜场'])}</td>"
-                f"<td>{int(row['负场'])}</td>"
-                f"<td>{wr_badge}</td>"
-                f"<td style='font-weight:800;color:#e11d48;'>{row['MMR']:.1f}</td>"
-                f"<td>{row['场均击杀']:.1f}</td>"
-                f"<td>{row['KD']:.2f}</td>"
-                f"<td style='font-weight:800;'>{row['KDA_num']:.2f}</td>"
-                f"<td>{int(row['击杀'])}</td>"
-                f"<td>{int(row['死亡'])}</td>"
-                f"<td>{int(row['助攻'])}</td>"
-                f"</tr>"
-            )
-            table_rows.append(row_html)
-
-        custom_table_html = (
-            f'<div class="clean-table-box">'
-            f'<table class="clean-table">'
-            f'<thead><tr>'
-            f'<th style="text-align:left;padding-left:16px;">选手</th>'
-            f'<th>总场次</th><th>胜</th><th>负</th><th>胜率</th>'
-            f'<th>MMR战力</th><th>场均杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th>'
-            f'</tr></thead>'
-            f'<tbody>{"".join(table_rows)}</tbody>'
-            f'</table></div>'
-        )
-        st.markdown(custom_table_html, unsafe_allow_html=True)
 
 # ==========================================
 # Tab 3: 局内战术图谱与成就馆
@@ -1196,7 +1264,7 @@ with tab_radar:
     else:
         c_sel, _ = st.columns([2.5, 3.5])
         with c_sel:
-            target_p = st.selectbox("选择要分析的选手：", active_player_options, format_func=lambda x: short_name(x))
+            target_p = st.selectbox("选择要分析的选手档案：", active_player_options, format_func=lambda x: short_name(x))
         
         p_radar = radar_stats_pool[target_p]
         valid_g = p_radar["games_6p"]
@@ -1237,7 +1305,7 @@ with tab_radar:
         values = [round(score_dmg, 1), round(score_tank, 1), round(score_kp, 1), round(score_kill, 1), round(score_assist, 1), round(score_surv, 1)]
 
         if score_dmg >= 78 and score_kill >= 75:
-            style_title, style_badge = "🗡️ 绝对主C / 团队核心火力", "badge-pink"
+            style_title, style_badge = "🗡️ 绝对主C / 团队核心火力", "badge-burgundy"
         elif score_tank >= 78 and score_assist >= 70:
             style_title, style_badge = "🛡️ 铁血开团 / 护航巨盾", "badge-blue"
         elif score_kp >= 78:
@@ -1245,14 +1313,14 @@ with tab_radar:
         elif score_surv >= 75 and score_dmg <= 50:
             style_title, style_badge = "🕊️ 稳健拉扯 / 保命大师", "badge-gray"
         elif score_kill >= 75 and score_surv <= 45:
-            style_title, style_badge = "🩸 突进刺客 / 绝命换头", "badge-pink"
+            style_title, style_badge = "🩸 突进刺客 / 绝命换头", "badge-burgundy"
         else:
             style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "badge-pink"
 
         p_hist = player_history[target_p]
         recent_games = p_hist["outcomes"][-3:] if p_hist["outcomes"] else []
         if len(recent_games) >= 2 and all(recent_games):
-            recent_status, status_tip, status_color = "🔥 连胜狂飙中", "手感发烫：最近对局连续取胜，状态极佳！", "#e11d48"
+            recent_status, status_tip, status_color = "🔥 连胜狂飙中", "手感发烫：最近对局连续取胜，状态极佳！", "#72092c"
         elif len(recent_games) >= 2 and not any(recent_games):
             recent_status, status_tip, status_color = "🧊 连败急需吸氧", "水逆预警：最近遭遇连败，急需给力队友带躺！", "#0284c7"
         else:
@@ -1292,11 +1360,11 @@ with tab_radar:
             st.markdown(f"""
                 <div class="card-panel" style="margin-top:10px;">
                     <div class="panel-header-title">局内战术定位</div>
-                    <div style="font-size:1.4rem;font-weight:900;color:#1e293b;margin-bottom:6px;">{short_name(target_p)}</div>
+                    <div style="font-size:1.45rem;font-weight:900;color:#1e293b;margin-bottom:6px;">{short_name(target_p)}</div>
                     <div class="metric-badge {style_badge}">{style_title}</div>
-                    <div style="font-size:0.88rem;color:#475569;line-height:2.0;margin-top:12px;">
+                    <div style="font-size:0.90rem;color:#475569;line-height:2.0;margin-top:12px;">
                         <div>• <b>统计基准</b>: {sample_desc}</div>
-                        <div>• <b>场均伤害占比</b>: <span style="color:#e11d48;font-weight:800;">{dmg_share:.1f}%</span></div>
+                        <div>• <b>场均伤害占比</b>: <span style="color:#72092c;font-weight:800;">{dmg_share:.1f}%</span></div>
                         <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:800;">{taken_share:.1f}%</span></div>
                         <div>• <b>团战参团率</b>: <span style="color:#ca8a04;font-weight:800;">{round(avg_kp * 100, 1)}%</span></div>
                         <div>• <b>场均KDA</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
@@ -1307,18 +1375,18 @@ with tab_radar:
         # 荣誉勋章馆展示卡
         st.markdown(f"""
             <div class="card-panel" style="margin-top:4px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecdd3;padding-bottom:8px;margin-bottom:10px;">
-                    <span style="font-size:1.02rem;font-weight:800;color:#9f1239;">🏅 【{short_name(target_p)}】个人荣誉与成就档案馆</span>
-                    <span class="badge-tag" title="{status_tip}" style="font-size:0.82rem;font-weight:700;color:{status_color};background:#ffffff;margin:0;">{recent_status}</span>
+                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #fecdd3;padding-bottom:8px;margin-bottom:10px;">
+                    <span style="font-size:1.05rem;font-weight:900;color:#72092c;">🏅 【{short_name(target_p)}】个人荣誉与成就档案馆</span>
+                    <span class="badge-tag" title="{status_tip}" style="font-size:0.84rem;font-weight:800;color:{status_color};background:#ffffff;margin:0;border-color:#72092c;">{recent_status}</span>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:0.88rem;color:#334155;margin-bottom:12px;">
-                    <div>⚡ <b>单场最高击杀</b>: <span style="color:#e11d48;font-weight:800;">{p_hist['max_kill'] if p_hist['max_kill'] > 0 else '--'} 杀</span></div>
-                    <div>💥 <b>最高输出占比</b>: <span style="color:#e11d48;font-weight:800;">{f"{p_hist['max_dmg_share']:.1f}%" if p_hist['max_dmg_share'] > 0 else '--'}</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:0.90rem;color:#334155;margin-bottom:12px;">
+                    <div>⚡ <b>单场最高击杀</b>: <span style="color:#72092c;font-weight:800;">{p_hist['max_kill'] if p_hist['max_kill'] > 0 else '--'} 杀</span></div>
+                    <div>💥 <b>最高输出占比</b>: <span style="color:#72092c;font-weight:800;">{f"{p_hist['max_dmg_share']:.1f}%" if p_hist['max_dmg_share'] > 0 else '--'}</span></div>
                     <div>🛡️ <b>最高承伤占比</b>: <span style="color:#0284c7;font-weight:800;">{f"{p_hist['max_taken_share']:.1f}%" if p_hist['max_taken_share'] > 0 else '--'}</span></div>
                     <div>🕊️ <b>胜局最低阵亡</b>: <span style="color:#0284c7;font-weight:800;">{p_hist['min_death_win'] if p_hist['min_death_win'] != 999 else '--'} 次</span></div>
                 </div>
                 <div style="border-top:1px dashed #fecdd3;padding-top:10px;">
-                    <span style="font-size:0.84rem;color:#881337;font-weight:700;margin-right:8px;">已解锁成就勋章 (悬停查看详情):</span>
+                    <span style="font-size:0.86rem;color:#72092c;font-weight:800;margin-right:8px;">已解锁成就勋章 (悬停查看详情):</span>
                     {badges_html}
                 </div>
             </div>
