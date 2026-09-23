@@ -20,10 +20,10 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 全局组件与标签美化 CSS ----------------
+# ---------------- 高级深海蓝微光 + 彻底消灭红底标签 CSS ----------------
 st.markdown("""
 <style>
-/* 全局背景：明朗高级的深海宝石蓝流光渐变 */
+/* 全局背景：深海蓝渐变 */
 .stApp {
     background: radial-gradient(circle at 50% 5%, #1d3e63 0%, #122841 50%, #0a192b 100%) !important;
     color: #e2e8f0 !important;
@@ -61,7 +61,7 @@ section[data-testid="stSidebar"] span {
     color: #f1f5f9 !important;
 }
 
-/* 侧边栏交互输入框与下拉框 */
+/* 侧边栏输入控件 */
 section[data-testid="stSidebar"] input {
     background-color: #132438 !important;
     color: #ffffff !important;
@@ -89,53 +89,53 @@ section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
     color: #38bdf8 !important;
 }
 
-/* ================= 核心修复：彻底消灭多选框红底，换为电竞微光蓝 ================= */
-div[data-baseweb="select"] {
+/* ================= 彻底消灭多选框一切红色标签 (全层级强行穿透) ================= */
+div[data-baseweb="select"],
+div[data-baseweb="select"] > div {
     background-color: #132438 !important;
     border: 1px solid rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
 }
-div[data-baseweb="select"] > div {
-    background-color: #132438 !important;
-    border: none !important;
+div[data-baseweb="select"] span {
+    color: #ffffff !important;
 }
-/* 多选标签 (Tag) 彻底消灭红色 */
+/* 强力覆盖 Tag 的所有红底伪类与子元素 */
 div[data-baseweb="tag"],
-span[data-baseweb="tag"] {
-    background: rgba(14, 165, 233, 0.25) !important;
-    background-color: rgba(14, 165, 233, 0.25) !important;
-    border: 1px solid rgba(56, 189, 248, 0.6) !important;
+span[data-baseweb="tag"],
+[data-baseweb="tag"] {
+    background: #193655 !important;
+    background-color: #193655 !important;
+    border: 1px solid rgba(56, 189, 248, 0.7) !important;
     border-radius: 6px !important;
-    color: #ffffff !important;
-    padding: 3px 8px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
-div[data-baseweb="tag"] span,
-span[data-baseweb="tag"] span {
+div[data-baseweb="tag"] *,
+span[data-baseweb="tag"] *,
+[data-baseweb="tag"] * {
+    background-color: transparent !important;
     color: #ffffff !important;
+    fill: #ffffff !important;
     font-weight: 600 !important;
-    font-size: 0.92rem !important;
+}
+div[data-baseweb="tag"]:hover,
+span[data-baseweb="tag"]:hover {
+    background-color: #234c75 !important;
+    border-color: #38bdf8 !important;
 }
 div[data-baseweb="tag"] svg,
 span[data-baseweb="tag"] svg {
     fill: #38bdf8 !important;
     color: #38bdf8 !important;
 }
-div[data-baseweb="tag"]:hover {
-    background: rgba(14, 165, 233, 0.4) !important;
-    border-color: #38bdf8 !important;
-}
 
-/* ================= 全局按钮组件修复 ================= */
-/* 次级普通按钮（如随机盲盒按钮） */
+/* 全局按钮彻底修复（告别白底看不清） */
 button[data-testid="stBaseButton-secondary"] {
-    background: rgba(19, 36, 56, 0.85) !important;
-    background-color: rgba(19, 36, 56, 0.85) !important;
+    background: rgba(19, 36, 56, 0.9) !important;
+    background-color: rgba(19, 36, 56, 0.9) !important;
     color: #ffffff !important;
     border: 1px solid rgba(56, 189, 248, 0.6) !important;
     border-radius: 8px !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(10px) !important;
 }
 button[data-testid="stBaseButton-secondary"]:hover {
     background: #1e3d63 !important;
@@ -147,11 +147,8 @@ button[data-testid="stBaseButton-secondary"] * {
     color: #ffffff !important;
     fill: #ffffff !important;
     font-weight: 700 !important;
-    opacity: 1 !important;
-    visibility: visible !important;
 }
 
-/* 主操作按钮（Primary Button） */
 button[data-testid="stBaseButton-primary"] {
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
     color: #ffffff !important;
@@ -554,7 +551,7 @@ def analyze_image(img_bytes, api_key):
 def short_name(full_name):
     if not full_name:
         return "未知"
-    return full_name.split("#")[0]
+    return str(full_name).split("#")[0]
 
 # ---------------- 侧边栏（管理 + 对局图文核对） ----------------
 with st.sidebar:
@@ -673,7 +670,7 @@ st.caption("💡 微信内无法直接拉起语音？请点击右上角「···
 
 st.write("")
 
-# ---------------- 主界面 2：趣味头衔、单人巅峰、双人羁绊、智能分队与胜率总榜 ----------------
+# ---------------- 主界面 2：数据统计与作战室 ----------------
 records = load_records()
 
 if not records:
@@ -702,10 +699,10 @@ else:
 
     # 同队搭档统计
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
-    # 宿敌对战统计（分属蓝红两队正面交手）
+    # 宿敌对战统计
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
-    # 单场巅峰记录追踪
+    # 单场巅峰追踪
     max_single_kill = {"player": "", "val": -1, "game_idx": 0}
     max_single_death = {"player": "", "val": -1, "game_idx": 0}
     max_single_assist = {"player": "", "val": -1, "game_idx": 0}
@@ -734,7 +731,6 @@ else:
             stats[fname]["死亡"] += deaths
             stats[fname]["助攻"] += assists
 
-            # 单场巅峰数值更新
             if kills > max_single_kill["val"]:
                 max_single_kill = {"player": fname, "val": kills, "game_idx": game_idx + 1}
             if deaths > max_single_death["val"]:
@@ -748,7 +744,6 @@ else:
             elif team_side == "RED":
                 red_team.append((fname, is_win))
 
-        # 1. 统计同队搭档
         for t in [blue_team, red_team]:
             team_members = list({item[0]: item[1] for item in t}.items())
             if len(team_members) >= 2:
@@ -760,7 +755,6 @@ else:
                     else:
                         synergy_stats[pair_key]["负场"] += 1
 
-        # 2. 统计对手宿敌（蓝方成员 vs 红方成员）
         blue_unique = list({item[0]: item[1] for item in blue_team}.items())
         red_unique = list({item[0]: item[1] for item in red_team}.items())
         for (pb, b_win) in blue_unique:
@@ -782,7 +776,7 @@ else:
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
         df["场均击杀"] = (df["击杀"] / df["总场次"]).round(1)
 
-        # 战力分 (MMR) 科学重构模型（保护尽力局大腿）
+        # 战力分 (MMR) 科学重构（大幅削弱胜率依赖，保护尽力局大腿）
         def calculate_mmr_v2(row):
             if row["总场次"] < 2:
                 return 50.0
@@ -799,7 +793,7 @@ else:
 
         df["MMR"] = df.apply(calculate_mmr_v2, axis=1)
 
-        # ---------------- 板块 A：单场巅峰纪录 (3 列) ----------------
+        # ---------------- 板块 A：单场巅峰纪录 ----------------
         st.subheader("🔥 单场最高纪录")
         col_peak1, col_peak2, col_peak3 = st.columns(3)
         with col_peak1:
@@ -829,7 +823,7 @@ else:
 
         st.write("")
 
-        # ---------------- 板块 B：综合荣誉头衔 (4 列，严格 >= 10 局门槛) ----------------
+        # ---------------- 板块 B：综合荣誉头衔 (>=10局) ----------------
         st.subheader("🎖️ 综合荣誉头衔 (≥10局)")
         candidates_10 = df[df["总场次"] >= 10]
         has_veteran = not candidates_10.empty
@@ -851,7 +845,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">KDA王</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -868,7 +862,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">累计击杀王</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -885,7 +879,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">累计白给王</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -902,7 +896,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">累计助攻王</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -912,7 +906,7 @@ else:
 
         st.write("")
 
-        # ---------------- 板块 C：羁绊看板 (3 列，严格 >= 5 局门槛) ----------------
+        # ---------------- 板块 C：羁绊看板 (>=5局) ----------------
         st.subheader("🔗 阵营羁绊与宿敌")
         syn_list = []
         for (p1, p2), v in synergy_stats.items():
@@ -978,7 +972,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">黄金搭档 (≥5局)</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -995,7 +989,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">难兄难弟 (≥5局)</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -1012,7 +1006,7 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.markdown(f"""
+                st.markdown("""
                     <div class="esport-card">
                         <div class="esport-card-title">一生之敌 (≥5局)</div>
                         <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
@@ -1022,41 +1016,57 @@ else:
 
         st.markdown("---")
 
-        # ---------------- 板块 D：赛前红蓝对阵作战室（极简微光多选 + 临时战力微调） ----------------
+        # ---------------- 板块 D：赛前红蓝对阵作战室 ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
-        all_known_players = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
-        default_selection = all_known_players[:10] if len(all_known_players) >= 10 else all_known_players
+        # 1. 维护可用玩家列表（历史老群友 + 临时外援）
+        if "custom_guests" not in st.session_state:
+            st.session_state["custom_guests"] = {}  # {name: mmr}
 
-        # 纯净简短的玩家ID展示（彻底告别一长串胜率战力）
+        # 历史已知玩家
+        known_roster = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
+        # 合并外援进入全量可选池
+        full_available_options = known_roster + list(st.session_state["custom_guests"].keys())
+
+        # 默认选 10 人（若不足则选全部）
+        default_selection = known_roster[:10] if len(known_roster) >= 10 else known_roster
+
+        # 选人多选框（纯净 ID 展示）
         selected_players = st.multiselect(
-            "选择出战群友名单（支持任意人数，如 6人、8人、10人等）：",
-            options=all_known_players,
+            "选择出战群友名单（支持任意人数，偶数均分，奇数自适应）：",
+            options=full_available_options,
             default=default_selection,
             format_func=lambda x: short_name(x)
         )
 
-        # 临时战力微调器（针对新人、替补或大腿外援）
-        if "mmr_override" not in st.session_state:
-            st.session_state["mmr_override"] = {}
+        # 2. 实用：快捷添加临时外援/新人
+        with st.expander("➕ 添加临时外援 / 缺人替补（可直接选入上表）", expanded=False):
+            st.caption("没有历史战绩的新人？在这里快速录入，选择实力档位，即可直接加入上方选人池参与智能分队：")
+            c_g1, c_g2, c_g3 = st.columns([2, 2, 1])
+            with c_g1:
+                guest_name = st.text_input("外援昵称/游戏ID", placeholder="例如: 隔壁老王", key="input_guest_name")
+            with c_g2:
+                guest_tier = st.selectbox(
+                    "预估实力档位",
+                    options=[80.0, 60.0, 45.0],
+                    format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水准 (60分)", 45.0: "🌱 萌新/挂件 (45分)"}[v],
+                    index=1,
+                    key="select_guest_tier"
+                )
+            with c_g3:
+                st.write("")
+                st.write("")
+                if st.button("➕ 确认加入"):
+                    if guest_name.strip():
+                        c_name = guest_name.strip()
+                        st.session_state["custom_guests"][c_name] = guest_tier
+                        st.success(f"已加入外援: {c_name}")
+                        time.sleep(0.4)
+                        st.rerun()
+                    else:
+                        st.warning("请输入昵称！")
 
-        if selected_players:
-            with st.expander("⚙️ 临时战力设定（针对新人群友/外援大腿）", expanded=False):
-                st.caption("💡 默认采用系统根据历史战绩评定的 MMR。如果来了新人或状态特殊，可在这里临时设定分值参与平衡计算：")
-                cols = st.columns(min(len(selected_players), 4))
-                for i, p in enumerate(selected_players):
-                    col_target = cols[i % min(len(selected_players), 4)]
-                    curr_val = st.session_state["mmr_override"].get(p, float(df.loc[p, "MMR"]))
-                    new_val = col_target.number_input(
-                        f"{short_name(p)} 战力",
-                        min_value=10.0,
-                        max_value=120.0,
-                        value=float(curr_val),
-                        step=5.0,
-                        key=f"mmr_in_{p}"
-                    )
-                    st.session_state["mmr_override"][p] = new_val
-
+        # 3. 分队操作按钮
         col_b1, col_b2, _ = st.columns([1.5, 1.5, 3])
         with col_b1:
             balance_btn = st.button("⚖️ 战力天平平衡分配", type="primary", use_container_width=True)
@@ -1068,11 +1078,15 @@ else:
             st.session_state["assigned_red"] = []
             st.session_state["split_mode"] = ""
 
-        total_chosen = len(selected_players)
+        # 获取玩家实时战力分
+        def get_player_mmr(p_id):
+            if p_id in st.session_state["custom_guests"]:
+                return float(st.session_state["custom_guests"][p_id])
+            if p_id in df.index:
+                return float(df.loc[p_id, "MMR"])
+            return 50.0
 
-        # 获取最终生效战力（优先考虑手动微调设定）
-        def get_effective_mmr(player_id):
-            return st.session_state.get("mmr_override", {}).get(player_id, float(df.loc[player_id, "MMR"]))
+        total_chosen = len(selected_players)
 
         if balance_btn:
             if total_chosen < 2:
@@ -1086,8 +1100,8 @@ else:
 
                 for candidate_blue in combinations(player_list, blue_size):
                     candidate_red = [p for p in player_list if p not in candidate_blue]
-                    m_blue = sum(get_effective_mmr(p) for p in candidate_blue)
-                    m_red = sum(get_effective_mmr(p) for p in candidate_red)
+                    m_blue = sum(get_player_mmr(p) for p in candidate_blue)
+                    m_red = sum(get_player_mmr(p) for p in candidate_red)
                     avg_blue = m_blue / len(candidate_blue)
                     avg_red = m_red / len(candidate_red)
                     
@@ -1112,13 +1126,13 @@ else:
                 st.session_state["assigned_red"] = shuffled[blue_size:]
                 st.session_state["split_mode"] = f"🎲 听天由命盲盒随机 ({len(st.session_state['assigned_blue'])}v{len(st.session_state['assigned_red'])})"
 
-        # 渲染对阵舞台卡片
+        # 4. 渲染对阵看板
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
             blue_team = st.session_state["assigned_blue"]
             red_team = st.session_state["assigned_red"]
 
-            blue_total = round(sum(get_effective_mmr(p) for p in blue_team), 1)
-            red_total = round(sum(get_effective_mmr(p) for p in red_team), 1)
+            blue_total = round(sum(get_player_mmr(p) for p in blue_team), 1)
+            red_total = round(sum(get_player_mmr(p) for p in red_team), 1)
             blue_avg = round(blue_total / len(blue_team), 1) if blue_team else 0
             red_avg = round(red_total / len(red_team), 1) if red_team else 0
             diff_score = round(abs(blue_total - red_total), 1)
@@ -1130,26 +1144,36 @@ else:
             blue_items = []
             for p in blue_team:
                 p_name = short_name(p)
-                p_wr = df.loc[p, "胜率_num"]
-                p_mmr = get_effective_mmr(p)
-                p_ak = df.loc[p, "场均击杀"]
+                p_mmr = get_player_mmr(p)
+                if p in df.index:
+                    p_wr = df.loc[p, "胜率_num"]
+                    p_ak = df.loc[p, "场均击杀"]
+                    extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
+                else:
+                    extra_desc = "临时外援 / 缺人替补"
+                
                 blue_items.append(
                     f"<div class='team-roster-item'>"
                     f"<span class='player-tag'>🛡️ {p_name}</span>"
-                    f"<span class='player-score-badge' style='background:rgba(56,189,248,0.2);color:#38bdf8;'>战力 {p_mmr} · 场均 {p_ak} 杀 (胜率 {p_wr}%)</span>"
+                    f"<span class='player-score-badge' style='background:rgba(56,189,248,0.2);color:#38bdf8;'>战力 {p_mmr} ({extra_desc})</span>"
                     f"</div>"
                 )
 
             red_items = []
             for p in red_team:
                 p_name = short_name(p)
-                p_wr = df.loc[p, "胜率_num"]
-                p_mmr = get_effective_mmr(p)
-                p_ak = df.loc[p, "场均击杀"]
+                p_mmr = get_player_mmr(p)
+                if p in df.index:
+                    p_wr = df.loc[p, "胜率_num"]
+                    p_ak = df.loc[p, "场均击杀"]
+                    extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
+                else:
+                    extra_desc = "临时外援 / 缺人替补"
+
                 red_items.append(
                     f"<div class='team-roster-item'>"
                     f"<span class='player-tag'>⚔️ {p_name}</span>"
-                    f"<span class='player-score-badge' style='background:rgba(251,113,133,0.2);color:#fb7185;'>战力 {p_mmr} · 场均 {p_ak} 杀 (胜率 {p_wr}%)</span>"
+                    f"<span class='player-score-badge' style='background:rgba(251,113,133,0.2);color:#fb7185;'>战力 {p_mmr} ({extra_desc})</span>"
                     f"</div>"
                 )
 
@@ -1189,10 +1213,8 @@ else:
         st.markdown("---")
         st.subheader("📊 胜率总榜")
 
-        # 排序
         df = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
 
-        # 亮感磨砂电竞表格拼接（严格保持行首无多余空格缩进，避免 Markdown 代码块白底陷阱）
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
