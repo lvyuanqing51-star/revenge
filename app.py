@@ -20,155 +20,218 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 核弹级深海蓝电竞 CSS (彻底碾压默认红底与白底) ----------------
+# ---------------- 温润淡粉 (Sakura Pastel) 主题 CSS ----------------
 st.markdown("""
 <style>
-/* 1. 强制全局深海蓝渐变背景，穿透所有层级 */
+/* 1. 全局背景：柔和樱花淡粉渐变 */
 html, body, [class*="st-"], .stApp, .stApp > header {
     background-color: transparent !important;
 }
 .stApp {
-    background: radial-gradient(circle at 50% 0%, #172a46 0%, #0d1a2d 50%, #050b14 100%) !important;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe4e6 50%, #fed7aa 100%) !important;
     background-attachment: fixed !important;
-    color: #e2e8f0 !important;
+    color: #334155 !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 2. 彻底消灭红标签！强制重写 BaseWeb Tag 样式 */
-div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
-span[data-baseweb="tag"] {
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(2, 132, 199, 0.15)) !important;
-    background-color: rgba(14, 165, 233, 0.2) !important;
-    border: 1px solid rgba(56, 189, 248, 0.5) !important;
-    border-radius: 6px !important;
-    padding: 2px 6px !important;
-}
-span[data-baseweb="tag"] span {
-    color: #f0f9ff !important;
-    font-weight: 600 !important;
-    font-size: 0.9rem !important;
-}
-span[data-baseweb="tag"] svg {
-    fill: #38bdf8 !important;
-    color: #38bdf8 !important;
-}
-
-/* 3. 彻底消灭下拉框的白色外壳与黑色输入槽 */
-div[data-testid="stMultiSelect"] > div > div,
-div[data-baseweb="select"] {
-    background-color: rgba(15, 23, 42, 0.6) !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 8px !important;
-    backdrop-filter: blur(10px) !important;
-}
-div[data-baseweb="select"] input {
-    background-color: transparent !important;
-    color: #ffffff !important;
-}
-div[data-baseweb="select"] ul {
-    background-color: #0b1726 !important;
-    border: 1px solid #38bdf8 !important;
-}
-li[data-baseweb="menu-item"] {
-    color: #e2e8f0 !important;
-    background-color: transparent !important;
-}
-li[data-baseweb="menu-item"]:hover {
-    background-color: rgba(56, 189, 248, 0.2) !important;
-    color: #38bdf8 !important;
-}
-
-/* 4. 彻底剥离主按钮的默认红色，强制改为蓝/青渐变 */
-button[data-testid="stBaseButton-primary"],
-button[kind="primary"] {
-    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
-    background-color: #0284c7 !important;
-    border: 1px solid #38bdf8 !important;
-    color: #ffffff !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4) !important;
-}
-button[data-testid="stBaseButton-primary"]:hover {
-    box-shadow: 0 0 20px rgba(56, 189, 248, 0.6) !important;
-    border-color: #a5f3fc !important;
-}
-
-/* 普通按钮深色化 */
-button[data-testid="stBaseButton-secondary"] {
-    background: rgba(30, 41, 59, 0.7) !important;
-    border: 1px solid rgba(148, 163, 184, 0.3) !important;
-    color: #cbd5e1 !important;
-    border-radius: 8px !important;
-}
-button[data-testid="stBaseButton-secondary"]:hover {
-    border-color: #38bdf8 !important;
-    color: #ffffff !important;
-}
-
-/* 全局输入框深色化 */
-input, div[data-baseweb="input"] {
-    background-color: rgba(15, 23, 42, 0.6) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(148, 163, 184, 0.3) !important;
-    border-radius: 6px !important;
-}
-
-/* 标题样式 */
+/* 2. 标题文字：草莓玫红与紫粉渐变 */
 h1 {
-    background: linear-gradient(90deg, #ffffff 0%, #a5f3fc 50%, #fef08a 100%) !important;
+    background: linear-gradient(90deg, #e11d48 0%, #db2777 50%, #9333ea 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     font-weight: 800 !important;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    letter-spacing: 1px !important;
 }
-h2, h3 { color: #f8fafc !important; }
+h2, h3 { 
+    color: #881337 !important; 
+    font-weight: 700 !important;
+}
 
-/* 卡片系统 (磨砂毛玻璃) */
-.esport-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+/* 3. 多选框 Tag：定制为草莓晶粉柔和徽章，彻底消灭刺眼大红 */
+div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
+span[data-baseweb="tag"] {
+    background: #fce7f3 !important;
+    background-color: #fce7f3 !important;
+    border: 1px solid #f472b6 !important;
+    border-radius: 6px !important;
+    padding: 2px 8px !important;
+}
+span[data-baseweb="tag"] span {
+    color: #9d174d !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+}
+span[data-baseweb="tag"] svg {
+    fill: #db2777 !important;
+    color: #db2777 !important;
+}
+
+/* 4. 多选框与输入框外壳：珍珠白底色，杜绝黑凹槽 */
+div[data-testid="stMultiSelect"] > div > div,
+div[data-baseweb="select"],
+input, div[data-baseweb="input"] {
+    background-color: #ffffff !important;
+    border: 1px solid #fbcfe8 !important;
+    border-radius: 8px !important;
+    color: #334155 !important;
+    box-shadow: 0 2px 6px rgba(244, 114, 182, 0.1) !important;
+}
+div[data-baseweb="select"] input {
+    background-color: transparent !important;
+    color: #334155 !important;
+}
+div[data-baseweb="select"] ul {
+    background-color: #ffffff !important;
+    border: 1px solid #f472b6 !important;
+}
+li[data-baseweb="menu-item"] {
+    color: #475569 !important;
+    background-color: transparent !important;
+}
+li[data-baseweb="menu-item"]:hover {
+    background-color: #fce7f3 !important;
+    color: #be185d !important;
+}
+
+/* 5. 主操作按钮：玫粉暖意渐变 */
+button[data-testid="stBaseButton-primary"],
+button[kind="primary"] {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+    background-color: #f43f5e !important;
+    border: 1px solid #fb7185 !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(244, 63, 94, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+button[data-testid="stBaseButton-primary"]:hover {
+    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.45) !important;
+    transform: translateY(-1px);
+}
+
+/* 次级按钮：白底粉边 */
+button[data-testid="stBaseButton-secondary"] {
+    background: #ffffff !important;
+    border: 1px solid #fbcfe8 !important;
+    color: #be185d !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+button[data-testid="stBaseButton-secondary"]:hover {
+    border-color: #f43f5e !important;
+    background: #fff1f2 !important;
+}
+
+/* 6. 荣誉卡片：纯白透亮 + 粉色微影 */
+.stat-card {
+    background: #ffffff;
+    border: 1px solid #fecdd3;
     border-radius: 12px;
     padding: 14px 18px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 14px rgba(244, 114, 182, 0.12);
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     margin-bottom: 12px;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.esport-card:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(56, 189, 248, 0.5);
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(244, 63, 94, 0.2);
+    border-color: #fb7185;
 }
-.esport-card-title { font-size: 0.9rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
-.esport-card-player { font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-bottom: 6px; }
-.esport-card-delta { font-size: 0.82rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; display: inline-block; width: fit-content; }
-.delta-cyan { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-.delta-gold { background: rgba(254, 240, 138, 0.15); color: #fef08a; border: 1px solid rgba(254, 240, 138, 0.3); }
-.delta-red { background: rgba(251, 113, 133, 0.15); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.3); }
-.delta-gray { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+.stat-card-title { font-size: 0.88rem; font-weight: 700; color: #9f1239; margin-bottom: 4px; }
+.stat-card-player { font-size: 1.25rem; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
+.stat-card-delta { font-size: 0.82rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; display: inline-block; width: fit-content; }
+.delta-pink { background: #ffe4e6; color: #e11d48; }
+.delta-gold { background: #fef9c3; color: #ca8a04; }
+.delta-blue { background: #e0f2fe; color: #0284c7; }
+.delta-gray { background: #f1f5f9; color: #64748b; }
 
-/* 分队看板 */
-.team-arena-box { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 18px; margin: 14px 0; backdrop-filter: blur(10px); }
-.team-col-blue { background: linear-gradient(180deg, rgba(14, 165, 233, 0.15), transparent); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 14px; }
-.team-col-red { background: linear-gradient(180deg, rgba(244, 63, 94, 0.15), transparent); border: 1px solid rgba(251, 113, 133, 0.3); border-radius: 10px; padding: 14px; }
-.team-roster-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; }
+/* 7. 对阵红蓝看板 */
+.team-arena-box {
+    background: #ffffff;
+    border: 1px solid #fecdd3;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.1);
+    margin: 14px 0;
+}
+.team-col-blue {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 14px;
+}
+.team-col-red {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 10px;
+    padding: 14px;
+}
+.team-roster-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+}
 
-/* 微信对战复制卡片 */
-.wechat-card { background: rgba(11, 23, 38, 0.8); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 10px; padding: 14px 18px; margin-top: 14px; }
+/* 8. 微信复制卡片 */
+.wechat-card {
+    background: #ffffff;
+    border: 1px solid #fbcfe8;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 14px;
+    box-shadow: 0 4px 12px rgba(244, 114, 182, 0.1);
+}
 
-/* 表格容器（解决 Markdown 代码块问题，紧凑排版） */
-.clean-table-box { width: 100%; overflow-x: auto; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; background: rgba(255, 255, 255, 0.03); margin: 14px 0 25px 0; }
-.clean-table { width: 100%; border-collapse: collapse; font-size: 0.93rem; text-align: center; color: #e2e8f0; }
-.clean-table th { background: rgba(15, 23, 42, 0.6); color: #94a3b8; font-weight: 700; padding: 12px 8px; border-bottom: 2px solid rgba(255, 255, 255, 0.1); }
-.clean-table td { padding: 10px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.clean-table tr:hover td { background: rgba(56, 189, 248, 0.08); }
+/* 9. 表格：珍珠白底 + 紧凑单行无缩进 */
+.clean-table-box {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #fecdd3;
+    border-radius: 10px;
+    background: #ffffff;
+    margin: 14px 0 25px 0;
+    box-shadow: 0 4px 14px rgba(244, 114, 182, 0.08);
+}
+.clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+    text-align: center;
+    color: #334155;
+}
+.clean-table th {
+    background: #fff1f2;
+    color: #9f1239;
+    font-weight: 700;
+    padding: 12px 8px;
+    border-bottom: 2px solid #fecdd3;
+}
+.clean-table td {
+    padding: 10px 6px;
+    border-bottom: 1px solid #fff1f2;
+}
+.clean-table tr:hover td {
+    background: #fff5f5;
+}
 
-/* 侧边栏 */
-section[data-testid="stSidebar"] { background-color: #0b1726 !important; border-right: 1px solid rgba(255,255,255,0.05) !important; }
-section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+/* 侧边栏：柔和浅灰粉 */
+section[data-testid="stSidebar"] {
+    background-color: #fff5f5 !important;
+    border-right: 1px solid #fecdd3 !important;
+}
+section[data-testid="stSidebar"] * {
+    color: #475569 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -492,26 +555,26 @@ else:
         col_p1, col_p2, col_p3 = st.columns(3)
         with col_p1:
             st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">单场最高击杀</div>
-                    <div class="esport-card-player">{short_name(max_single_kill['player'])}</div>
-                    <div class="esport-card-delta delta-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
+                <div class="stat-card">
+                    <div class="stat-card-title">单场最高击杀</div>
+                    <div class="stat-card-player">{short_name(max_single_kill['player'])}</div>
+                    <div class="stat-card-delta delta-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_p2:
             st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">单场最高阵亡</div>
-                    <div class="esport-card-player">{short_name(max_single_death['player'])}</div>
-                    <div class="esport-card-delta delta-red">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
+                <div class="stat-card">
+                    <div class="stat-card-title">单场最高阵亡</div>
+                    <div class="stat-card-player">{short_name(max_single_death['player'])}</div>
+                    <div class="stat-card-delta delta-pink">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
                 </div>
             """, unsafe_allow_html=True)
         with col_p3:
             st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">单场最高助攻</div>
-                    <div class="esport-card-player">{short_name(max_single_assist['player'])}</div>
-                    <div class="esport-card-delta delta-cyan">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
+                <div class="stat-card">
+                    <div class="stat-card-title">单场最高助攻</div>
+                    <div class="stat-card-player">{short_name(max_single_assist['player'])}</div>
+                    <div class="stat-card-delta delta-blue">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -524,19 +587,19 @@ else:
         with col1:
             t_name = candidates_10.sort_values(by="KDA_num", ascending=False).index[0] if has_vet else "虚位以待"
             val_str = f"KDA {df.loc[t_name, 'KDA_num']}" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">KDA之王</div><div class="esport-card-player">{short_name(t_name)}</div><div class="esport-card-delta delta-cyan">{val_str}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">KDA之王</div><div class="stat-card-player">{short_name(t_name)}</div><div class="stat-card-delta delta-blue">{val_str}</div></div>', unsafe_allow_html=True)
         with col2:
             t_name = candidates_10.sort_values(by="击杀", ascending=False).index[0] if has_vet else "虚位以待"
             val_str = f"{int(df.loc[t_name, '击杀'])} 杀" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">累计击杀王</div><div class="esport-card-player">{short_name(t_name)}</div><div class="esport-card-delta delta-gold">{val_str}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">累计击杀王</div><div class="stat-card-player">{short_name(t_name)}</div><div class="stat-card-delta delta-gold">{val_str}</div></div>', unsafe_allow_html=True)
         with col3:
             t_name = candidates_10.sort_values(by="死亡", ascending=False).index[0] if has_vet else "虚位以待"
             val_str = f"{int(df.loc[t_name, '死亡'])} 阵亡" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">累计白给王</div><div class="esport-card-player">{short_name(t_name)}</div><div class="esport-card-delta delta-red">{val_str}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">累计白给王</div><div class="stat-card-player">{short_name(t_name)}</div><div class="stat-card-delta delta-pink">{val_str}</div></div>', unsafe_allow_html=True)
         with col4:
             t_name = candidates_10.sort_values(by="助攻", ascending=False).index[0] if has_vet else "虚位以待"
             val_str = f"{int(df.loc[t_name, '助攻'])} 助攻" if has_vet else "需满 10 局"
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">累计助攻王</div><div class="esport-card-player">{short_name(t_name)}</div><div class="esport-card-delta delta-cyan">{val_str}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">累计助攻王</div><div class="stat-card-player">{short_name(t_name)}</div><div class="stat-card-delta delta-blue">{val_str}</div></div>', unsafe_allow_html=True)
 
         # ---------------- 板块 C：羁绊看板 ----------------
         st.subheader("🔗 阵营羁绊与宿敌")
@@ -569,13 +632,13 @@ else:
         cs1, cs2, cs3 = st.columns(3)
         with cs1:
             p_text, d_text = (best_pair['pair'], f"{int(best_pair['wins'])}胜{int(best_pair['losses'])}负") if best_pair is not None else ("虚位以待", "同队需满 5 局")
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">黄金搭档 (≥5局)</div><div class="esport-card-player">{p_text}</div><div class="esport-card-delta delta-cyan">{d_text}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">黄金搭档 (≥5局)</div><div class="stat-card-player">{p_text}</div><div class="stat-card-delta delta-blue">{d_text}</div></div>', unsafe_allow_html=True)
         with cs2:
             p_text, d_text = (worst_pair['pair'], f"{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负") if worst_pair is not None else ("虚位以待", "同队需满 5 局")
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">难兄难弟 (≥5局)</div><div class="esport-card-player">{p_text}</div><div class="esport-card-delta delta-red">{d_text}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">难兄难弟 (≥5局)</div><div class="stat-card-player">{p_text}</div><div class="stat-card-delta delta-pink">{d_text}</div></div>', unsafe_allow_html=True)
         with cs3:
             p_text, d_text = (rival_pair['display'], f"{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负") if rival_pair is not None else ("虚位以待", "交手需满 5 局")
-            st.markdown(f'<div class="esport-card"><div class="esport-card-title">一生之敌 (≥5局)</div><div class="esport-card-player">{p_text}</div><div class="esport-card-delta delta-gold">{d_text}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="stat-card"><div class="stat-card-title">一生之敌 (≥5局)</div><div class="stat-card-player">{p_text}</div><div class="stat-card-delta delta-gold">{d_text}</div></div>', unsafe_allow_html=True)
 
         st.markdown("---")
 
@@ -708,25 +771,25 @@ else:
             for p in blue_team:
                 p_mmr = get_player_mmr(p)
                 desc = f"胜率 {df.loc[p, '胜率_num']}% · 场均 {df.loc[p, '场均击杀']} 杀" if p in df.index else f"外援 · {st.session_state['custom_guests'].get(p,{}).get('tier','外援')}"
-                b_htmls.append(f"<div class='team-roster-row'><b>🔵 {short_name(p)}</b><span style='color:#38bdf8;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
+                b_htmls.append(f"<div class='team-roster-row'><b>🔵 {short_name(p)}</b><span style='color:#0284c7;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
 
             r_htmls = []
             for p in red_team:
                 p_mmr = get_player_mmr(p)
                 desc = f"胜率 {df.loc[p, '胜率_num']}% · 场均 {df.loc[p, '场均击杀']} 杀" if p in df.index else f"外援 · {st.session_state['custom_guests'].get(p,{}).get('tier','外援')}"
-                r_htmls.append(f"<div class='team-roster-row'><b>🔴 {short_name(p)}</b><span style='color:#fb7185;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
+                r_htmls.append(f"<div class='team-roster-row'><b>🔴 {short_name(p)}</b><span style='color:#e11d48;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
 
             arena_html = f"""
                 <div class="team-arena-box">
                     <div style="display:flex;gap:16px;flex-wrap:wrap;">
                         <div style="flex:1;min-width:280px;" class="team-col-blue">
-                            <div style="font-size:1.1rem;font-weight:800;color:#38bdf8;margin-bottom:10px;display:flex;justify-content:space-between;">
+                            <div style="font-size:1.1rem;font-weight:800;color:#0284c7;margin-bottom:10px;display:flex;justify-content:space-between;">
                                 <span>🔵 蓝色方 ({len(blue_team)}人)</span><span>均分: {blue_avg}</span>
                             </div>
                             {''.join(b_htmls)}
                         </div>
                         <div style="flex:1;min-width:280px;" class="team-col-red">
-                            <div style="font-size:1.1rem;font-weight:800;color:#fb7185;margin-bottom:10px;display:flex;justify-content:space-between;">
+                            <div style="font-size:1.1rem;font-weight:800;color:#e11d48;margin-bottom:10px;display:flex;justify-content:space-between;">
                                 <span>🔴 红色方 ({len(red_team)}人)</span><span>均分: {red_avg}</span>
                             </div>
                             {''.join(r_htmls)}
@@ -742,29 +805,29 @@ else:
 
             wechat_html = f"""
                 <div class="wechat-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(56, 189, 248, 0.4);padding-bottom:6px;margin-bottom:8px;">
-                        <span style="font-size:0.9rem;font-weight:700;color:#94a3b8;">📋 微信名单快捷复制</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecdd3;padding-bottom:6px;margin-bottom:8px;">
+                        <span style="font-size:0.9rem;font-weight:700;color:#9f1239;">📋 微信名单快捷复制</span>
                         <button id="btn_copy_wechat" onclick="
                             navigator.clipboard.writeText('{raw_copy_text}').then(() => {{
                                 const btn = document.getElementById('btn_copy_wechat');
                                 btn.innerText = '✅ 已成功复制！';
-                                btn.style.background = 'rgba(74, 222, 128, 0.2)';
-                                btn.style.borderColor = '#4ade80';
-                                btn.style.color = '#4ade80';
+                                btn.style.background = '#fce7f3';
+                                btn.style.borderColor = '#f43f5e';
+                                btn.style.color = '#be185d';
                                 setTimeout(() => {{
                                     btn.innerText = '📋 点击一键复制';
-                                    btn.style.background = 'rgba(14, 165, 233, 0.25)';
-                                    btn.style.borderColor = '#38bdf8';
-                                    btn.style.color = '#ffffff';
+                                    btn.style.background = '#ffffff';
+                                    btn.style.borderColor = '#fbcfe8';
+                                    btn.style.color = '#be185d';
                                 }}, 2000);
                             }}).catch(() => {{ alert('请手动长按复制'); }});
-                        " style="background:rgba(14, 165, 233, 0.25);border:1px solid #38bdf8;color:#ffffff;padding:4px 10px;border-radius:6px;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 点击一键复制</button>
+                        " style="background:#ffffff;border:1px solid #fbcfe8;color:#be185d;padding:4px 10px;border-radius:6px;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 点击一键复制</button>
                     </div>
-                    <div style="font-size:0.95rem;line-height:1.6;color:#e2e8f0;">
+                    <div style="font-size:0.95rem;line-height:1.6;color:#334155;">
                         <div><b>【海克斯内战·双方对阵阵容】</b></div>
-                        <div><span style="color:#38bdf8;font-weight:700;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
-                        <div><span style="color:#fb7185;font-weight:700;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
-                        <div style="font-size:0.85rem;color:#94a3b8;margin-top:2px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
+                        <div><span style="color:#0284c7;font-weight:700;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
+                        <div><span style="color:#e11d48;font-weight:700;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
+                        <div style="font-size:0.85rem;color:#64748b;margin-top:2px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
                     </div>
                 </div>
             """
@@ -778,15 +841,15 @@ else:
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
-            wr_badge = f"<span style='color:#38bdf8;font-weight:700;'>{wr_val}%</span>" if wr_val >= 50 else f"<span style='color:#fb7185;font-weight:700;'>{wr_val}%</span>"
+            wr_badge = f"<span style='color:#0284c7;font-weight:700;'>{wr_val}%</span>" if wr_val >= 50 else f"<span style='color:#e11d48;font-weight:700;'>{wr_val}%</span>"
             row_html = (
                 f"<tr>"
-                f"<td style='text-align:left;padding-left:16px;font-weight:700;color:#ffffff;'>{short_name(player_id)}</td>"
+                f"<td style='text-align:left;padding-left:16px;font-weight:700;color:#1e293b;'>{short_name(player_id)}</td>"
                 f"<td>{int(row['总场次'])}</td>"
                 f"<td>{int(row['胜场'])}</td>"
                 f"<td>{int(row['负场'])}</td>"
                 f"<td>{wr_badge}</td>"
-                f"<td style='font-weight:700;color:#38bdf8;'>{row['MMR']:.1f}</td>"
+                f"<td style='font-weight:700;color:#e11d48;'>{row['MMR']:.1f}</td>"
                 f"<td>{row['场均击杀']:.1f}</td>"
                 f"<td>{row['KD']:.2f}</td>"
                 f"<td style='font-weight:700;'>{row['KDA_num']:.2f}</td>"
