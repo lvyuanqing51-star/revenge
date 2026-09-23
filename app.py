@@ -1000,14 +1000,14 @@ else:
 
         st.markdown("---")
 
-        # ---------------- 板块 D：赛前红蓝对阵作战室（双模分队器） ----------------
+        # ---------------- 板块 D：赛前红蓝对阵作战室（动态人数自适应双模分队器） ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
         all_known_players = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
         default_selection = all_known_players[:10] if len(all_known_players) >= 10 else all_known_players
 
-        selected_10 = st.multiselect(
-            "选择出战的 10 位群友：",
+        selected_players = st.multiselect(
+            "选择出战的群友名单（支持任意人数，如 6人、8人、10人自动对半开）：",
             options=all_known_players,
             default=default_selection,
             format_func=lambda x: f"{short_name(x)} (出场{int(df.loc[x, '总场次'])}局 | 胜率{df.loc[x, '胜率_num']}% | 战力{df.loc[x, 'MMR']})"
@@ -1019,26 +1019,31 @@ else:
         with col_b2:
             random_btn = st.button("🎲 听天由命随机盲盒", use_container_width=True)
 
-        # 初始化分队状态
         if "assigned_blue" not in st.session_state:
             st.session_state["assigned_blue"] = []
             st.session_state["assigned_red"] = []
             st.session_state["split_mode"] = ""
 
+        total_chosen = len(selected_players)
+
         if balance_btn:
-            if len(selected_10) != 10:
-                st.warning(f"⚠️ 当前选择了 {len(selected_10)} 人，请精确勾选 10 位玩家！")
+            if total_chosen < 2:
+                st.warning("⚠️ 至少需要选择 2 位玩家才能进行对抗分队！")
             else:
+                player_list = list(selected_players)
+                blue_size = total_chosen // 2
                 best_diff = float("inf")
                 best_blue = []
                 best_red = []
-                player_list = list(selected_10)
 
-                for candidate_blue in combinations(player_list, 5):
+                for candidate_blue in combinations(player_list, blue_size):
                     candidate_red = [p for p in player_list if p not in candidate_blue]
                     m_blue = sum(df.loc[p, "MMR"] for p in candidate_blue)
                     m_red = sum(df.loc[p, "MMR"] for p in candidate_red)
-                    diff = abs(m_blue - m_red)
+                    avg_blue = m_blue / len(candidate_blue)
+                    avg_red = m_red / len(candidate_red)
+                    
+                    diff = abs(avg_blue - avg_red) if total_chosen % 2 != 0 else abs(m_blue - m_red)
                     if diff < best_diff:
                         best_diff = diff
                         best_blue = list(candidate_blue)
@@ -1046,17 +1051,18 @@ else:
 
                 st.session_state["assigned_blue"] = best_blue
                 st.session_state["assigned_red"] = best_red
-                st.session_state["split_mode"] = "⚖️ 战力天平最优平衡"
+                st.session_state["split_mode"] = f"⚖️ 战力天平最优平衡 ({len(best_blue)}v{len(best_red)})"
 
         elif random_btn:
-            if len(selected_10) != 10:
-                st.warning(f"⚠️ 当前选择了 {len(selected_10)} 人，请精确勾选 10 位玩家！")
+            if total_chosen < 2:
+                st.warning("⚠️ 至少需要选择 2 位玩家才能进行对抗分队！")
             else:
-                shuffled = list(selected_10)
+                shuffled = list(selected_players)
                 random.shuffle(shuffled)
-                st.session_state["assigned_blue"] = shuffled[:5]
-                st.session_state["assigned_red"] = shuffled[5:]
-                st.session_state["split_mode"] = "🎲 听天由命盲盒随机"
+                blue_size = total_chosen // 2
+                st.session_state["assigned_blue"] = shuffled[:blue_size]
+                st.session_state["assigned_red"] = shuffled[blue_size:]
+                st.session_state["split_mode"] = f"🎲 听天由命盲盒随机 ({len(st.session_state['assigned_blue'])}v{len(st.session_state['assigned_red'])})"
 
         # 渲染对阵舞台卡片
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
@@ -1065,14 +1071,14 @@ else:
 
             blue_total = round(sum(df.loc[p, "MMR"] for p in blue_team), 1)
             red_total = round(sum(df.loc[p, "MMR"] for p in red_team), 1)
-            blue_avg = round(blue_total / 5, 1)
-            red_avg = round(red_total / 5, 1)
+            blue_avg = round(blue_total / len(blue_team), 1) if blue_team else 0
+            red_avg = round(red_total / len(red_team), 1) if red_team else 0
             diff_score = round(abs(blue_total - red_total), 1)
+            avg_diff = round(abs(blue_avg - red_avg), 1)
 
             st.write("")
-            st.caption(f"当前模式：**{st.session_state['split_mode']}** ｜ 双方总战力差：**{diff_score} 分**")
+            st.caption(f"当前模式：**{st.session_state['split_mode']}** ｜ 双方总战力差：**{diff_score} 分** (人均均分差: **{avg_diff} 分**)")
 
-            # 蓝队卡片条目拼接
             blue_items = []
             for p in blue_team:
                 p_name = short_name(p)
@@ -1085,7 +1091,6 @@ else:
                     f"</div>"
                 )
 
-            # 红队卡片条目拼接
             red_items = []
             for p in red_team:
                 p_name = short_name(p)
@@ -1103,17 +1108,17 @@ else:
                 f"<div style='display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;'>"
                 f"<div style='flex:1;min-width:280px;' class='team-column-blue'>"
                 f"<div class='team-header-title blue-title'>"
-                f"<span>🔵 蓝色方阵营</span><span>均分: {blue_avg}</span>"
+                f"<span>🔵 蓝色方 ({len(blue_team)}人)</span><span>均分: {blue_avg}</span>"
                 f"</div>"
                 f"{''.join(blue_items)}"
                 f"</div>"
                 f"<div style='flex:0 0 100px;display:flex;align-items:center;justify-content:center;' class='vs-divider-box'>"
                 f"<div class='vs-glow-text'>VS</div>"
-                f"<span style='font-size:0.78rem;color:#94a3b8;'>分差 {diff_score}</span>"
+                f"<span style='font-size:0.78rem;color:#94a3b8;'>均分差 {avg_diff}</span>"
                 f"</div>"
                 f"<div style='flex:1;min-width:280px;' class='team-column-red'>"
                 f"<div class='team-header-title red-title'>"
-                f"<span>🔴 红色方阵营</span><span>均分: {red_avg}</span>"
+                f"<span>🔴 红色方 ({len(red_team)}人)</span><span>均分: {red_avg}</span>"
                 f"</div>"
                 f"{''.join(red_items)}"
                 f"</div>"
@@ -1123,12 +1128,11 @@ else:
 
             st.markdown(arena_html, unsafe_allow_html=True)
 
-            # 复制战书文本
             copy_text = (
-                f"【海克斯内战·双方名单】\n"
-                f"🔵 蓝方(均分{blue_avg}): {'、'.join([short_name(p) for p in blue_team])}\n"
-                f"🔴 红方(均分{red_avg}): {'、'.join([short_name(p) for p in red_team])}\n"
-                f"⚡ 战力分差: {diff_score} | 比赛模式: {st.session_state['split_mode']}"
+                f"【海克斯内战·双方对阵阵容】\n"
+                f"🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {'、'.join([short_name(p) for p in blue_team])}\n"
+                f"🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {'、'.join([short_name(p) for p in red_team])}\n"
+                f"⚡ 阵型模式: {st.session_state['split_mode']} | 均分分差: {avg_diff}"
             )
             st.text_area("📋 微信/群聊对战名单复制：", value=copy_text, height=100)
 
