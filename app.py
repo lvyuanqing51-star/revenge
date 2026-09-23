@@ -61,8 +61,35 @@ section[data-testid="stSidebar"] span {
     color: #f1f5f9 !important;
 }
 
-/* ================= 核心修复：消灭主界面所有输入框与折叠栏白底 ================= */
-/* 1. 折叠栏 Expander 彻底深色化 */
+/* 侧边栏输入控件 */
+section[data-testid="stSidebar"] input {
+    background-color: #132438 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 6px !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="input"],
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
+    background-color: #132438 !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
+    background-color: transparent !important;
+    border: none !important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
+    fill: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
+
+/* 折叠栏 Expander 彻底深色化 */
 details[data-testid="stExpander"] {
     background-color: rgba(19, 36, 56, 0.7) !important;
     border: 1px solid rgba(56, 189, 248, 0.4) !important;
@@ -84,7 +111,7 @@ details[data-testid="stExpander"][open] summary {
     border-bottom-right-radius: 0 !important;
 }
 
-/* 2. 主页面所有输入框 Input 强制深色 */
+/* 主页面所有输入框 Input 强制深色 */
 input, 
 div[data-baseweb="input"],
 div[data-baseweb="base-input"] {
@@ -97,7 +124,7 @@ input {
     color: #ffffff !important;
 }
 
-/* 3. 下拉选框与多选框全局深色微光 */
+/* 下拉选框与多选框全局深色微光 */
 div[data-baseweb="select"],
 div[data-baseweb="select"] > div {
     background-color: #132438 !important;
@@ -109,7 +136,7 @@ div[data-baseweb="select"] * {
     color: #ffffff !important;
 }
 
-/* 4. 彻底消灭多选框红底标签 */
+/* 彻底消灭多选框红底标签 */
 div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
 div[data-baseweb="tag"],
 span[data-baseweb="tag"] {
@@ -133,7 +160,7 @@ span[data-baseweb="tag"] svg {
     color: #38bdf8 !important;
 }
 
-/* ================= 按钮组件修复 ================= */
+/* 按钮组件 */
 button[data-testid="stBaseButton-secondary"] {
     background: rgba(19, 36, 56, 0.9) !important;
     background-color: rgba(19, 36, 56, 0.9) !important;
@@ -272,7 +299,7 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-/* ================= 红蓝对阵分队看板 ================= */
+/* 红蓝对阵分队看板 */
 .team-arena-container {
     background: rgba(15, 23, 42, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1024,6 +1051,11 @@ else:
         if "custom_guests" not in st.session_state:
             st.session_state["custom_guests"] = {}
 
+        # 兼顾向下兼容：清洗旧版可能残留的 float 类型脏数据
+        for k, v in list(st.session_state["custom_guests"].items()):
+            if not isinstance(v, dict):
+                st.session_state["custom_guests"][k] = {"mmr": float(v), "tier": "临时外援"}
+
         known_roster = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
         full_available_options = known_roster + list(st.session_state["custom_guests"].keys())
 
@@ -1067,14 +1099,18 @@ else:
                     else:
                         st.warning("请输入昵称！")
 
-            # 显示与管理当前已有的外援
+            # 显示与管理当前已有的外援（彻底做好容错与删除）
             if st.session_state["custom_guests"]:
                 st.markdown("<div style='margin-top:12px;font-weight:700;color:#fef08a;'>📋 当前已添加的外援（点右侧删除）：</div>", unsafe_allow_html=True)
                 for g_name, g_info in list(st.session_state["custom_guests"].items()):
+                    # 双重容错：若非字典则提取默认
+                    mmr_val = g_info.get("mmr", 60.0) if isinstance(g_info, dict) else float(g_info)
+                    tier_str = g_info.get("tier", "外援") if isinstance(g_info, dict) else "外援"
+
                     col_info, col_del = st.columns([5, 1])
                     with col_info:
                         st.markdown(f"<div style='padding:6px 10px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:0.92rem;margin-bottom:4px;'>"
-                                    f"👤 <b style='color:#ffffff;'>{g_name}</b> · <span style='color:#38bdf8;'>战力 {g_info['mmr']} ({g_info['tier']})</span>"
+                                    f"👤 <b style='color:#ffffff;'>{g_name}</b> · <span style='color:#38bdf8;'>战力 {mmr_val} ({tier_str})</span>"
                                     f"</div>", unsafe_allow_html=True)
                     with col_del:
                         if st.button("🗑️ 删除", key=f"del_guest_{g_name}"):
@@ -1096,7 +1132,8 @@ else:
         # 获取玩家实时战力分
         def get_player_mmr(p_id):
             if p_id in st.session_state["custom_guests"]:
-                return float(st.session_state["custom_guests"][p_id]["mmr"])
+                g_val = st.session_state["custom_guests"][p_id]
+                return float(g_val.get("mmr", 60.0)) if isinstance(g_val, dict) else float(g_val)
             if p_id in df.index:
                 return float(df.loc[p_id, "MMR"])
             return 50.0
@@ -1165,7 +1202,8 @@ else:
                     p_ak = df.loc[p, "场均击杀"]
                     extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
                 else:
-                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
+                    g_data = st.session_state["custom_guests"].get(p, {})
+                    tier_str = g_data.get("tier", "外援") if isinstance(g_data, dict) else "外援"
                     extra_desc = f"外援 · {tier_str}"
                 
                 blue_items.append(
@@ -1184,7 +1222,8 @@ else:
                     p_ak = df.loc[p, "场均击杀"]
                     extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
                 else:
-                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
+                    g_data = st.session_state["custom_guests"].get(p, {})
+                    tier_str = g_data.get("tier", "外援") if isinstance(g_data, dict) else "外援"
                     extra_desc = f"外援 · {tier_str}"
 
                 red_items.append(
