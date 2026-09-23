@@ -199,6 +199,19 @@ button[data-testid="stBaseButton-secondary"]:hover {
 .delta-blue { background: #e0f2fe; color: #0284c7; }
 .delta-gray { background: #f1f5f9; color: #64748b; }
 
+.badge-tag {
+    display: inline-block;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #9f1239;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin: 3px 6px 3px 0;
+    box-shadow: 0 1px 3px rgba(244, 114, 182, 0.1);
+}
+
 .team-arena-box {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -396,7 +409,7 @@ def short_name(full_name):
         return "未知"
     return str(full_name).split("#")[0]
 
-# ---------------- 2. 动感 SVG 六边形雷达生成器 ----------------
+# ---------------- 2. 原生 SVG 六边形雷达生成器 ----------------
 def generate_radar_svg(values, categories):
     size = 320
     cx, cy, r = size / 2, size / 2, 105
@@ -424,7 +437,6 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
-    # 绘制多边形：保底给 0.12，杜绝任何数据缩成原点 0
     data_pts = []
     data_dots = []
     for i in range(total):
@@ -435,7 +447,7 @@ def generate_radar_svg(values, categories):
         data_pts.append(f"{dx:.1f},{dy:.1f}")
         data_dots.append(f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="4" fill="#be185d"/>')
 
-    polygon_svg = f'<polygon points="{" ".join(data_pts)}" fill="rgba(244, 63, 94, 0.30)" stroke="#e11d48" stroke-width="2.5"/>'
+    polygon_svg = f'<polygon points="{" ".join(data_pts)}" fill="rgba(244, 63, 94, 0.28)" stroke="#e11d48" stroke-width="2.5"/>'
 
     svg_content = f"""
     <div style="display:flex;justify-content:center;align-items:center;padding:10px 0;">
@@ -600,6 +612,15 @@ else:
         "damage_shares": [], "taken_shares": [], "kp_shares": []
     })
 
+    # 个人荣誉与手感追踪字典
+    player_history = defaultdict(lambda: {
+        "outcomes": [], 
+        "max_kill": 0,
+        "max_dmg_share": 0.0,
+        "max_taken_share": 0.0,
+        "min_death_win": 999
+    })
+
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
@@ -646,6 +667,27 @@ else:
 
             dmg_s = p.get("damage_share")
             taken_s = p.get("taken_share")
+
+            # 记录历史成就与高光
+            player_history[fname]["outcomes"].append(is_win)
+            if k > player_history[fname]["max_kill"]:
+                player_history[fname]["max_kill"] = k
+            if is_win and d < player_history[fname]["min_death_win"]:
+                player_history[fname]["min_death_win"] = d
+            if dmg_s is not None:
+                try:
+                    ds_val = float(dmg_s)
+                    if ds_val > player_history[fname]["max_dmg_share"]:
+                        player_history[fname]["max_dmg_share"] = ds_val
+                except Exception:
+                    pass
+            if taken_s is not None:
+                try:
+                    ts_val = float(taken_s)
+                    if ts_val > player_history[fname]["max_taken_share"]:
+                        player_history[fname]["max_taken_share"] = ts_val
+                except Exception:
+                    pass
 
             if is_valid_6p_game:
                 radar_stats_pool[fname]["games_6p"] += 1
@@ -1046,15 +1088,15 @@ else:
         )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-        # ---------------- 板块 E：合理且风格鲜明的六维战术图谱 (≥6人局) ----------------
+        # ---------------- 板块 E：雷达图 + 专属荣誉档案勋章馆 ----------------
         st.markdown("---")
-        st.subheader("🎯 选手局内战术图谱 (仅统计 ≥6 人正规对局)")
+        st.subheader("🎯 选手局内战术图谱与个人荣誉档案")
 
-        valid_radar_players = [p for p, data in radar_stats_pool.items() if data["games_6p"] > 0]
-        active_player_options = sorted(valid_radar_players, key=lambda x: radar_stats_pool[x]["games_6p"], reverse=True)
+        # 核心改动：不再受限于 games_6p > 0，确保所有群友都能选择并展示
+        active_player_options = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
 
         if not active_player_options:
-            st.info("💡 暂无 6 人及以上的对局记录。录入标准内战截图后自动生成雷达图！")
+            st.info("💡 暂无群友数据。录入对局截图后自动生成档案！")
         else:
             c_sel, _ = st.columns([2.5, 3.5])
             with c_sel:
@@ -1063,53 +1105,62 @@ else:
             p_radar = radar_stats_pool[target_p]
             valid_g = p_radar["games_6p"]
             
-            p_kills = float(p_radar["kills"] / valid_g)
-            p_deaths = float(p_radar["deaths"] / valid_g)
-            p_assists = float(p_radar["assists"] / valid_g)
+            # 若有 >=6 人局数据优先使用，若没有则平滑回退至全局数据，杜绝除零崩溃
+            if valid_g > 0:
+                p_kills = float(p_radar["kills"] / valid_g)
+                p_deaths = float(p_radar["deaths"] / valid_g)
+                p_assists = float(p_radar["assists"] / valid_g)
+                dmg_list = p_radar["damage_shares"]
+                dmg_share = (sum(dmg_list) / len(dmg_list)) if dmg_list else (p_kills * 2.3)
+                taken_list = p_radar["taken_shares"]
+                taken_share = (sum(taken_list) / len(taken_list)) if taken_list else (p_deaths * 2.4)
+                kp_list = p_radar["kp_shares"]
+                avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
+                sample_desc = f"{valid_g} 局 (已剔除残局)"
+            else:
+                p_g_total = int(df.loc[target_p, "总场次"])
+                p_kills = float(df.loc[target_p, "击杀"] / p_g_total)
+                p_deaths = float(df.loc[target_p, "死亡"] / p_g_total)
+                p_assists = float(df.loc[target_p, "助攻"] / p_g_total)
+                dmg_share = p_kills * 2.3
+                taken_share = p_deaths * 2.4
+                avg_kp = (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
+                sample_desc = f"{p_g_total} 局 (全局数据)"
 
-            # 1. 伤害输出 (10% ~ 35% 映射到 25 ~ 95 分)
-            dmg_list = p_radar["damage_shares"]
-            dmg_share = (sum(dmg_list) / len(dmg_list)) if dmg_list else (p_kills * 2.3)
+            # 1. 伤害输出 (20% 为 60 分中轴)
             if dmg_share <= 20.0:
                 score_dmg = 25.0 + (dmg_share / 20.0) * 35.0
             else:
                 score_dmg = 60.0 + min(1.0, (dmg_share - 20.0) / 14.0) * 35.0
             score_dmg = max(18.0, min(96.0, score_dmg))
 
-            # 2. 承受伤害 (12% ~ 35% 映射到 25 ~ 95 分)
-            taken_list = p_radar["taken_shares"]
-            taken_share = (sum(taken_list) / len(taken_list)) if taken_list else (p_deaths * 2.4)
+            # 2. 承受伤害
             if taken_share <= 20.0:
                 score_tank = 25.0 + (taken_share / 20.0) * 35.0
             else:
                 score_tank = 60.0 + min(1.0, (taken_share - 20.0) / 14.0) * 35.0
             score_tank = max(18.0, min(96.0, score_tank))
 
-            # 3. 参团活跃 (35% ~ 80% 映射到 25 ~ 95 分)
-            kp_list = p_radar["kp_shares"]
-            avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
+            # 3. 参团活跃
             if avg_kp <= 0.55:
                 score_kp = 25.0 + (avg_kp / 0.55) * 35.0
             else:
                 score_kp = 60.0 + min(1.0, (avg_kp - 0.55) / 0.22) * 35.0
             score_kp = max(18.0, min(96.0, score_kp))
 
-            # 4 & 5. 收割与助攻：解耦偏向计算（拉开刺客与辅助差异，但不惩罚过度）
+            # 4 & 5. 收割与助攻
             ka_total = max(1.0, p_kills + p_assists)
-            kill_bias = p_kills / ka_total  # 偏向比 (0.1 ~ 0.8)
+            kill_bias = p_kills / ka_total
             
-            # 收割分：场均击杀驱动 + 终结占比
             k_base = min(1.0, p_kills / 10.0)
             score_kill = 25.0 + k_base * 45.0 + (kill_bias * 25.0)
             score_kill = max(20.0, min(95.0, score_kill))
 
-            # 助攻分：场均助攻驱动 + 团队协助偏向
             a_base = min(1.0, p_assists / 12.0)
             score_assist = 25.0 + a_base * 45.0 + ((1.0 - kill_bias) * 25.0)
             score_assist = max(20.0, min(95.0, score_assist))
 
-            # 6. 保命能力：平滑且严密，绝不归零！
-            # 场均死 <= 3次 得 85~95，场均死 6 次得 60，场均死 >= 10 次得 25~30
+            # 6. 保命能力 (科学且稳定，绝不归零)
             if p_deaths <= 6.0:
                 score_surv = 60.0 + ((6.0 - p_deaths) / 4.0) * 32.0
             else:
@@ -1119,7 +1170,6 @@ else:
             categories = ['伤害输出', '承受伤害', '参团活跃', '人头收割', '助攻开团', '保命能力']
             values = [round(score_dmg, 1), round(score_tank, 1), round(score_kp, 1), round(score_kill, 1), round(score_assist, 1), round(score_surv, 1)]
 
-            # 战术风格打标
             if score_dmg >= 78 and score_kill >= 75:
                 style_title, style_badge = "🗡️ 绝对主C / 团队核心火力", "delta-pink"
             elif score_tank >= 78 and score_assist >= 70:
@@ -1137,6 +1187,36 @@ else:
             tank_disp = f"{taken_share:.1f}%"
             kp_disp = f"{round(avg_kp * 100, 1)}%"
 
+            # 计算近期状态 (取最近3局)
+            p_hist = player_history[target_p]
+            recent_games = p_hist["outcomes"][-3:] if p_hist["outcomes"] else []
+            if len(recent_games) >= 2 and all(recent_games):
+                recent_status = "🔥 连胜狂飙中"
+                status_color = "#e11d48"
+            elif len(recent_games) >= 2 and not any(recent_games):
+                recent_status = "🧊 连败急需吸氧"
+                status_color = "#0284c7"
+            else:
+                recent_status = "⚖️ 状态起伏平稳"
+                status_color = "#64748b"
+
+            # 动态生成成就徽章
+            badges = []
+            if p_hist["max_dmg_share"] >= 33.0 or score_dmg >= 85:
+                badges.append("💥 血条消失术")
+            if p_hist["max_taken_share"] >= 33.0 or score_tank >= 85:
+                badges.append("🛡️ 叹息之壁")
+            if p_hist["max_kill"] >= 13 or score_kill >= 85:
+                badges.append("🩸 绝命赏金客")
+            if p_hist["min_death_win"] <= 3 or score_surv >= 80:
+                badges.append("🕊️ 保分艺术家")
+            if int(df.loc[target_p, "总场次"]) >= 8:
+                badges.append("🎰 全勤老将")
+            if not badges:
+                badges.append("🌱 未来可期")
+
+            badges_html = "".join([f'<span class="badge-tag">{b}</span>' for b in badges])
+
             col_radar, col_detail = st.columns([1.2, 1])
 
             with col_radar:
@@ -1149,14 +1229,34 @@ else:
                         <div class="stat-card-player">{short_name(target_p)}</div>
                         <div class="stat-card-delta {style_badge}">{style_title}</div>
                         <div style="font-size:0.88rem;color:#475569;line-height:2.0;margin-top:10px;">
-                            <div>• <b>标准对局有效样本</b>: {valid_g} 局 (已剔除残局)</div>
+                            <div>• <b>有效样本来源</b>: {sample_desc}</div>
                             <div>• <b>场均伤害占比</b>: <span style="color:#e11d48;font-weight:700;">{dmg_disp}</span></div>
                             <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{tank_disp}</span></div>
                             <div>• <b>平均团战参团率</b>: <span style="color:#ca8a04;font-weight:700;">{kp_disp}</span></div>
-                            <div>• <b>标准场均数据</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
+                            <div>• <b>场均基础战绩</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
+
+            # 新增：专属群友个人档案与荣誉勋章卡 (无论何种情况，直接稳定渲染在正下方)
+            st.markdown(f"""
+                <div class="stat-card" style="margin-top:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecdd3;padding-bottom:8px;margin-bottom:10px;">
+                        <span style="font-size:0.95rem;font-weight:800;color:#9f1239;">🏅 【{short_name(target_p)}】个人荣誉与成就档案馆</span>
+                        <span style="font-size:0.82rem;font-weight:700;color:{status_color};background:#ffffff;padding:2px 8px;border-radius:6px;border:1px solid #fbcfe8;">{recent_status}</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:0.88rem;color:#334155;margin-bottom:10px;">
+                        <div>⚡ <b>生涯单场最高击杀</b>: <span style="color:#e11d48;font-weight:700;">{p_hist['max_kill']} 杀</span></div>
+                        <div>💥 <b>单场最高输出占比</b>: <span style="color:#e11d48;font-weight:700;">{p_hist['max_dmg_share']:.1f}%</span></div>
+                        <div>🛡️ <b>单场最高承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{p_hist['max_taken_share']:.1f}%</span></div>
+                        <div>🕊️ <b>胜局最低阵亡纪录</b>: <span style="color:#0284c7;font-weight:700;">{p_hist['min_death_win'] if p_hist['min_death_win'] != 999 else '--'} 次</span></div>
+                    </div>
+                    <div style="border-top:1px dashed #fecdd3;padding-top:8px;">
+                        <span style="font-size:0.82rem;color:#881337;font-weight:700;margin-right:6px;">已解锁成就勋章:</span>
+                        {badges_html}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
 # ---------------- 主界面 3：战绩录入 (置底) ----------------
 st.markdown("---")
