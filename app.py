@@ -20,10 +20,15 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 温润淡粉 (Sakura Pastel) 深度定制 CSS ----------------
+# ---------------- 温润淡粉 (Sakura Pastel) + 根节点变量劫持 CSS ----------------
 st.markdown("""
 <style>
-/* 1. 全局背景：柔和樱花淡粉渐变 */
+/* 核心穿透：从根源直接覆写 Streamlit 的 primaryColor 变量，彻底消灭刺眼大红色 */
+:root, [data-theme="light"], .stApp {
+    --primary-color: #f43f5e !important;
+}
+
+/* 全局背景：柔和樱花淡粉渐变 */
 .stApp {
     background: linear-gradient(135deg, #fff5f5 0%, #ffe4e6 50%, #fed7aa 100%) !important;
     background-attachment: fixed !important;
@@ -31,7 +36,7 @@ st.markdown("""
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 2. 顶部主标题渐变 */
+/* 顶部主标题渐变 */
 h1 {
     background: linear-gradient(90deg, #e11d48 0%, #db2777 50%, #9333ea 100%) !important;
     -webkit-background-clip: text !important;
@@ -44,7 +49,7 @@ h2, h3 {
     font-weight: 700 !important;
 }
 
-/* 3. 彻底根治 1：消灭刺眼大红！多选框角色标签全面粉晶化 */
+/* 彻底重写多选框名字标签：全面改为草莓粉晶柔和徽章，彻底消灭刺眼红框 */
 div[data-baseweb="tag"],
 span[data-baseweb="tag"],
 li[data-baseweb="tag"],
@@ -66,7 +71,7 @@ div[data-testid="stMultiSelect"] [data-baseweb="tag"] * {
     fill: #db2777 !important;
 }
 
-/* 4. 彻底根治 2：干掉突兀的粉色多余输入框！将 select 内的 input 彻底隐形融合 */
+/* 多选框外壳与消灭自带输入槽边框 */
 div[data-testid="stMultiSelect"] > div > div,
 div[data-baseweb="select"] > div {
     background-color: #ffffff !important;
@@ -75,7 +80,6 @@ div[data-baseweb="select"] > div {
     box-shadow: 0 2px 8px rgba(244, 114, 182, 0.08) !important;
     padding: 4px 8px !important;
 }
-/* 消除多选框内部自带输入槽的边框、背景与发光 */
 div[data-baseweb="select"] input,
 div[data-baseweb="select"] input:focus,
 div[data-baseweb="select"] div[data-baseweb="base-input"] {
@@ -87,7 +91,7 @@ div[data-baseweb="select"] div[data-baseweb="base-input"] {
     color: #334155 !important;
 }
 
-/* 5. 弹出菜单：实体纯白，杜绝文字重叠透光 */
+/* 弹出菜单：实体纯白，杜绝文字穿透重叠 */
 div[data-baseweb="popover"],
 div[data-baseweb="popover"] > div,
 ul[data-baseweb="menu"] {
@@ -108,7 +112,7 @@ li[data-baseweb="menu-item"]:hover {
     color: #be185d !important;
 }
 
-/* 6. 三大连麦作战室专属发光按钮 */
+/* 三大连麦作战室专属发光按钮 */
 div[data-testid="stLinkButton"] a {
     border-radius: 12px !important;
     font-weight: 700 !important;
@@ -151,7 +155,7 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5) !important;
 }
 
-/* 7. 输入框与普通按钮（仅作用于外援输入框） */
+/* 外援输入框与操作按钮 */
 div[data-testid="stTextInput"] input {
     background-color: #ffffff !important;
     border: 1px solid #fbcfe8 !important;
@@ -180,7 +184,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
     background: #fff1f2 !important;
 }
 
-/* 8. 卡片系统 */
+/* 卡片系统 */
 .stat-card {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -206,7 +210,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
 .delta-blue { background: #e0f2fe; color: #0284c7; }
 .delta-gray { background: #f1f5f9; color: #64748b; }
 
-/* 9. 对阵红蓝看板与复制区 */
+/* 红蓝对阵看板与复制区 */
 .team-arena-box {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -236,7 +240,7 @@ button[data-testid="stBaseButton-secondary"]:hover {
     box-shadow: 0 4px 12px rgba(244, 114, 182, 0.1);
 }
 
-/* 10. 表格 */
+/* 表格容器 */
 .clean-table-box {
     width: 100%;
     overflow-x: auto;
