@@ -20,7 +20,7 @@ CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(
-    page_title="海克斯内战·Hex League",
+    page_title="海克斯内战",
     page_icon="⚔️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -40,7 +40,7 @@ st.markdown("""
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* 顶部导航控制台 */
+/* 顶部导航控制台（纯粹利落，去除了多余英文字段） */
 .app-header-bar {
     display: flex;
     justify-content: space-between;
@@ -55,7 +55,7 @@ st.markdown("""
     box-shadow: 0 6px 24px rgba(114, 9, 44, 0.08);
 }
 .header-title {
-    font-size: 1.65rem;
+    font-size: 1.70rem;
     font-weight: 900;
     background: linear-gradient(90deg, #881337 0%, #b91c1c 45%, #d97706 100%);
     -webkit-background-clip: text;
@@ -64,13 +64,6 @@ st.markdown("""
     align-items: center;
     gap: 10px;
     letter-spacing: 0.5px;
-}
-.header-sub {
-    font-size: 0.82rem;
-    color: #701a75;
-    font-weight: 700;
-    margin-top: 3px;
-    letter-spacing: 1.2px;
 }
 
 /* 🎙️ 三大微光语音作战室：黑金流光边框 */
@@ -583,10 +576,7 @@ with st.sidebar:
 cfg = load_config()
 st.markdown(f"""
 <div class="app-header-bar">
-    <div>
-        <div class="header-title">⚔️ 海克斯内战 · 数据中心</div>
-        <div class="header-sub">HEX LEAGUE ANALYTICS CONSOLE</div>
-    </div>
+    <div class="header-title">⚔️ 海克斯内战 · 战绩中心</div>
     <div style="display:flex;align-items:center;gap:12px;">
         <span class="badge-tag" style="background:#ffffff;border-color:#72092c;color:#72092c;margin:0;">📦 已收录 <b>{total_games_all}</b> 场对局</span>
     </div>
