@@ -20,212 +20,63 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 纯净磨砂电竞风全局 CSS ----------------
+# ---------------- 清爽明亮浅色主题 CSS (杜绝样式打架与黑块) ----------------
 st.markdown("""
 <style>
-/* 全局背景：深海宝石蓝流光渐变 */
+/* 全局浅灰冰蓝背景，文字清晰锐利 */
 .stApp {
-    background: radial-gradient(circle at 50% 5%, #1d3e63 0%, #122841 50%, #0a192b 100%) !important;
-    color: #e2e8f0 !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 顶部主标题 */
+/* 顶部标题渐变与副标题 */
 h1 {
-    background: linear-gradient(90deg, #ffffff 0%, #a5f3fc 50%, #fef08a 100%) !important;
+    background: linear-gradient(90deg, #0284c7 0%, #2563eb 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     font-weight: 800 !important;
-    letter-spacing: 1.5px !important;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    letter-spacing: 1px !important;
 }
 h2, h3 {
-    color: #f8fafc !important;
-    letter-spacing: 0.8px;
+    color: #1e293b !important;
+    font-weight: 700 !important;
 }
 
-/* 侧边栏底色 */
-section[data-testid="stSidebar"] {
-    background-color: #0b1726 !important;
-    border-right: 1px solid rgba(56, 189, 248, 0.2) !important;
-}
-section[data-testid="stSidebar"] h1, 
-section[data-testid="stSidebar"] h2, 
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] h4 {
-    color: #fef08a !important;
-}
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span {
-    color: #f1f5f9 !important;
-}
-
-/* 外援磨砂条与全局输入框深色化 */
-.guest-bar-container {
-    background: rgba(15, 23, 42, 0.55);
-    border: 1px solid rgba(56, 189, 248, 0.3);
+/* 独立清爽卡片系统 */
+.stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 14px 18px;
-    margin-top: 10px;
-    margin-bottom: 16px;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-}
-input, 
-div[data-baseweb="input"] {
-    background-color: #132438 !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 8px !important;
-}
-input {
-    color: #ffffff !important;
-}
-
-/* 原生按钮组件修饰：次级按钮与主要按钮微光样式 */
-button[data-testid="stBaseButton-secondary"] {
-    background: rgba(19, 36, 56, 0.85) !important;
-    background-color: rgba(19, 36, 56, 0.85) !important;
-    color: #94a3b8 !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
-    transition: all 0.2s ease !important;
-}
-button[data-testid="stBaseButton-secondary"]:hover {
-    background: rgba(30, 61, 99, 0.95) !important;
-    background-color: rgba(30, 61, 99, 0.95) !important;
-    border-color: #38bdf8 !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
-}
-button[data-testid="stBaseButton-secondary"] * {
-    color: inherit !important;
-    font-weight: 600 !important;
-}
-
-button[data-testid="stBaseButton-primary"] {
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(56, 189, 248, 0.8) !important;
-    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4) !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    transition: all 0.2s ease !important;
-}
-button[data-testid="stBaseButton-primary"]:hover {
-    box-shadow: 0 0 20px rgba(56, 189, 248, 0.7) !important;
-    border-color: #a5f3fc !important;
-}
-
-/* 微信战报卡片（杜绝原生惨白 code 块） */
-.wechat-copy-panel {
-    background: rgba(11, 23, 38, 0.85);
-    border: 1px solid rgba(56, 189, 248, 0.5);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-top: 14px;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    position: relative;
-    user-select: all;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-.wechat-copy-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 8px;
-    margin-bottom: 10px;
-    font-size: 0.88rem;
-    color: #94a3b8;
-}
-.wechat-copy-body {
-    font-size: 0.98rem;
-    line-height: 1.7;
-    color: #f1f5f9;
-}
-
-/* 语音作战室三大专属微光按钮 */
-div[data-testid="stLinkButton"] a {
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    backdrop-filter: blur(12px) !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-div[data-testid="stLinkButton"] a:hover {
-    transform: translateY(-2px);
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
-    background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(202, 138, 4, 0.15)) !important;
-    border: 1px solid rgba(253, 224, 71, 0.5) !important;
-    box-shadow: 0 4px 15px rgba(234, 179, 8, 0.2) !important;
-    color: #fef9c3 !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
-    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.2)) !important;
-    border: 1px solid rgba(56, 189, 248, 0.7) !important;
-    box-shadow: 0 4px 18px rgba(14, 165, 233, 0.35) !important;
-    color: #f0f9ff !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
-    box-shadow: 0 6px 24px rgba(56, 189, 248, 0.6) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
-    background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.2)) !important;
-    border: 1px solid rgba(251, 113, 133, 0.7) !important;
-    box-shadow: 0 4px 18px rgba(244, 63, 94, 0.3) !important;
-    color: #fff1f2 !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-    box-shadow: 0 6px 24px rgba(251, 113, 133, 0.55) !important;
-}
-
-/* 独立电竞磨砂卡片系统 */
-.esport-card {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 12px;
-    padding: 14px 18px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     margin-bottom: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.esport-card:hover {
-    transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.13);
-    border-color: rgba(56, 189, 248, 0.6);
-    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25);
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.12);
+    border-color: #38bdf8;
 }
-.esport-card-title {
-    font-size: 0.92rem;
+.stat-card-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+.stat-card-player {
+    font-size: 1.25rem;
     font-weight: 800;
-    color: #ffffff;
-    text-shadow: 0 0 10px #eab308, 0 0 18px rgba(234, 179, 8, 0.6), 1px 1px 2px #000000;
-    letter-spacing: 0.8px;
-    margin-bottom: 6px;
-}
-.esport-card-player {
-    font-size: 1.22rem;
-    font-weight: 800;
-    color: #ffffff;
+    color: #0f172a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 6px;
 }
-.esport-card-delta {
+.stat-card-delta {
     font-size: 0.82rem;
     font-weight: 700;
     padding: 2px 8px;
@@ -233,182 +84,89 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     display: inline-block;
     width: fit-content;
 }
-.delta-cyan {
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
-}
-.delta-gold {
-    background: rgba(254, 240, 138, 0.15);
-    color: #fef08a;
-    border: 1px solid rgba(254, 240, 138, 0.3);
-}
-.delta-red {
-    background: rgba(251, 113, 133, 0.15);
-    color: #fb7185;
-    border: 1px solid rgba(251, 113, 133, 0.3);
-}
-.delta-gray {
-    background: rgba(148, 163, 184, 0.15);
-    color: #94a3b8;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-}
+.delta-blue { background: #e0f2fe; color: #0284c7; }
+.delta-gold { background: #fef9c3; color: #ca8a04; }
+.delta-red { background: #ffe4e6; color: #e11d48; }
+.delta-gray { background: #f1f5f9; color: #64748b; }
 
 /* 红蓝对阵分队看板 */
-.team-arena-container {
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 16px;
-    padding: 20px;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-    margin-top: 10px;
-    margin-bottom: 20px;
+.team-arena-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    margin: 14px 0;
 }
-.team-column-blue {
-    background: linear-gradient(180deg, rgba(14, 165, 233, 0.18) 0%, rgba(15, 23, 42, 0.4) 100%);
-    border: 1px solid rgba(56, 189, 248, 0.4);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+.team-col-blue {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 14px;
 }
-.team-column-red {
-    background: linear-gradient(180deg, rgba(244, 63, 94, 0.18) 0%, rgba(15, 23, 42, 0.4) 100%);
-    border: 1px solid rgba(251, 113, 133, 0.4);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.15);
+.team-col-red {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 10px;
+    padding: 14px;
 }
-.team-header-title {
-    font-size: 1.15rem;
-    font-weight: 800;
+.team-roster-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-}
-.blue-title {
-    color: #38bdf8;
-    border-bottom: 2px solid rgba(56, 189, 248, 0.4);
-}
-.red-title {
-    color: #fb7185;
-    border-bottom: 2px solid rgba(251, 113, 133, 0.4);
-}
-.team-roster-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 8px;
-    transition: all 0.2s ease;
-}
-.team-roster-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(2px);
-}
-.player-tag {
-    font-weight: 700;
-    color: #ffffff;
-    font-size: 1.02rem;
-}
-.player-score-badge {
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-.vs-divider-box {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    padding: 10px 0;
-}
-.vs-glow-text {
-    font-size: 2.2rem;
-    font-weight: 900;
-    font-style: italic;
-    background: linear-gradient(180deg, #fef08a 0%, #ea580c 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 20px rgba(234, 88, 12, 0.8);
+    padding: 8px 12px;
     margin-bottom: 6px;
 }
 
-/* 亮感磨砂电竞表格容器 */
-.hextech-table-container {
-    width: 100%;
-    overflow-x: auto;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 12px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    margin-top: 10px;
-    margin-bottom: 25px;
-}
-.hextech-table {
-    width: 100%;
-    border-collapse: collapse;
-    color: #f1f5f9;
-    font-size: 0.95rem;
-    text-align: center;
-}
-.hextech-table th {
-    background: rgba(23, 49, 77, 0.8);
-    color: #fef08a;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    padding: 14px 10px;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
-}
-.hextech-table td {
-    padding: 13px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    transition: background 0.2s;
-}
-.hextech-table tr:hover td {
-    background: rgba(56, 189, 248, 0.12) !important;
-}
-.hextech-table tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.03);
-}
-.hextech-badge-win {
-    color: #38bdf8;
-    font-weight: 700;
-    text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-}
-.hextech-badge-loss {
-    color: #fb7185;
-    font-weight: 700;
-}
-.hextech-player-name {
-    text-align: left;
-    padding-left: 20px !important;
-    font-weight: 600;
-    color: #ffffff;
+/* 微信对阵纯净卡片 */
+.wechat-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
-/* 底部上传框磨砂优化 */
-div[data-testid="stFileUploader"] {
-    background: rgba(255, 255, 255, 0.06) !important;
-    border-radius: 10px !important;
-    border: 1px dashed rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(12px) !important;
-    padding: 12px !important;
+/* 原生表格美化 */
+.custom-table-box {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    margin: 14px 0 25px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+.clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+    text-align: center;
+    color: #1e293b;
+}
+.clean-table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    padding: 12px 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+.clean-table td {
+    padding: 10px 6px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.clean-table tr:hover td {
+    background: #f8fafc;
 }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ---------------- 0. 配置与图片压缩 ----------------
+# ---------------- 0. 基础配置与图片压缩 ----------------
 def load_config():
     if os.path.exists(CONFIG_FILE):
         try:
@@ -450,22 +208,18 @@ def clean_player_name_strict(name: str) -> str:
         return ""
     s = re.sub(r'[\s\u200b\ufeff\u3000\r\n\t]+', '', str(name))
     s = s.replace("＃", "#").replace("—", "-").replace("–", "-")
-    
     if ("千秋" in s) or ("52652" in s) or ("一栗卿" in s) or ("一粟卿" in s) or ("栗卿" in s) or ("粟卿" in s):
         return TARGET_QIANQIU
-
     s = s.replace("丶", "").replace("、", "").replace(",", "")
     return s
 
 def build_canonical_name_map(all_raw_names: list) -> dict:
     mapping = {}
     unique_clusters = []
-
     for raw in all_raw_names:
         cleaned = clean_player_name_strict(raw)
         if not cleaned:
             continue
-
         if cleaned == TARGET_QIANQIU:
             mapping[raw] = TARGET_QIANQIU
             continue
@@ -475,8 +229,7 @@ def build_canonical_name_map(all_raw_names: list) -> dict:
             if cleaned == cluster:
                 matched_target = cluster
                 break
-            ratio = difflib.SequenceMatcher(None, cleaned, cluster).ratio()
-            if ratio >= 0.88:
+            if difflib.SequenceMatcher(None, cleaned, cluster).ratio() >= 0.88:
                 matched_target = cluster
                 break
 
@@ -485,7 +238,6 @@ def build_canonical_name_map(all_raw_names: list) -> dict:
         else:
             unique_clusters.append(cleaned)
             mapping[raw] = cleaned
-
     return mapping
 
 def get_md5(data):
@@ -512,7 +264,6 @@ def analyze_image(img_bytes, api_key):
         timeout=40.0
     )
     b64 = base64.b64encode(img_bytes).decode('utf-8')
-    
     prompt = (
         "这是英雄联盟掌盟战绩结算截图。\n"
         "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID与KDA数值。\n"
@@ -520,7 +271,6 @@ def analyze_image(img_bytes, api_key):
         "请严格输出合法JSON：\n"
         '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "is_winner": true}]}'
     )
-    
     resp = client.chat.completions.create(
         model="qwen-vl-max",
         messages=[{"role": "user", "content": [
@@ -540,16 +290,15 @@ def short_name(full_name):
         return "未知"
     return str(full_name).split("#")[0]
 
-# ---------------- 侧边栏（管理 + 对局图文核对） ----------------
+# ---------------- 侧边栏 ----------------
 with st.sidebar:
     st.header("⚙️ 系统管理")
     default_key = st.secrets.get("DASHSCOPE_API_KEY", "") if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets else ""
-    key = st.text_input("DashScope API Key", value=default_key, type="password", help="sk- 开头的密钥")
+    key = st.text_input("DashScope API Key", value=default_key, type="password")
 
     records = load_records()
     st.metric("总计收录对局", f"{len(records)} 局")
 
-    # 逐局图文核对
     if records:
         st.markdown("---")
         st.subheader("🔍 对局图文核对")
@@ -557,12 +306,9 @@ with st.sidebar:
         selected_idx = st.selectbox("选择要核对的场次", range(len(records)), format_func=lambda i: game_options[i])
         
         curr_record = records[selected_idx]
-        
         thumb_b64 = curr_record.get("image_thumb", "")
         if thumb_b64:
-            st.image(f"data:image/jpeg;base64,{thumb_b64}", caption=f"第 {selected_idx + 1} 局原始结算图", use_container_width=True)
-        else:
-            st.caption("ℹ️ 此历史记录无缓存截图。")
+            st.image(f"data:image/jpeg;base64,{thumb_b64}", caption=f"第 {selected_idx + 1} 局原始截图", use_container_width=True)
         
         p_rows = []
         for p in curr_record.get("players", []):
@@ -575,89 +321,62 @@ with st.sidebar:
         if p_rows:
             st.dataframe(pd.DataFrame(p_rows), hide_index=True)
         
-        if st.button("🗑️ 删除本局错误战绩", key=f"del_game_{selected_idx}"):
+        if st.button("🗑️ 删除本局记录", key=f"del_game_{selected_idx}"):
             records.pop(selected_idx)
             save_records(records)
-            st.success("已删除该局记录！")
-            time.sleep(0.5)
+            st.success("已删除该局！")
+            time.sleep(0.4)
             st.rerun()
 
-    # 语音房设置
-    with st.expander("🎙️ 配置内战语音房链接"):
+    with st.expander("🎙️ 语音房链接配置"):
         cfg = load_config()
-        new_main = st.text_input("大厅主语音链接", value=cfg.get("main_voice", ""))
-        new_blue = st.text_input("🔵 蓝方专属语音链接", value=cfg.get("blue_voice", ""))
-        new_red = st.text_input("🔴 红方专属语音链接", value=cfg.get("red_voice", ""))
-        if st.button("💾 保存语音房链接"):
+        new_main = st.text_input("大厅主语音", value=cfg.get("main_voice", ""))
+        new_blue = st.text_input("🔵 蓝方语音", value=cfg.get("blue_voice", ""))
+        new_red = st.text_input("🔴 红方语音", value=cfg.get("red_voice", ""))
+        if st.button("💾 保存语音房"):
             save_config({"main_voice": new_main, "blue_voice": new_blue, "red_voice": new_red})
-            st.success("配置已保存！")
-            time.sleep(0.5)
+            st.success("已保存！")
+            time.sleep(0.4)
             st.rerun()
 
     st.markdown("---")
-    st.subheader("📦 数据备份与恢复")
-    
     if records:
         json_bytes = json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8')
         st.download_button(
             label="💾 导出战绩备份 (JSON)",
             data=json_bytes,
             file_name="lol_records_backup.json",
-            mime="application/json",
-            help="点击下载备份文件到本地"
+            mime="application/json"
         )
     
-    with st.expander("📥 导入恢复历史数据"):
-        uploaded_backup = st.file_uploader("选择已备份的 JSON 文件", type=["json"], key="backup_uploader")
-        if uploaded_backup is not None:
+    with st.expander("📥 导入恢复数据"):
+        uploaded_backup = st.file_uploader("选择备份文件", type=["json"], key="backup_uploader")
+        if uploaded_backup is not None and st.button("⚡ 确认导入", type="primary"):
             try:
                 imported_data = json.load(uploaded_backup)
                 if isinstance(imported_data, list):
-                    if st.button("⚡ 确认导入并恢复", type="primary"):
-                        save_records(imported_data)
-                        st.success("战绩已恢复！")
-                        time.sleep(0.8)
-                        st.rerun()
-                else:
-                    st.error("文件格式不正确，必须是 JSON 列表！")
-            except Exception as err:
-                st.error(f"读取文件失败: {err}")
+                    save_records(imported_data)
+                    st.success("恢复成功！")
+                    time.sleep(0.5)
+                    st.rerun()
+            except Exception as e:
+                st.error(f"导入失败: {e}")
 
-    st.markdown("---")
-    admin_pwd = st.secrets.get("ADMIN_PASSWORD", "666888") if hasattr(st, "secrets") and "ADMIN_PASSWORD" in st.secrets else "666888"
-    pwd = st.text_input("管理密码", type="password")
-    if pwd:
-        input_hash = hashlib.sha256(pwd.encode('utf-8')).hexdigest()
-        target_hash = hashlib.sha256(admin_pwd.encode('utf-8')).hexdigest()
-        if input_hash == target_hash:
-            st.success("🔓 管理员身份已验证")
-            if records and st.button("🗑️ 删除最近一局"):
-                records.pop()
-                save_records(records)
-                st.rerun()
-            if st.button("💣 清空所有对局"):
-                save_records([])
-                st.rerun()
-        else:
-            st.error("❌ 密码错误")
-
-# ---------------- 主界面 1：标题与连麦作战室直达 ----------------
-st.title("⚔️ 海克斯内战")
+# ---------------- 主界面 1：标题与连麦 ----------------
+st.title("⚔️ 海克斯内战战绩中心")
 
 cfg = load_config()
 c1, c2, c3 = st.columns(3)
 with c1:
-    st.link_button("🎙️ 进入大厅语音", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
+    st.link_button("🎙️ 大厅语音", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
 with c2:
-    st.link_button("🔵 进蓝方作战室", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
+    st.link_button("🔵 蓝方作战室", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
 with c3:
-    st.link_button("🔴 进红方作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
+    st.link_button("🔴 红方作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
 
-st.caption("💡 微信内无法直接拉起语音？请点击右上角「···」，选择「在浏览器打开」即可一键进麦。")
+st.caption("💡 微信内置浏览器打不开？请点右上角「···」选择「在浏览器打开」。")
 
-st.write("")
-
-# ---------------- 主界面 2：数据统计与作战室 ----------------
+# ---------------- 主界面 2：数据汇总与分析 ----------------
 records = load_records()
 
 if not records:
@@ -666,9 +385,9 @@ else:
     all_raw = []
     for r in records:
         for p in r.get("players", []):
-            raw_pname = p.get("player_name", "")
-            if raw_pname:
-                all_raw.append(raw_pname)
+            raw_name = p.get("player_name", "")
+            if raw_name:
+                all_raw.append(raw_name)
     
     name_mapping = build_canonical_name_map(list(set(all_raw)))
 
@@ -679,11 +398,7 @@ else:
             return TARGET_QIANQIU
         return fname
 
-    stats = defaultdict(lambda: {
-        "总场次": 0, "胜场": 0, "负场": 0,
-        "击杀": 0, "死亡": 0, "助攻": 0
-    })
-
+    stats = defaultdict(lambda: {"总场次": 0, "胜场": 0, "负场": 0, "击杀": 0, "死亡": 0, "助攻": 0})
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
@@ -701,26 +416,21 @@ else:
                 continue
             fname = get_final_name(raw_pname)
 
-            kills = int(p.get("kills", 0))
-            deaths = int(p.get("deaths", 0))
-            assists = int(p.get("assists", 0))
+            k, d, a = int(p.get("kills", 0)), int(p.get("deaths", 0)), int(p.get("assists", 0))
+            is_win = bool(p.get("is_winner"))
 
             stats[fname]["总场次"] += 1
-            is_win = bool(p.get("is_winner"))
-            if is_win:
-                stats[fname]["胜场"] += 1
-            else:
-                stats[fname]["负场"] += 1
-            stats[fname]["击杀"] += kills
-            stats[fname]["死亡"] += deaths
-            stats[fname]["助攻"] += assists
+            stats[fname]["胜场" if is_win else "负场"] += 1
+            stats[fname]["击杀"] += k
+            stats[fname]["死亡"] += d
+            stats[fname]["助攻"] += a
 
-            if kills > max_single_kill["val"]:
-                max_single_kill = {"player": fname, "val": kills, "game_idx": game_idx + 1}
-            if deaths > max_single_death["val"]:
-                max_single_death = {"player": fname, "val": deaths, "game_idx": game_idx + 1}
-            if assists > max_single_assist["val"]:
-                max_single_assist = {"player": fname, "val": assists, "game_idx": game_idx + 1}
+            if k > max_single_kill["val"]:
+                max_single_kill = {"player": fname, "val": k, "game_idx": game_idx + 1}
+            if d > max_single_death["val"]:
+                max_single_death = {"player": fname, "val": d, "game_idx": game_idx + 1}
+            if a > max_single_assist["val"]:
+                max_single_assist = {"player": fname, "val": a, "game_idx": game_idx + 1}
 
             team_side = str(p.get("team", "")).upper()
             if team_side == "BLUE":
@@ -729,20 +439,17 @@ else:
                 red_team.append((fname, is_win))
 
         for t in [blue_team, red_team]:
-            team_members = list({item[0]: item[1] for item in t}.items())
-            if len(team_members) >= 2:
-                for (p1, win1), (p2, _) in combinations(team_members, 2):
+            members = list({item[0]: item[1] for item in t}.items())
+            if len(members) >= 2:
+                for (p1, win1), (p2, _) in combinations(members, 2):
                     pair_key = tuple(sorted([p1, p2]))
                     synergy_stats[pair_key]["同队场次"] += 1
-                    if win1:
-                        synergy_stats[pair_key]["胜场"] += 1
-                    else:
-                        synergy_stats[pair_key]["负场"] += 1
+                    synergy_stats[pair_key]["胜场" if win1 else "负场"] += 1
 
-        blue_unique = list({item[0]: item[1] for item in blue_team}.items())
-        red_unique = list({item[0]: item[1] for item in red_team}.items())
-        for (pb, b_win) in blue_unique:
-            for (pr, _) in red_unique:
+        b_u = list({item[0]: item[1] for item in blue_team}.items())
+        r_u = list({item[0]: item[1] for item in red_team}.items())
+        for (pb, b_win) in b_u:
+            for (pr, _) in r_u:
                 if pb == pr:
                     continue
                 p1, p2 = sorted([pb, pr])
@@ -760,366 +467,236 @@ else:
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
         df["场均击杀"] = (df["击杀"] / df["总场次"]).round(1)
 
-        def calculate_mmr_v2(row):
+        def calculate_mmr(row):
             if row["总场次"] < 2:
                 return 50.0
             avg_k = float(row["场均击杀"])
             kill_score = min(avg_k / 10.0, 1.2) * 35.0
             kda_val = float(row["KDA_num"])
             kda_score = min(kda_val / 5.0, 1.2) * 35.0
-            wr_val = float(row["胜率_num"])
-            wr_score = (wr_val / 100.0) * 30.0
+            wr_score = (float(row["胜率_num"]) / 100.0) * 30.0
             total_mmr = kill_score + kda_score + wr_score
             if avg_k >= 7.0 and kda_val >= 2.5:
                 total_mmr += 5.0
             return round(total_mmr, 1)
 
-        df["MMR"] = df.apply(calculate_mmr_v2, axis=1)
+        df["MMR"] = df.apply(calculate_mmr, axis=1)
 
-        # ---------------- 板块 A：单场巅峰纪录 ----------------
+        # ---------------- 板块 A：单场纪录 ----------------
         st.subheader("🔥 单场最高纪录")
-        col_peak1, col_peak2, col_peak3 = st.columns(3)
-        with col_peak1:
+        col_p1, col_p2, col_p3 = st.columns(3)
+        with col_p1:
             st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">单场最高击杀</div>
-                    <div class="esport-card-player">{short_name(max_single_kill['player'])}</div>
-                    <div class="esport-card-delta delta-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
+                <div class="stat-card">
+                    <div class="stat-card-title">单场最高击杀</div>
+                    <div class="stat-card-player">{short_name(max_single_kill['player'])}</div>
+                    <div class="stat-card-delta delta-gold">{max_single_kill['val']} 杀 (第 {max_single_kill['game_idx']} 局)</div>
                 </div>
             """, unsafe_allow_html=True)
-        with col_peak2:
+        with col_p2:
             st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">单场最高阵亡</div>
-                    <div class="esport-card-player">{short_name(max_single_death['player'])}</div>
-                    <div class="esport-card-delta delta-red">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
+                <div class="stat-card">
+                    <div class="stat-card-title">单场最高阵亡</div>
+                    <div class="stat-card-player">{short_name(max_single_death['player'])}</div>
+                    <div class="stat-card-delta delta-red">{max_single_death['val']} 阵亡 (第 {max_single_death['game_idx']} 局)</div>
                 </div>
             """, unsafe_allow_html=True)
-        with col_peak3:
+        with col_p3:
             st.markdown(f"""
-                <div class="esport-card">
-                    <div class="esport-card-title">单场最高助攻</div>
-                    <div class="esport-card-player">{short_name(max_single_assist['player'])}</div>
-                    <div class="esport-card-delta delta-cyan">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
+                <div class="stat-card">
+                    <div class="stat-card-title">单场最高助攻</div>
+                    <div class="stat-card-player">{short_name(max_single_assist['player'])}</div>
+                    <div class="stat-card-delta delta-blue">{max_single_assist['val']} 助攻 (第 {max_single_assist['game_idx']} 局)</div>
                 </div>
             """, unsafe_allow_html=True)
 
-        st.write("")
-
-        # ---------------- 板块 B：综合荣誉头衔 (>=10局) ----------------
+        # ---------------- 板块 B：综合荣誉 (>=10局) ----------------
         st.subheader("🎖️ 综合荣誉头衔 (≥10局)")
         candidates_10 = df[df["总场次"] >= 10]
-        has_veteran = not candidates_10.empty
-
-        if has_veteran:
-            top_kda_name = candidates_10.sort_values(by="KDA_num", ascending=False).index[0]
-            top_kill_name = candidates_10.sort_values(by="击杀", ascending=False).index[0]
-            top_death_name = candidates_10.sort_values(by="死亡", ascending=False).index[0]
-            top_assist_name = candidates_10.sort_values(by="助攻", ascending=False).index[0]
+        has_vet = not candidates_10.empty
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            if has_veteran:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">KDA王</div>
-                        <div class="esport-card-player">{short_name(top_kda_name)}</div>
-                        <div class="esport-card-delta delta-cyan">KDA {df.loc[top_kda_name, 'KDA_num']}</div>
-                    </div>
-                """, unsafe_allow_html=True)
+            if has_vet:
+                t_name = candidates_10.sort_values(by="KDA_num", ascending=False).index[0]
+                val_str = f"KDA {df.loc[t_name, 'KDA_num']}"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">KDA王</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                t_name, val_str = "虚位以待", "需满 10 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">KDA之王</div>
+                    <div class="stat-card-player">{short_name(t_name)}</div>
+                    <div class="stat-card-delta delta-blue">{val_str}</div>
+                </div>
+            """, unsafe_allow_html=True)
         with col2:
-            if has_veteran:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">累计击杀王</div>
-                        <div class="esport-card-player">{short_name(top_kill_name)}</div>
-                        <div class="esport-card-delta delta-gold">{int(df.loc[top_kill_name, '击杀'])} 杀</div>
-                    </div>
-                """, unsafe_allow_html=True)
+            if has_vet:
+                t_name = candidates_10.sort_values(by="击杀", ascending=False).index[0]
+                val_str = f"{int(df.loc[t_name, '击杀'])} 杀"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">累计击杀王</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                t_name, val_str = "虚位以待", "需满 10 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">累计击杀王</div>
+                    <div class="stat-card-player">{short_name(t_name)}</div>
+                    <div class="stat-card-delta delta-gold">{val_str}</div>
+                </div>
+            """, unsafe_allow_html=True)
         with col3:
-            if has_veteran:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">累计白给王</div>
-                        <div class="esport-card-player">{short_name(top_death_name)}</div>
-                        <div class="esport-card-delta delta-red">{int(df.loc[top_death_name, '死亡'])} 阵亡</div>
-                    </div>
-                """, unsafe_allow_html=True)
+            if has_vet:
+                t_name = candidates_10.sort_values(by="死亡", ascending=False).index[0]
+                val_str = f"{int(df.loc[t_name, '死亡'])} 阵亡"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">累计白给王</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                t_name, val_str = "虚位以待", "需满 10 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">累计白给王</div>
+                    <div class="stat-card-player">{short_name(t_name)}</div>
+                    <div class="stat-card-delta delta-red">{val_str}</div>
+                </div>
+            """, unsafe_allow_html=True)
         with col4:
-            if has_veteran:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">累计助攻王</div>
-                        <div class="esport-card-player">{short_name(top_assist_name)}</div>
-                        <div class="esport-card-delta delta-cyan">{int(df.loc[top_assist_name, '助攻'])} 助攻</div>
-                    </div>
-                """, unsafe_allow_html=True)
+            if has_vet:
+                t_name = candidates_10.sort_values(by="助攻", ascending=False).index[0]
+                val_str = f"{int(df.loc[t_name, '助攻'])} 助攻"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">累计助攻王</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">需出场满 10 局</div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-        st.write("")
+                t_name, val_str = "虚位以待", "需满 10 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">累计助攻王</div>
+                    <div class="stat-card-player">{short_name(t_name)}</div>
+                    <div class="stat-card-delta delta-blue">{val_str}</div>
+                </div>
+            """, unsafe_allow_html=True)
 
         # ---------------- 板块 C：羁绊看板 (>=5局) ----------------
         st.subheader("🔗 阵营羁绊与宿敌")
         syn_list = []
         for (p1, p2), v in synergy_stats.items():
-            t_games = int(v["同队场次"])
-            w_games = int(v["胜场"])
-            l_games = int(v["负场"])
-            wr = (w_games / t_games) if t_games > 0 else 0
-            syn_list.append({
-                "pair_name": f"{short_name(p1)} & {short_name(p2)}",
-                "games": t_games,
-                "wins": w_games,
-                "losses": l_games,
-                "win_rate": wr
-            })
-        
+            tg, wg, lg = int(v["同队场次"]), int(v["胜场"]), int(v["负场"])
+            syn_list.append({"pair": f"{short_name(p1)} & {short_name(p2)}", "games": tg, "wins": wg, "losses": lg, "wr": wg/tg if tg>0 else 0})
         syn_df = pd.DataFrame(syn_list)
         best_pair, worst_pair = None, None
         if not syn_df.empty:
-            syn_candidates = syn_df[syn_df["games"] >= 5]
-            if not syn_candidates.empty:
-                best_pair = syn_candidates.sort_values(by=["win_rate", "games"], ascending=[False, False]).iloc[0]
-                worst_pair = syn_candidates.sort_values(by=["win_rate", "games"], ascending=[True, False]).iloc[0]
+            cand = syn_df[syn_df["games"] >= 5]
+            if not cand.empty:
+                best_pair = cand.sort_values(by=["wr", "games"], ascending=[False, False]).iloc[0]
+                worst_pair = cand.sort_values(by=["wr", "games"], ascending=[True, False]).iloc[0]
 
         nem_list = []
         for (p1, p2), v in nemesis_stats.items():
-            t_games = int(v["交手场次"])
-            p1_w = int(v["p1_wins"])
-            p2_w = int(v["p2_wins"])
-            if t_games > 0:
-                if p1_w >= p2_w:
-                    winner, loser = p1, p2
-                    w_cnt, l_cnt = p1_w, p2_w
-                else:
-                    winner, loser = p2, p1
-                    w_cnt, l_cnt = p2_w, p1_w
-                
-                dom_rate = w_cnt / t_games
-                diff = abs(p1_w - p2_w)
-                nem_list.append({
-                    "display_name": f"{short_name(winner)} ➔ {short_name(loser)}",
-                    "games": t_games,
-                    "wins": w_cnt,
-                    "losses": l_cnt,
-                    "dom_rate": dom_rate,
-                    "diff": diff
-                })
-
+            tg, p1_w, p2_w = int(v["交手场次"]), int(v["p1_wins"]), int(v["p2_wins"])
+            if tg > 0:
+                winner, loser = (p1, p2) if p1_w >= p2_w else (p2, p1)
+                w_cnt, l_cnt = max(p1_w, p2_w), min(p1_w, p2_w)
+                nem_list.append({"display": f"{short_name(winner)} ➔ {short_name(loser)}", "wins": w_cnt, "losses": l_cnt, "dom": w_cnt/tg, "diff": abs(p1_w-p2_w), "games": tg})
         nem_df = pd.DataFrame(nem_list)
         rival_pair = None
         if not nem_df.empty:
-            nem_candidates = nem_df[nem_df["games"] >= 5]
-            if not nem_candidates.empty:
-                rival_pair = nem_candidates.sort_values(by=["dom_rate", "diff", "games"], ascending=[False, False, False]).iloc[0]
+            n_cand = nem_df[nem_df["games"] >= 5]
+            if not n_cand.empty:
+                rival_pair = n_cand.sort_values(by=["dom", "diff", "games"], ascending=[False, False, False]).iloc[0]
 
-        col_syn1, col_syn2, col_syn3 = st.columns(3)
-        with col_syn1:
+        cs1, cs2, cs3 = st.columns(3)
+        with cs1:
             if best_pair is not None:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">黄金搭档 (≥5局)</div>
-                        <div class="esport-card-player">{best_pair['pair_name']}</div>
-                        <div class="esport-card-delta delta-cyan">{int(best_pair['wins'])}胜{int(best_pair['losses'])}负 ({round(best_pair['win_rate']*100, 1)}%)</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                p_text, d_text = best_pair['pair'], f"{int(best_pair['wins'])}胜{int(best_pair['losses'])}负 ({round(best_pair['wr']*100,1)}%)"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">黄金搭档 (≥5局)</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">暂无同队满 5 局的搭档</div>
-                    </div>
-                """, unsafe_allow_html=True)
-        with col_syn2:
+                p_text, d_text = "虚位以待", "同队需满 5 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">黄金搭档 (≥5局)</div>
+                    <div class="stat-card-player">{p_text}</div>
+                    <div class="stat-card-delta delta-blue">{d_text}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with cs2:
             if worst_pair is not None:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">难兄难弟 (≥5局)</div>
-                        <div class="esport-card-player">{worst_pair['pair_name']}</div>
-                        <div class="esport-card-delta delta-red">{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['win_rate']*100, 1)}%)</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                p_text, d_text = worst_pair['pair'], f"{int(worst_pair['wins'])}胜{int(worst_pair['losses'])}负 ({round(worst_pair['wr']*100,1)}%)"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">难兄难弟 (≥5局)</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">暂无同队满 5 局的搭档</div>
-                    </div>
-                """, unsafe_allow_html=True)
-        with col_syn3:
+                p_text, d_text = "虚位以待", "同队需满 5 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">难兄难弟 (≥5局)</div>
+                    <div class="stat-card-player">{p_text}</div>
+                    <div class="stat-card-delta delta-red">{d_text}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with cs3:
             if rival_pair is not None:
-                st.markdown(f"""
-                    <div class="esport-card">
-                        <div class="esport-card-title">一生之敌 (≥5局)</div>
-                        <div class="esport-card-player">{rival_pair['display_name']}</div>
-                        <div class="esport-card-delta delta-gold">{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负 ({round(rival_pair['dom_rate']*100, 1)}%压制)</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                p_text, d_text = rival_pair['display'], f"{int(rival_pair['wins'])}胜{int(rival_pair['losses'])}负 ({round(rival_pair['dom']*100,1)}%压制)"
             else:
-                st.markdown("""
-                    <div class="esport-card">
-                        <div class="esport-card-title">一生之敌 (≥5局)</div>
-                        <div class="esport-card-player" style="color:#94a3b8;font-size:1rem;">虚位以待</div>
-                        <div class="esport-card-delta delta-gray">暂无交手满 5 局的宿敌</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                p_text, d_text = "虚位以待", "交手需满 5 局"
+            st.markdown(f"""
+                <div class="stat-card">
+                    <div class="stat-card-title">一生之敌 (≥5局)</div>
+                    <div class="stat-card-player">{p_text}</div>
+                    <div class="stat-card-delta delta-gold">{d_text}</div>
+                </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("---")
 
         # ---------------- 板块 D：赛前红蓝对阵作战室 ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
-        # 维护可用外援
         if "custom_guests" not in st.session_state:
             st.session_state["custom_guests"] = {}
 
-        # 历史脏数据容错
         for k, v in list(st.session_state["custom_guests"].items()):
             if not isinstance(v, dict):
                 st.session_state["custom_guests"][k] = {"mmr": float(v), "tier": "临时外援"}
 
         known_roster = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
-        full_available_options = known_roster + list(st.session_state["custom_guests"].keys())
+        full_options = known_roster + list(st.session_state["custom_guests"].keys())
+        default_selection = known_roster[:10] if len(known_roster) >= 10 else known_roster
 
-        # ---------------- 纯净电竞磨砂选人面板（彻底平替原生 BaseWeb 多选黑白冲突） ----------------
-        if "active_roster" not in st.session_state:
-            st.session_state["active_roster"] = list(known_roster[:10] if len(known_roster) >= 10 else known_roster)
+        # 回归原生多选框：一次选完，不再频繁触发全局重新渲染转圈
+        selected_players = st.multiselect(
+            "选择出战群友名单（可在下拉框中直接搜索或多选，不转圈卡顿）：",
+            options=full_options,
+            default=default_selection,
+            format_func=lambda x: short_name(x)
+        )
 
-        # 自动清洗不在当前名单里的无效玩家
-        st.session_state["active_roster"] = [p for p in st.session_state["active_roster"] if p in full_available_options]
-
-        # 选人看板头部与统计
-        sel_count = len(st.session_state["active_roster"])
-        st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;margin-bottom:10px;">
-                <div style="font-size:0.95rem;font-weight:700;color:#f8fafc;">
-                    👥 出战名单点选 (点击即可选中 / 移出)：
-                </div>
-                <div style="font-size:0.9rem;font-weight:700;color:#38bdf8;">
-                    已点选参战: <span style="font-size:1.1rem;color:#fef08a;">{sel_count}</span> 人
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        # 快捷全选/清空控制条
-        c_act1, c_act2, c_act3, _ = st.columns([1.1, 1.1, 1.1, 3.2])
-        with c_act1:
-            if st.button("⚡ 选前10人", key="btn_sel_10", use_container_width=True):
-                st.session_state["active_roster"] = list(known_roster[:10])
-                st.rerun()
-        with c_act2:
-            if st.button("🌟 全选全部", key="btn_sel_all", use_container_width=True):
-                st.session_state["active_roster"] = list(full_available_options)
-                st.rerun()
-        with c_act3:
-            if st.button("🧹 一键清空", key="btn_clear_roster", use_container_width=True):
-                st.session_state["active_roster"] = []
-                st.rerun()
-
-        # 纯净电竞点选卡牌网格 (每行 5 位玩家)
-        cols_per_row = 5
-        for row_i in range(0, len(full_available_options), cols_per_row):
-            batch = full_available_options[row_i:row_i+cols_per_row]
-            b_cols = st.columns(cols_per_row)
-            for col_j, p_id in enumerate(batch):
-                with b_cols[col_j]:
-                    p_disp = short_name(p_id)
-                    is_active = p_id in st.session_state["active_roster"]
-                    btn_label = f"✅ {p_disp}" if is_active else f"➕ {p_disp}"
-                    btn_type = "primary" if is_active else "secondary"
-                    if st.button(btn_label, key=f"toggle_{p_id}", type=btn_type, use_container_width=True):
-                        if is_active:
-                            st.session_state["active_roster"].remove(p_id)
-                        else:
-                            st.session_state["active_roster"].append(p_id)
+        # 外援录入条
+        with st.container():
+            cg1, cg2, cg3 = st.columns([3, 3, 1.5])
+            with cg1:
+                guest_name = st.text_input("临时外援/替补昵称", placeholder="输入昵称...", key="in_guest_name", label_visibility="collapsed")
+            with cg2:
+                guest_tier = st.selectbox(
+                    "实力评级",
+                    options=[80.0, 60.0, 45.0],
+                    format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水平 (60分)", 45.0: "🌱 萌新挂件 (45分)"}[v],
+                    index=1,
+                    key="sel_guest_tier",
+                    label_visibility="collapsed"
+                )
+            with cg3:
+                if st.button("➕ 加入外援", key="btn_add_g", use_container_width=True):
+                    if guest_name.strip():
+                        c_name = guest_name.strip()
+                        tier_label = {80.0: "通天大腿", 60.0: "普通水平", 45.0: "萌新挂件"}[guest_tier]
+                        st.session_state["custom_guests"][c_name] = {"mmr": guest_tier, "tier": tier_label}
+                        st.success(f"已录入外援: {c_name}")
+                        time.sleep(0.3)
                         st.rerun()
+                    else:
+                        st.warning("请输入昵称！")
 
-        selected_players = st.session_state["active_roster"]
-
-        # 极简磨砂外援录入条
-        st.markdown("<div class='guest-bar-container'>", unsafe_allow_html=True)
-        st.markdown("<div style='font-size:0.9rem;font-weight:700;color:#38bdf8;margin-bottom:8px;'>➕ 快速添加临时外援 / 替补（无需战绩直接参战）：</div>", unsafe_allow_html=True)
-        
-        c_g1, c_g2, c_g3 = st.columns([2.5, 2.5, 1.2])
-        with c_g1:
-            guest_name = st.text_input("外援昵称/ID", placeholder="输入名字直接添加...", key="input_guest_name", label_visibility="collapsed")
-        with c_g2:
-            guest_tier = st.selectbox(
-                "实力评级",
-                options=[80.0, 60.0, 45.0],
-                format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水平 (60分)", 45.0: "🌱 萌新挂件 (45分)"}[v],
-                index=1,
-                key="select_guest_tier",
-                label_visibility="collapsed"
-            )
-        with c_g3:
-            if st.button("➕ 加入名单", key="btn_add_guest", use_container_width=True):
-                if guest_name.strip():
-                    c_name = guest_name.strip()
-                    tier_label = {80.0: "通天大腿", 60.0: "普通水平", 45.0: "萌新挂件"}[guest_tier]
-                    st.session_state["custom_guests"][c_name] = {"mmr": guest_tier, "tier": tier_label}
-                    if c_name not in st.session_state["active_roster"]:
-                        st.session_state["active_roster"].append(c_name)
-                    st.success(f"已加入外援: {c_name}")
-                    time.sleep(0.4)
-                    st.rerun()
-                else:
-                    st.warning("请输入昵称！")
-
-        # 当前已添加外援的轻量管理列表
         if st.session_state["custom_guests"]:
-            st.markdown("<div style='margin-top:10px;font-size:0.85rem;color:#fef08a;'>已录入外援：</div>", unsafe_allow_html=True)
             for g_name, g_info in list(st.session_state["custom_guests"].items()):
                 mmr_val = g_info.get("mmr", 60.0) if isinstance(g_info, dict) else float(g_info)
                 tier_str = g_info.get("tier", "外援") if isinstance(g_info, dict) else "外援"
-
-                col_info, col_del = st.columns([5, 1])
-                with col_info:
-                    st.markdown(f"<div style='padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:6px;font-size:0.9rem;margin-bottom:3px;'>"
-                                f"👤 <b style='color:#ffffff;'>{g_name}</b> · <span style='color:#38bdf8;'>战力 {mmr_val} ({tier_str})</span>"
-                                f"</div>", unsafe_allow_html=True)
-                with col_del:
-                    if st.button("🗑️ 删除", key=f"del_guest_{g_name}"):
+                col_i, col_d = st.columns([5, 1])
+                with col_i:
+                    st.caption(f"👤 **{g_name}** · 战力分: {mmr_val} ({tier_str})")
+                with col_d:
+                    if st.button("🗑️ 删除", key=f"del_g_{g_name}"):
                         del st.session_state["custom_guests"][g_name]
-                        if g_name in st.session_state["active_roster"]:
-                            st.session_state["active_roster"].remove(g_name)
                         st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
 
-        # 分队操作按钮
         col_b1, col_b2, _ = st.columns([1.5, 1.5, 3])
         with col_b1:
             balance_btn = st.button("⚖️ 战力天平平衡分配", type="primary", use_container_width=True)
@@ -1143,34 +720,30 @@ else:
 
         if balance_btn:
             if total_chosen < 2:
-                st.warning("⚠️ 至少需要选择 2 位玩家才能进行对抗分队！")
+                st.warning("⚠️ 至少选择 2 位玩家才能进行分队！")
             else:
-                player_list = list(selected_players)
+                p_list = list(selected_players)
                 blue_size = total_chosen // 2
                 best_diff = float("inf")
-                best_blue = []
-                best_red = []
+                best_b, best_r = [], []
 
-                for candidate_blue in combinations(player_list, blue_size):
-                    candidate_red = [p for p in player_list if p not in candidate_blue]
-                    m_blue = sum(get_player_mmr(p) for p in candidate_blue)
-                    m_red = sum(get_player_mmr(p) for p in candidate_red)
-                    avg_blue = m_blue / len(candidate_blue)
-                    avg_red = m_red / len(candidate_red)
-                    
-                    diff = abs(avg_blue - avg_red) if total_chosen % 2 != 0 else abs(m_blue - m_red)
+                for cand_b in combinations(p_list, blue_size):
+                    cand_r = [p for p in p_list if p not in cand_b]
+                    m_b = sum(get_player_mmr(p) for p in cand_b)
+                    m_r = sum(get_player_mmr(p) for p in cand_r)
+                    avg_b, avg_r = m_b / len(cand_b), m_r / len(cand_r)
+                    diff = abs(avg_b - avg_r) if total_chosen % 2 != 0 else abs(m_b - m_r)
                     if diff < best_diff:
                         best_diff = diff
-                        best_blue = list(candidate_blue)
-                        best_red = list(candidate_red)
+                        best_b, best_r = list(cand_b), list(cand_r)
 
-                st.session_state["assigned_blue"] = best_blue
-                st.session_state["assigned_red"] = best_red
-                st.session_state["split_mode"] = f"⚖️ 战力天平最优平衡 ({len(best_blue)}v{len(best_red)})"
+                st.session_state["assigned_blue"] = best_b
+                st.session_state["assigned_red"] = best_r
+                st.session_state["split_mode"] = f"⚖️ 战力天平最优平衡 ({len(best_b)}v{len(best_r)})"
 
         elif random_btn:
             if total_chosen < 2:
-                st.warning("⚠️ 至少需要选择 2 位玩家才能进行对抗分队！")
+                st.warning("⚠️ 至少选择 2 位玩家才能进行分队！")
             else:
                 shuffled = list(selected_players)
                 random.shuffle(shuffled)
@@ -1179,7 +752,7 @@ else:
                 st.session_state["assigned_red"] = shuffled[blue_size:]
                 st.session_state["split_mode"] = f"🎲 听天由命盲盒随机 ({len(st.session_state['assigned_blue'])}v{len(st.session_state['assigned_red'])})"
 
-        # 渲染对阵看板
+        # 渲染对阵结果
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
             blue_team = st.session_state["assigned_blue"]
             red_team = st.session_state["assigned_red"]
@@ -1191,112 +764,70 @@ else:
             diff_score = round(abs(blue_total - red_total), 1)
             avg_diff = round(abs(blue_avg - red_avg), 1)
 
-            st.write("")
-            st.caption(f"当前模式：**{st.session_state['split_mode']}** ｜ 双方总战力差：**{diff_score} 分** (人均均分差: **{avg_diff} 分**)")
+            st.caption(f"当前模式：**{st.session_state['split_mode']}** ｜ 双方总战力差：**{diff_score} 分** (人均差: **{avg_diff} 分**)")
 
-            blue_items = []
+            b_htmls = []
             for p in blue_team:
                 p_name = short_name(p)
                 p_mmr = get_player_mmr(p)
-                if p in df.index:
-                    p_wr = df.loc[p, "胜率_num"]
-                    p_ak = df.loc[p, "场均击杀"]
-                    extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
-                else:
-                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
-                    extra_desc = f"外援 · {tier_str}"
-                
-                blue_items.append(
-                    f"<div class='team-roster-item'>"
-                    f"<span class='player-tag'>🛡️ {p_name}</span>"
-                    f"<span class='player-score-badge' style='background:rgba(56,189,248,0.2);color:#38bdf8;'>战力 {p_mmr} ({extra_desc})</span>"
-                    f"</div>"
-                )
+                desc = f"胜率 {df.loc[p, '胜率_num']}% · 场均 {df.loc[p, '场均击杀']} 杀" if p in df.index else f"外援 · {st.session_state['custom_guests'].get(p,{}).get('tier','外援')}"
+                b_htmls.append(f"<div class='team-roster-row'><b>🔵 {p_name}</b><span style='color:#0284c7;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
 
-            red_items = []
+            r_htmls = []
             for p in red_team:
                 p_name = short_name(p)
                 p_mmr = get_player_mmr(p)
-                if p in df.index:
-                    p_wr = df.loc[p, "胜率_num"]
-                    p_ak = df.loc[p, "场均击杀"]
-                    extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
-                else:
-                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
-                    extra_desc = f"外援 · {tier_str}"
+                desc = f"胜率 {df.loc[p, '胜率_num']}% · 场均 {df.loc[p, '场均击杀']} 杀" if p in df.index else f"外援 · {st.session_state['custom_guests'].get(p,{}).get('tier','外援')}"
+                r_htmls.append(f"<div class='team-roster-row'><b>🔴 {p_name}</b><span style='color:#e11d48;font-size:0.85rem;'>战力 {p_mmr} ({desc})</span></div>")
 
-                red_items.append(
-                    f"<div class='team-roster-item'>"
-                    f"<span class='player-tag'>⚔️ {p_name}</span>"
-                    f"<span class='player-score-badge' style='background:rgba(251,113,133,0.2);color:#fb7185;'>战力 {p_mmr} ({extra_desc})</span>"
-                    f"</div>"
-                )
-
-            arena_html = (
-                f"<div class='team-arena-container'>"
-                f"<div style='display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;'>"
-                f"<div style='flex:1;min-width:280px;' class='team-column-blue'>"
-                f"<div class='team-header-title blue-title'>"
-                f"<span>🔵 蓝色方 ({len(blue_team)}人)</span><span>均分: {blue_avg}</span>"
-                f"</div>"
-                f"{''.join(blue_items)}"
-                f"</div>"
-                f"<div style='flex:0 0 100px;display:flex;align-items:center;justify-content:center;' class='vs-divider-box'>"
-                f"<div class='vs-glow-text'>VS</div>"
-                f"<span style='font-size:0.78rem;color:#94a3b8;'>均分差 {avg_diff}</span>"
-                f"</div>"
-                f"<div style='flex:1;min-width:280px;' class='team-column-red'>"
-                f"<div class='team-header-title red-title'>"
-                f"<span>🔴 红色方 ({len(red_team)}人)</span><span>均分: {red_avg}</span>"
-                f"</div>"
-                f"{''.join(red_items)}"
-                f"</div>"
-                f"</div>"
-                f"</div>"
-            )
-
+            arena_html = f"""
+                <div class="team-arena-box">
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:280px;" class="team-col-blue">
+                            <div style="font-size:1.1rem;font-weight:800;color:#0284c7;margin-bottom:10px;display:flex;justify-content:space-between;">
+                                <span>🔵 蓝色方 ({len(blue_team)}人)</span><span>均分: {blue_avg}</span>
+                            </div>
+                            {''.join(b_htmls)}
+                        </div>
+                        <div style="flex:1;min-width:280px;" class="team-col-red">
+                            <div style="font-size:1.1rem;font-weight:800;color:#e11d48;margin-bottom:10px;display:flex;justify-content:space-between;">
+                                <span>🔴 红色方 ({len(red_team)}人)</span><span>均分: {red_avg}</span>
+                            </div>
+                            {''.join(r_htmls)}
+                        </div>
+                    </div>
+                </div>
+            """
             st.markdown(arena_html, unsafe_allow_html=True)
 
-            # 手写深海蓝微光战报卡片（内置原生 JS 剪贴板写入按钮）
+            # 微信战报卡片（支持点击一键复制）
             blue_line = "、".join([short_name(p) for p in blue_team])
             red_line = "、".join([short_name(p) for p in red_team])
             raw_copy_text = f"【海克斯内战·双方对阵阵容】\\n🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {blue_line}\\n🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {red_line}\\n⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)"
-            
+
             wechat_html = f"""
-                <div class="wechat-copy-panel">
-                    <div class="wechat-copy-header">
-                        <span>📋 微信对阵名单</span>
+                <div class="wechat-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:8px;">
+                        <span style="font-size:0.9rem;font-weight:700;color:#475569;">📋 微信名单快捷复制</span>
                         <button id="btn_copy_wechat" onclick="
                             navigator.clipboard.writeText('{raw_copy_text}').then(() => {{
                                 const btn = document.getElementById('btn_copy_wechat');
-                                btn.innerText = '✅ 已复制到剪贴板！';
-                                btn.style.borderColor = '#4ade80';
-                                btn.style.color = '#4ade80';
+                                btn.innerText = '✅ 已成功复制！';
+                                btn.style.background = '#dcfce7';
+                                btn.style.color = '#16a34a';
                                 setTimeout(() => {{
                                     btn.innerText = '📋 点击一键复制';
-                                    btn.style.borderColor = 'rgba(56, 189, 248, 0.6)';
-                                    btn.style.color = '#ffffff';
+                                    btn.style.background = '#f1f5f9';
+                                    btn.style.color = '#334155';
                                 }}, 2000);
-                            }}).catch(err => {{
-                                alert('复制失败，请手动长按文本全选');
-                            }});
-                        " style="
-                            background: rgba(14, 165, 233, 0.25);
-                            border: 1px solid rgba(56, 189, 248, 0.6);
-                            color: #ffffff;
-                            padding: 4px 12px;
-                            border-radius: 6px;
-                            font-size: 0.82rem;
-                            font-weight: 700;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                        ">📋 点击一键复制</button>
+                            }}).catch(() => {{ alert('请手动长按复制'); }});
+                        " style="background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;padding:4px 10px;border-radius:6px;font-size:0.82rem;font-weight:700;cursor:pointer;">📋 点击一键复制</button>
                     </div>
-                    <div class="wechat-copy-body">
+                    <div style="font-size:0.95rem;line-height:1.6;color:#1e293b;">
                         <div><b>【海克斯内战·双方对阵阵容】</b></div>
-                        <div style="margin-top:4px;"><span style="color:#38bdf8;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
-                        <div><span style="color:#fb7185;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
-                        <div style="font-size:0.85rem;color:#94a3b8;margin-top:4px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
+                        <div><span style="color:#0284c7;font-weight:700;">🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}):</span> {blue_line}</div>
+                        <div><span style="color:#e11d48;font-weight:700;">🔴 红方 ({len(red_team)}人 | 均分{red_avg}):</span> {red_line}</div>
+                        <div style="font-size:0.85rem;color:#64748b;margin-top:2px;">⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)</div>
                     </div>
                 </div>
             """
@@ -1310,53 +841,39 @@ else:
         table_rows = []
         for player_id, row in df.iterrows():
             wr_val = row["胜率_num"]
-            wr_badge = f"<span class='hextech-badge-win'>{wr_val}%</span>" if wr_val >= 50 else f"<span class='hextech-badge-loss'>{wr_val}%</span>"
-            kd_str = f"{row['KD']:.2f}"
-            kda_str = f"{row['KDA_num']:.2f}"
-            mmr_val = f"{row['MMR']:.1f}"
-            avg_kill_str = f"{row['场均击杀']:.1f}"
-            p_name = short_name(player_id)
+            wr_badge = f"<span style='color:#0284c7;font-weight:700;'>{wr_val}%</span>" if wr_val >= 50 else f"<span style='color:#e11d48;font-weight:700;'>{wr_val}%</span>"
+            table_rows.append(f"""
+                <tr>
+                    <td style="text-align:left;padding-left:16px;font-weight:700;">{short_name(player_id)}</td>
+                    <td>{int(row['总场次'])}</td>
+                    <td>{int(row['胜场'])}</td>
+                    <td>{int(row['负场'])}</td>
+                    <td>{wr_badge}</td>
+                    <td style="font-weight:700;color:#0284c7;">{row['MMR']:.1f}</td>
+                    <td>{row['场均击杀']:.1f}</td>
+                    <td>{row['KD']:.2f}</td>
+                    <td style="font-weight:700;">{row['KDA_num']:.2f}</td>
+                    <td>{int(row['击杀'])}</td>
+                    <td>{int(row['死亡'])}</td>
+                    <td>{int(row['助攻'])}</td>
+                </tr>
+            """)
 
-            total_games = int(row['总场次'])
-            wins = int(row['胜场'])
-            losses = int(row['负场'])
-            kills = int(row['击杀'])
-            deaths = int(row['死亡'])
-            assists = int(row['助攻'])
-
-            row_html = (
-                f"<tr>"
-                f"<td class='hextech-player-name'>{p_name}</td>"
-                f"<td>{total_games}</td>"
-                f"<td>{wins}</td>"
-                f"<td>{losses}</td>"
-                f"<td>{wr_badge}</td>"
-                f"<td style='color:#a5f3fc;font-weight:700;'>{mmr_val}</td>"
-                f"<td style='color:#fde047;font-weight:700;'>{avg_kill_str}</td>"
-                f"<td style='color:#38bdf8;font-weight:700;'>{kd_str}</td>"
-                f"<td style='color:#fef08a;font-weight:700;'>{kda_str}</td>"
-                f"<td>{kills}</td>"
-                f"<td>{deaths}</td>"
-                f"<td>{assists}</td>"
-                f"</tr>"
-            )
-            table_rows.append(row_html)
-
-        custom_table_html = (
-            f'<div class="hextech-table-container">'
-            f'<table class="hextech-table">'
-            f'<thead><tr>'
-            f'<th style="text-align:left;padding-left:20px;">玩家</th>'
-            f'<th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>'
-            f'<th>战力(MMR)</th><th>场均击杀</th><th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
-            f'</tr></thead>'
-            f'<tbody>{"".join(table_rows)}</tbody>'
-            f'</table></div>'
-        )
-
+        custom_table_html = f"""
+            <div class="custom-table-box">
+                <table class="clean-table">
+                    <thead><tr>
+                        <th style="text-align:left;padding-left:16px;">玩家</th>
+                        <th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>
+                        <th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>
+                    </tr></thead>
+                    <tbody>{''.join(table_rows)}</tbody>
+                </table>
+            </div>
+        """
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-# ---------------- 主界面 3：战绩上传窗口（置底） ----------------
+# ---------------- 主界面 3：战绩录入 (置底) ----------------
 st.markdown("---")
 st.subheader("📥 战绩录入")
 
@@ -1366,30 +883,28 @@ with st.form("upload_box", clear_on_submit=False):
 
 if submit_btn:
     if not files:
-        st.warning("⚠️ 请先选择或拖入战绩截图！")
+        st.warning("⚠️ 请先选择战绩截图！")
     elif not key:
-        st.warning("⚠️ 请在左侧侧边栏填入 DashScope API Key！")
+        st.warning("⚠️ 请在左侧输入 DashScope API Key！")
     else:
         records = load_records()
         seen_hashes = {r.get("md5") for r in records if "md5" in r}
         added = 0
-        
         bar = st.progress(0)
         status_box = st.empty()
-        
+
         for idx, file in enumerate(files):
             status_box.info(f"⏳ 正在分析第 {idx+1}/{len(files)} 张: {file.name}")
             img_data = file.read()
             h = get_md5(img_data)
-            
+
             if h in seen_hashes:
-                st.warning(f"⚠️ {file.name} 已录入过，已自动跳过。")
+                st.warning(f"⚠️ {file.name} 已录入过，跳过。")
             else:
                 try:
                     result = analyze_image(img_data, key)
                     result["md5"] = h
                     result["image_thumb"] = compress_image_to_b64(img_data)
-                    
                     for p in result.get("players", []):
                         p["player_name"] = clean_player_name_strict(p.get("player_name", ""))
                     records.append(result)
@@ -1398,11 +913,11 @@ if submit_btn:
                     save_records(records)
                 except Exception as e:
                     st.error(f"❌ {file.name} 录入失败: {e}")
-            
+
             bar.progress((idx + 1) / len(files))
-        
+
         status_box.empty()
         if added > 0:
             st.success(f"🎉 成功录入 {added} 局战绩！")
-            time.sleep(0.8)
+            time.sleep(0.6)
             st.rerun()
