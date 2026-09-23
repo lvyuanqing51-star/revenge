@@ -220,17 +220,16 @@ button[data-testid="stBaseButton-secondary"]:hover {
     box-shadow: 0 3px 8px rgba(244, 63, 94, 0.2);
 }
 
-.rule-chip {
-    display: inline-flex;
+.rule-chip-card {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     background: #fff1f2;
     border: 1px solid #fecdd3;
-    color: #be185d;
-    font-size: 0.82rem;
-    font-weight: 700;
-    padding: 3px 10px;
     border-radius: 8px;
-    margin: 3px 6px 3px 0;
+    padding: 6px 12px;
+    margin-bottom: 6px;
+    font-size: 0.86rem;
 }
 
 .team-arena-box {
@@ -886,7 +885,7 @@ else:
 
         st.markdown("---")
 
-        # ---------------- 板块 D：赛前红蓝对阵作战室 (新增：🔗 宿敌/连体硬锁定) ----------------
+        # ---------------- 板块 D：赛前红蓝对阵作战室 (支持单个删除锁定规则) ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
         if "custom_guests" not in st.session_state:
@@ -942,9 +941,9 @@ else:
                         del st.session_state["custom_guests"][g_name]
                         st.rerun()
 
-        # 核心功能升级：人情世故 & 宿敌锁定器
+        # 人情世故与宿敌锁定器 (支持单个删除)
         if "lock_rules" not in st.session_state:
-            st.session_state["lock_rules"] = [] # [{"type": "same", "p1": str, "p2": str}]
+            st.session_state["lock_rules"] = []
 
         with st.expander("🔗 人情世故与宿敌羁绊绑定 (可选 - 强制同队 / 强制对立)"):
             c_rule_a, c_rule_b, c_rule_btn1, c_rule_btn2 = st.columns([2.5, 2.5, 2, 2])
@@ -955,27 +954,38 @@ else:
                 rule_p2 = st.selectbox("玩家 2", options=rem_options, format_func=lambda x: short_name(x), key="sel_rule_p2") if rem_options else None
             
             with c_rule_btn1:
-                if st.button("🔗 锁定同队 (连体)", use_container_width=True):
+                if st.button("🔗 锁定同队", use_container_width=True):
                     if rule_p1 and rule_p2:
-                        # 避免重复
                         st.session_state["lock_rules"] = [r for r in st.session_state["lock_rules"] if not ({r["p1"], r["p2"]} == {rule_p1, rule_p2})]
                         st.session_state["lock_rules"].append({"type": "same", "p1": rule_p1, "p2": rule_p2})
                         st.rerun()
             with c_rule_btn2:
-                if st.button("⚔️ 锁定对立 (宿敌)", use_container_width=True):
+                if st.button("⚔️ 锁定对立", use_container_width=True):
                     if rule_p1 and rule_p2:
                         st.session_state["lock_rules"] = [r for r in st.session_state["lock_rules"] if not ({r["p1"], r["p2"]} == {rule_p1, rule_p2})]
                         st.session_state["lock_rules"].append({"type": "diff", "p1": rule_p1, "p2": rule_p2})
                         st.rerun()
 
+            # 单个规则列表渲染与单个删除按钮
             if st.session_state["lock_rules"]:
-                st.caption("当前生效的硬性规则：")
-                chips_html = []
+                st.markdown("<div style='margin-top:10px;font-size:0.86rem;font-weight:700;color:#9f1239;'>已生效的规则列表：</div>", unsafe_allow_html=True)
+                
+                del_idx_target = None
                 for idx, r in enumerate(st.session_state["lock_rules"]):
-                    lbl = "🔗 必须同队" if r["type"] == "same" else "⚔️ 必须对立"
-                    chips_html.append(f'<span class="rule-chip">{short_name(r["p1"])} {lbl} {short_name(r["p2"])}</span>')
-                st.markdown("".join(chips_html), unsafe_allow_html=True)
-                if st.button("🗑️ 清空所有锁定规则"):
+                    lbl_text = "🔗 必须同队 (连体)" if r["type"] == "same" else "⚔️ 必须对立 (宿敌)"
+                    lbl_color = "#e11d48" if r["type"] == "same" else "#0284c7"
+                    col_txt, col_del = st.columns([5, 1])
+                    with col_txt:
+                        st.markdown(f"<div class='rule-chip-card'><span>👤 <b>{short_name(r['p1'])}</b> <span style='color:{lbl_color};font-weight:800;margin:0 4px;'>{lbl_text}</span> 👤 <b>{short_name(r['p2'])}</b></span></div>", unsafe_allow_html=True)
+                    with col_del:
+                        if st.button("❌ 移除", key=f"del_rule_{idx}", use_container_width=True):
+                            del_idx_target = idx
+
+                if del_idx_target is not None:
+                    st.session_state["lock_rules"].pop(del_idx_target)
+                    st.rerun()
+
+                if st.button("🗑️ 清空所有规则", key="btn_clear_all_rules"):
                     st.session_state["lock_rules"] = []
                     st.rerun()
 
@@ -1000,25 +1010,21 @@ else:
                 return float(df.loc[p_id, "MMR"])
             return 50.0
 
-        # 检查某种分组是否满足当前所有的强制同队/对立规则
         def check_rules_valid(team_b_set, team_r_set):
             for rule in st.session_state["lock_rules"]:
                 p1, p2 = rule["p1"], rule["p2"]
-                # 只有在两人都被选中的情况下才检验
                 if (p1 in team_b_set or p1 in team_r_set) and (p2 in team_b_set or p2 in team_r_set):
                     if rule["type"] == "same":
-                        # 必须都在蓝方，或都在红方
                         if not ((p1 in team_b_set and p2 in team_b_set) or (p1 in team_r_set and p2 in team_r_set)):
                             return False
                     elif rule["type"] == "diff":
-                        # 必须分属两方
                         if not ((p1 in team_b_set and p2 in team_r_set) or (p1 in team_r_set and p2 in team_b_set)):
                             return False
             return True
 
         total_chosen = len(selected_players)
 
-        # 模式 1：全局纯战力平衡 (带约束求解)
+        # 模式 1：全局纯战力平衡
         if balance_btn:
             if total_chosen < 2:
                 st.warning("⚠️ 至少选择 2 位玩家才能进行分队！")
@@ -1041,13 +1047,13 @@ else:
                         best_b, best_r = list(cand_b), list(cand_r)
 
                 if not best_b:
-                    st.error("❌ 无法满足当前设定的羁绊锁定规则！请检查是否存在互相冲突的规则（例如同时要求同队又对立）。")
+                    st.error("❌ 无法满足当前设定的羁绊锁定规则！请检查是否存在冲突。")
                 else:
                     st.session_state["assigned_blue"] = best_b
                     st.session_state["assigned_red"] = best_r
                     st.session_state["split_mode"] = f"⚖️ 战力天平平衡 ({len(best_b)}v{len(best_r)})"
 
-        # 模式 2：👑 大腿均分模式 (带约束求解)
+        # 模式 2：👑 大腿均分模式
         elif carry_spread_btn:
             if total_chosen < 4:
                 st.warning("⚠️ 大腿均分模式至少需要 4 位出战玩家！")
@@ -1094,7 +1100,7 @@ else:
                     st.session_state["assigned_red"] = best_r
                     st.session_state["split_mode"] = f"👑 大腿均分·带头大哥模式 ({len(best_b)}v{len(best_r)})"
 
-        # 模式 3：随机盲盒 (带约束求解)
+        # 模式 3：随机盲盒
         elif random_btn:
             if total_chosen < 2:
                 st.warning("⚠️ 至少选择 2 位玩家才能进行分队！")
