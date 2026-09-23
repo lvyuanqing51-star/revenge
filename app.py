@@ -20,7 +20,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 彻底消灭红底标签 CSS ----------------
+# ---------------- 高级深海蓝微光 + 彻底修复展开栏与白底 CSS ----------------
 st.markdown("""
 <style>
 /* 全局背景：深海蓝渐变 */
@@ -61,66 +61,71 @@ section[data-testid="stSidebar"] span {
     color: #f1f5f9 !important;
 }
 
-/* 侧边栏输入控件 */
-section[data-testid="stSidebar"] input {
-    background-color: #132438 !important;
-    color: #ffffff !important;
+/* ================= 核心修复：消灭主界面所有输入框与折叠栏白底 ================= */
+/* 1. 折叠栏 Expander 彻底深色化 */
+details[data-testid="stExpander"] {
+    background-color: rgba(19, 36, 56, 0.7) !important;
     border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(12px) !important;
 }
-section[data-testid="stSidebar"] div[data-baseweb="input"],
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
-    background-color: #132438 !important;
-    border: 1px solid rgba(56, 189, 248, 0.4) !important;
-    border-radius: 8px !important;
-    overflow: hidden !important;
+details[data-testid="stExpander"] summary {
+    background-color: rgba(19, 36, 56, 0.9) !important;
+    color: #38bdf8 !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
 }
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] input {
-    background-color: transparent !important;
-    color: #ffffff !important;
-    border: none !important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] button {
-    background-color: transparent !important;
-    border: none !important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
-    fill: #38bdf8 !important;
+details[data-testid="stExpander"] summary * {
     color: #38bdf8 !important;
 }
+details[data-testid="stExpander"][open] summary {
+    border-bottom: 1px solid rgba(56, 189, 248, 0.3) !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
 
-/* ================= 彻底消灭多选框一切红色标签 (全层级强行穿透) ================= */
+/* 2. 主页面所有输入框 Input 强制深色 */
+input, 
+div[data-baseweb="input"],
+div[data-baseweb="base-input"] {
+    background-color: #132438 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 8px !important;
+}
+input {
+    color: #ffffff !important;
+}
+
+/* 3. 下拉选框与多选框全局深色微光 */
 div[data-baseweb="select"],
 div[data-baseweb="select"] > div {
     background-color: #132438 !important;
     border: 1px solid rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
-}
-div[data-baseweb="select"] span {
     color: #ffffff !important;
 }
-/* 强力覆盖 Tag 的所有红底伪类与子元素 */
+div[data-baseweb="select"] * {
+    color: #ffffff !important;
+}
+
+/* 4. 彻底消灭多选框红底标签 */
+div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
 div[data-baseweb="tag"],
-span[data-baseweb="tag"],
-[data-baseweb="tag"] {
+span[data-baseweb="tag"] {
     background: #193655 !important;
     background-color: #193655 !important;
     border: 1px solid rgba(56, 189, 248, 0.7) !important;
     border-radius: 6px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
+div[data-testid="stMultiSelect"] span[data-baseweb="tag"] *,
 div[data-baseweb="tag"] *,
-span[data-baseweb="tag"] *,
-[data-baseweb="tag"] * {
+span[data-baseweb="tag"] * {
     background-color: transparent !important;
     color: #ffffff !important;
     fill: #ffffff !important;
     font-weight: 600 !important;
-}
-div[data-baseweb="tag"]:hover,
-span[data-baseweb="tag"]:hover {
-    background-color: #234c75 !important;
-    border-color: #38bdf8 !important;
 }
 div[data-baseweb="tag"] svg,
 span[data-baseweb="tag"] svg {
@@ -128,7 +133,7 @@ span[data-baseweb="tag"] svg {
     color: #38bdf8 !important;
 }
 
-/* 全局按钮彻底修复（告别白底看不清） */
+/* ================= 按钮组件修复 ================= */
 button[data-testid="stBaseButton-secondary"] {
     background: rgba(19, 36, 56, 0.9) !important;
     background-color: rgba(19, 36, 56, 0.9) !important;
@@ -697,12 +702,9 @@ else:
         "击杀": 0, "死亡": 0, "助攻": 0
     })
 
-    # 同队搭档统计
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
-    # 宿敌对战统计
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
-    # 单场巅峰追踪
     max_single_kill = {"player": "", "val": -1, "game_idx": 0}
     max_single_death = {"player": "", "val": -1, "game_idx": 0}
     max_single_assist = {"player": "", "val": -1, "game_idx": 0}
@@ -776,7 +778,6 @@ else:
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
         df["场均击杀"] = (df["击杀"] / df["总场次"]).round(1)
 
-        # 战力分 (MMR) 科学重构（大幅削弱胜率依赖，保护尽力局大腿）
         def calculate_mmr_v2(row):
             if row["总场次"] < 2:
                 return 50.0
@@ -1019,54 +1020,68 @@ else:
         # ---------------- 板块 D：赛前红蓝对阵作战室 ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
-        # 1. 维护可用玩家列表（历史老群友 + 临时外援）
+        # 外援持久化字典结构: { name: {"tier": "大腿/普通/萌新", "mmr": 80.0} }
         if "custom_guests" not in st.session_state:
-            st.session_state["custom_guests"] = {}  # {name: mmr}
+            st.session_state["custom_guests"] = {}
 
-        # 历史已知玩家
         known_roster = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
-        # 合并外援进入全量可选池
         full_available_options = known_roster + list(st.session_state["custom_guests"].keys())
 
-        # 默认选 10 人（若不足则选全部）
+        # 默认勾选 10 人（仅选已知选手）
         default_selection = known_roster[:10] if len(known_roster) >= 10 else known_roster
 
-        # 选人多选框（纯净 ID 展示）
+        # 纯净 ID 多选框
         selected_players = st.multiselect(
-            "选择出战群友名单（支持任意人数，偶数均分，奇数自适应）：",
+            "选择出战群友名单（支持任意人数，如 6人、8人、10人等）：",
             options=full_available_options,
             default=default_selection,
             format_func=lambda x: short_name(x)
         )
 
-        # 2. 实用：快捷添加临时外援/新人
-        with st.expander("➕ 添加临时外援 / 缺人替补（可直接选入上表）", expanded=False):
-            st.caption("没有历史战绩的新人？在这里快速录入，选择实力档位，即可直接加入上方选人池参与智能分队：")
-            c_g1, c_g2, c_g3 = st.columns([2, 2, 1])
+        # 临时外援管理区（支持添加与删除）
+        with st.expander("➕ 临时外援与替补管理（支持随时添加与删除）", expanded=False):
+            st.caption("没有历史战绩的新人？在此快速录入或删除，可直接在上方名单中勾选使用：")
+            
+            c_g1, c_g2, c_g3 = st.columns([2.5, 2.5, 1.5])
             with c_g1:
-                guest_name = st.text_input("外援昵称/游戏ID", placeholder="例如: 隔壁老王", key="input_guest_name")
+                guest_name = st.text_input("输入外援昵称/ID", placeholder="例如: 隔壁老王", key="input_guest_name")
             with c_g2:
                 guest_tier = st.selectbox(
-                    "预估实力档位",
+                    "预估其实力水平",
                     options=[80.0, 60.0, 45.0],
-                    format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水准 (60分)", 45.0: "🌱 萌新/挂件 (45分)"}[v],
+                    format_func=lambda v: {80.0: "👑 通天大腿 (80分)", 60.0: "🛡️ 普通水平 (60分)", 45.0: "🌱 萌新挂件 (45分)"}[v],
                     index=1,
                     key="select_guest_tier"
                 )
             with c_g3:
                 st.write("")
                 st.write("")
-                if st.button("➕ 确认加入"):
+                if st.button("➕ 确认添加", key="btn_add_guest", use_container_width=True):
                     if guest_name.strip():
                         c_name = guest_name.strip()
-                        st.session_state["custom_guests"][c_name] = guest_tier
-                        st.success(f"已加入外援: {c_name}")
+                        tier_label = {80.0: "通天大腿", 60.0: "普通水平", 45.0: "萌新挂件"}[guest_tier]
+                        st.session_state["custom_guests"][c_name] = {"mmr": guest_tier, "tier": tier_label}
+                        st.success(f"已添加外援: {c_name}")
                         time.sleep(0.4)
                         st.rerun()
                     else:
                         st.warning("请输入昵称！")
 
-        # 3. 分队操作按钮
+            # 显示与管理当前已有的外援
+            if st.session_state["custom_guests"]:
+                st.markdown("<div style='margin-top:12px;font-weight:700;color:#fef08a;'>📋 当前已添加的外援（点右侧删除）：</div>", unsafe_allow_html=True)
+                for g_name, g_info in list(st.session_state["custom_guests"].items()):
+                    col_info, col_del = st.columns([5, 1])
+                    with col_info:
+                        st.markdown(f"<div style='padding:6px 10px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:0.92rem;margin-bottom:4px;'>"
+                                    f"👤 <b style='color:#ffffff;'>{g_name}</b> · <span style='color:#38bdf8;'>战力 {g_info['mmr']} ({g_info['tier']})</span>"
+                                    f"</div>", unsafe_allow_html=True)
+                    with col_del:
+                        if st.button("🗑️ 删除", key=f"del_guest_{g_name}"):
+                            del st.session_state["custom_guests"][g_name]
+                            st.rerun()
+
+        # 分队操作按钮
         col_b1, col_b2, _ = st.columns([1.5, 1.5, 3])
         with col_b1:
             balance_btn = st.button("⚖️ 战力天平平衡分配", type="primary", use_container_width=True)
@@ -1081,7 +1096,7 @@ else:
         # 获取玩家实时战力分
         def get_player_mmr(p_id):
             if p_id in st.session_state["custom_guests"]:
-                return float(st.session_state["custom_guests"][p_id])
+                return float(st.session_state["custom_guests"][p_id]["mmr"])
             if p_id in df.index:
                 return float(df.loc[p_id, "MMR"])
             return 50.0
@@ -1126,7 +1141,7 @@ else:
                 st.session_state["assigned_red"] = shuffled[blue_size:]
                 st.session_state["split_mode"] = f"🎲 听天由命盲盒随机 ({len(st.session_state['assigned_blue'])}v{len(st.session_state['assigned_red'])})"
 
-        # 4. 渲染对阵看板
+        # 渲染对阵看板
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
             blue_team = st.session_state["assigned_blue"]
             red_team = st.session_state["assigned_red"]
@@ -1150,7 +1165,8 @@ else:
                     p_ak = df.loc[p, "场均击杀"]
                     extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
                 else:
-                    extra_desc = "临时外援 / 缺人替补"
+                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
+                    extra_desc = f"外援 · {tier_str}"
                 
                 blue_items.append(
                     f"<div class='team-roster-item'>"
@@ -1168,7 +1184,8 @@ else:
                     p_ak = df.loc[p, "场均击杀"]
                     extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
                 else:
-                    extra_desc = "临时外援 / 缺人替补"
+                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
+                    extra_desc = f"外援 · {tier_str}"
 
                 red_items.append(
                     f"<div class='team-roster-item'>"
