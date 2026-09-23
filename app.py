@@ -20,7 +20,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 彻底修复展开栏与白底 CSS ----------------
+# ---------------- 高级深海蓝微光 + 彻底修复展开栏、文本框与白底 CSS ----------------
 st.markdown("""
 <style>
 /* 全局背景：深海蓝渐变 */
@@ -109,6 +109,24 @@ details[data-testid="stExpander"][open] summary {
     border-bottom: 1px solid rgba(56, 189, 248, 0.3) !important;
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+}
+
+/* ================= 核心修复：彻底消灭多行文本框 Textarea 白底 ================= */
+textarea,
+div[data-baseweb="textarea"],
+div[data-baseweb="textarea"] > div,
+div[data-baseweb="textarea"] textarea {
+    background-color: #112236 !important;
+    background: #112236 !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.5) !important;
+    border-radius: 8px !important;
+    font-family: inherit !important;
+    font-size: 0.92rem !important;
+}
+textarea:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
 }
 
 /* 主页面所有输入框 Input 强制深色 */
@@ -1047,7 +1065,6 @@ else:
         # ---------------- 板块 D：赛前红蓝对阵作战室 ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
-        # 外援持久化字典结构: { name: {"tier": "大腿/普通/萌新", "mmr": 80.0} }
         if "custom_guests" not in st.session_state:
             st.session_state["custom_guests"] = {}
 
@@ -1059,7 +1076,6 @@ else:
         known_roster = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
         full_available_options = known_roster + list(st.session_state["custom_guests"].keys())
 
-        # 默认勾选 10 人（仅选已知选手）
         default_selection = known_roster[:10] if len(known_roster) >= 10 else known_roster
 
         # 纯净 ID 多选框
@@ -1099,11 +1115,9 @@ else:
                     else:
                         st.warning("请输入昵称！")
 
-            # 显示与管理当前已有的外援（彻底做好容错与删除）
             if st.session_state["custom_guests"]:
                 st.markdown("<div style='margin-top:12px;font-weight:700;color:#fef08a;'>📋 当前已添加的外援（点右侧删除）：</div>", unsafe_allow_html=True)
                 for g_name, g_info in list(st.session_state["custom_guests"].items()):
-                    # 双重容错：若非字典则提取默认
                     mmr_val = g_info.get("mmr", 60.0) if isinstance(g_info, dict) else float(g_info)
                     tier_str = g_info.get("tier", "外援") if isinstance(g_info, dict) else "外援"
 
@@ -1129,7 +1143,6 @@ else:
             st.session_state["assigned_red"] = []
             st.session_state["split_mode"] = ""
 
-        # 获取玩家实时战力分
         def get_player_mmr(p_id):
             if p_id in st.session_state["custom_guests"]:
                 g_val = st.session_state["custom_guests"][p_id]
@@ -1202,8 +1215,7 @@ else:
                     p_ak = df.loc[p, "场均击杀"]
                     extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
                 else:
-                    g_data = st.session_state["custom_guests"].get(p, {})
-                    tier_str = g_data.get("tier", "外援") if isinstance(g_data, dict) else "外援"
+                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
                     extra_desc = f"外援 · {tier_str}"
                 
                 blue_items.append(
@@ -1222,8 +1234,7 @@ else:
                     p_ak = df.loc[p, "场均击杀"]
                     extra_desc = f"胜率 {p_wr}% · 场均 {p_ak} 杀"
                 else:
-                    g_data = st.session_state["custom_guests"].get(p, {})
-                    tier_str = g_data.get("tier", "外援") if isinstance(g_data, dict) else "外援"
+                    tier_str = st.session_state["custom_guests"].get(p, {}).get("tier", "外援")
                     extra_desc = f"外援 · {tier_str}"
 
                 red_items.append(
@@ -1258,13 +1269,15 @@ else:
 
             st.markdown(arena_html, unsafe_allow_html=True)
 
+            # 纯粹优雅的微信复制区（彻底修复白底，使用 code block 样式）
             copy_text = (
                 f"【海克斯内战·双方对阵阵容】\n"
                 f"🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {'、'.join([short_name(p) for p in blue_team])}\n"
                 f"🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {'、'.join([short_name(p) for p in red_team])}\n"
                 f"⚡ 阵型模式: {st.session_state['split_mode']} | 均分分差: {avg_diff}"
             )
-            st.text_area("📋 微信/群聊对战名单复制：", value=copy_text, height=100)
+            st.caption("📋 点击下方文本框右上角图标即可一键复制阵容名单至微信群：")
+            st.code(copy_text, language="markdown")
 
         st.markdown("---")
         st.subheader("📊 胜率总榜")
