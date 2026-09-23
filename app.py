@@ -62,42 +62,51 @@ section[data-testid="stSidebar"] span {
 }
 
 /* ================= 核心修复 1：彻底消灭多选框黑块、杂色条纹与红标签 ================= */
-/* 统一步调：把整个 select 容器及其所有内部子层背景全部打平为统一的深蓝半透明 */
+/* 1. 彻底锁定多选框全层级为统一深蓝底色，杜绝任何白边与外壳反白 */
 div[data-testid="stMultiSelect"],
 div[data-testid="stMultiSelect"] > div,
 div[data-baseweb="select"],
 div[data-baseweb="select"] > div,
-div[data-baseweb="select"] div,
-div[data-baseweb="base-input"] {
-    background-color: rgba(19, 36, 56, 0.75) !important;
-    background: rgba(19, 36, 56, 0.75) !important;
-    border-color: rgba(56, 189, 248, 0.4) !important;
+div[data-baseweb="select"] [role="combobox"] {
+    background-color: rgba(19, 36, 56, 0.85) !important;
+    background: rgba(19, 36, 56, 0.85) !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
 }
 
-/* 内部输入光标与搜索文本区域透明化，彻底杜绝黑条 */
-div[data-baseweb="select"] input {
-    background-color: transparent !important;
+/* 2. 彻底消灭右侧输入区的黑色凹槽和阴影，全部透明打平 */
+div[data-baseweb="select"] input,
+div[data-baseweb="select"] div[data-baseweb="base-input"],
+div[data-baseweb="select"] input:focus {
     background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
     color: #ffffff !important;
 }
 
-/* 强力替换多选气泡标签为微光青蓝，强制剥离红色 */
-div[data-testid="stMultiSelect"] span[data-baseweb="tag"],
-div[data-baseweb="tag"],
-span[data-baseweb="tag"] {
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(2, 132, 199, 0.25)) !important;
-    background-color: rgba(14, 165, 233, 0.35) !important;
-    border: 1px solid rgba(56, 189, 248, 0.7) !important;
-    border-radius: 6px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-}
-div[data-testid="stMultiSelect"] span[data-baseweb="tag"] *,
-div[data-baseweb="tag"] *,
-span[data-baseweb="tag"] * {
+/* 3. 强制覆盖所有子级容器背景，杜绝继承黑条 */
+div[data-baseweb="select"] div {
     background-color: transparent !important;
+    border-color: transparent !important;
+}
+
+/* 4. 强制将刺眼西瓜红标签改为微光青蓝磨砂标签 */
+div[data-baseweb="tag"],
+span[data-baseweb="tag"],
+li[data-baseweb="tag"] {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.4), rgba(2, 132, 199, 0.25)) !important;
+    background-color: rgba(14, 165, 233, 0.4) !important;
+    border: 1px solid rgba(56, 189, 248, 0.6) !important;
+    border-radius: 6px !important;
     color: #ffffff !important;
-    fill: #ffffff !important;
+    margin: 2px 4px !important;
+}
+
+/* 标签文字与关闭 × 按钮全部染成微光白与高亮青 */
+div[data-baseweb="tag"] span,
+span[data-baseweb="tag"] span {
+    color: #ffffff !important;
     font-weight: 600 !important;
 }
 div[data-baseweb="tag"] svg,
@@ -1249,15 +1258,40 @@ else:
 
             st.markdown(arena_html, unsafe_allow_html=True)
 
-            # 手写深海蓝微光战报卡片（彻底替换掉难看的白底条）
+            # 手写深海蓝微光战报卡片（带原生一键复制能力，杜绝原生组件白底）
             blue_line = "、".join([short_name(p) for p in blue_team])
             red_line = "、".join([short_name(p) for p in red_team])
+            raw_copy_text = f"【海克斯内战·双方对阵阵容】\\n🔵 蓝方 ({len(blue_team)}人 | 均分{blue_avg}): {blue_line}\\n🔴 红方 ({len(red_team)}人 | 均分{red_avg}): {red_line}\\n⚡ 战力差: {diff_score} 分 (人均差: {avg_diff} 分)"
             
             wechat_html = f"""
                 <div class="wechat-copy-panel">
                     <div class="wechat-copy-header">
-                        <span>📋 微信对阵名单（长按或鼠标轻点即可全选复制）</span>
-                        <span style="color:#38bdf8;">模式: {st.session_state['split_mode']}</span>
+                        <span>📋 微信对阵名单</span>
+                        <button id="btn_copy_wechat" onclick="
+                            navigator.clipboard.writeText('{raw_copy_text}').then(() => {{
+                                const btn = document.getElementById('btn_copy_wechat');
+                                btn.innerText = '✅ 已复制到剪贴板！';
+                                btn.style.borderColor = '#4ade80';
+                                btn.style.color = '#4ade80';
+                                setTimeout(() => {{
+                                    btn.innerText = '📋 点击一键复制';
+                                    btn.style.borderColor = 'rgba(56, 189, 248, 0.6)';
+                                    btn.style.color = '#ffffff';
+                                }}, 2000);
+                            }}).catch(err => {{
+                                alert('复制失败，请手动长按文本全选');
+                            }});
+                        " style="
+                            background: rgba(14, 165, 233, 0.25);
+                            border: 1px solid rgba(56, 189, 248, 0.6);
+                            color: #ffffff;
+                            padding: 4px 12px;
+                            border-radius: 6px;
+                            font-size: 0.82rem;
+                            font-weight: 700;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                        ">📋 点击一键复制</button>
                     </div>
                     <div class="wechat-copy-body">
                         <div><b>【海克斯内战·双方对阵阵容】</b></div>
