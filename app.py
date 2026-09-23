@@ -20,7 +20,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 高级深海蓝微光 + 全局按钮彻底修复 CSS ----------------
+# ---------------- 高级深海蓝微光 + 全局组件与标签美化 CSS ----------------
 st.markdown("""
 <style>
 /* 全局背景：明朗高级的深海宝石蓝流光渐变 */
@@ -89,27 +89,45 @@ section[data-testid="stSidebar"] div[data-baseweb="base-input"] svg {
     color: #38bdf8 !important;
 }
 
-/* 下拉选框 */
-div[data-baseweb="select"],
-div[data-baseweb="select"] > div {
+/* ================= 核心修复：彻底消灭多选框红底，换为电竞微光蓝 ================= */
+div[data-baseweb="select"] {
     background-color: #132438 !important;
     border: 1px solid rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
-    color: #ffffff !important;
 }
-div[data-baseweb="select"] button,
-div[data-baseweb="select"] [role="button"] {
-    background: transparent !important;
+div[data-baseweb="select"] > div {
+    background-color: #132438 !important;
     border: none !important;
-    box-shadow: none !important;
 }
-div[data-baseweb="select"] svg {
+/* 多选标签 (Tag) 彻底消灭红色 */
+div[data-baseweb="tag"],
+span[data-baseweb="tag"] {
+    background: rgba(14, 165, 233, 0.25) !important;
+    background-color: rgba(14, 165, 233, 0.25) !important;
+    border: 1px solid rgba(56, 189, 248, 0.6) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    padding: 3px 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+div[data-baseweb="tag"] span,
+span[data-baseweb="tag"] span {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem !important;
+}
+div[data-baseweb="tag"] svg,
+span[data-baseweb="tag"] svg {
     fill: #38bdf8 !important;
     color: #38bdf8 !important;
 }
+div[data-baseweb="tag"]:hover {
+    background: rgba(14, 165, 233, 0.4) !important;
+    border-color: #38bdf8 !important;
+}
 
-/* ================= 全局按钮彻底修复（消灭白底与白字看不清） ================= */
-/* 1. 次级普通按钮（如随机盲盒按钮） */
+/* ================= 全局按钮组件修复 ================= */
+/* 次级普通按钮（如随机盲盒按钮） */
 button[data-testid="stBaseButton-secondary"] {
     background: rgba(19, 36, 56, 0.85) !important;
     background-color: rgba(19, 36, 56, 0.85) !important;
@@ -125,7 +143,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
     border-color: #38bdf8 !important;
     box-shadow: 0 0 16px rgba(56, 189, 248, 0.6) !important;
 }
-/* 强制按钮内每一层文字/图标显色 */
 button[data-testid="stBaseButton-secondary"] * {
     color: #ffffff !important;
     fill: #ffffff !important;
@@ -134,7 +151,7 @@ button[data-testid="stBaseButton-secondary"] * {
     visibility: visible !important;
 }
 
-/* 2. 主操作按钮（Primary Button） */
+/* 主操作按钮（Primary Button） */
 button[data-testid="stBaseButton-primary"] {
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
     color: #ffffff !important;
@@ -765,34 +782,19 @@ else:
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
         df["场均击杀"] = (df["击杀"] / df["总场次"]).round(1)
 
-        # ---------------- 战力分 (MMR) 科学重构模型（保护尽力局大腿） ----------------
-        # 机制：
-        # 1. 场均击杀 (35%)：衡量 C 位绝对Carry压迫感（基准 10 杀封顶满分）
-        # 2. KDA 战损比 (35%)：衡量综合战损实力（基准 5.0 KDA 封顶满分）
-        # 3. 队伍胜率 (30%)：仅占三成，绝不让败方孤勇者被过度拖累
-        # 4. 杀神大腿加成：若场均击杀 >= 7 且 KDA >= 2.5，直接追加 5 分大腿荣誉分
+        # 战力分 (MMR) 科学重构模型（保护尽力局大腿）
         def calculate_mmr_v2(row):
             if row["总场次"] < 2:
                 return 50.0
-            
-            # 杀伤力得分 (0-35)
             avg_k = float(row["场均击杀"])
-            kill_score = min(avg_k / 10.0, 1.2) * 35.0  # 极度强悍允许溢出至42分
-            
-            # 战损比得分 (0-35)
+            kill_score = min(avg_k / 10.0, 1.2) * 35.0
             kda_val = float(row["KDA_num"])
             kda_score = min(kda_val / 5.0, 1.2) * 35.0
-            
-            # 胜率分 (0-30)
             wr_val = float(row["胜率_num"])
             wr_score = (wr_val / 100.0) * 30.0
-            
             total_mmr = kill_score + kda_score + wr_score
-
-            # 尽力局大腿保护加分：高击杀选手即便输多，战力依然高企
             if avg_k >= 7.0 and kda_val >= 2.5:
                 total_mmr += 5.0
-
             return round(total_mmr, 1)
 
         df["MMR"] = df.apply(calculate_mmr_v2, axis=1)
@@ -1020,18 +1022,40 @@ else:
 
         st.markdown("---")
 
-        # ---------------- 板块 D：赛前红蓝对阵作战室（动态人数自适应双模分队器） ----------------
+        # ---------------- 板块 D：赛前红蓝对阵作战室（极简微光多选 + 临时战力微调） ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
         all_known_players = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
         default_selection = all_known_players[:10] if len(all_known_players) >= 10 else all_known_players
 
+        # 纯净简短的玩家ID展示（彻底告别一长串胜率战力）
         selected_players = st.multiselect(
-            "选择出战的群友名单（支持任意人数，如 6人、8人、10人自动对半开）：",
+            "选择出战群友名单（支持任意人数，如 6人、8人、10人等）：",
             options=all_known_players,
             default=default_selection,
-            format_func=lambda x: f"{short_name(x)} (出场{int(df.loc[x, '总场次'])}局 | 胜率{df.loc[x, '胜率_num']}% | 战力{df.loc[x, 'MMR']})"
+            format_func=lambda x: short_name(x)
         )
+
+        # 临时战力微调器（针对新人、替补或大腿外援）
+        if "mmr_override" not in st.session_state:
+            st.session_state["mmr_override"] = {}
+
+        if selected_players:
+            with st.expander("⚙️ 临时战力设定（针对新人群友/外援大腿）", expanded=False):
+                st.caption("💡 默认采用系统根据历史战绩评定的 MMR。如果来了新人或状态特殊，可在这里临时设定分值参与平衡计算：")
+                cols = st.columns(min(len(selected_players), 4))
+                for i, p in enumerate(selected_players):
+                    col_target = cols[i % min(len(selected_players), 4)]
+                    curr_val = st.session_state["mmr_override"].get(p, float(df.loc[p, "MMR"]))
+                    new_val = col_target.number_input(
+                        f"{short_name(p)} 战力",
+                        min_value=10.0,
+                        max_value=120.0,
+                        value=float(curr_val),
+                        step=5.0,
+                        key=f"mmr_in_{p}"
+                    )
+                    st.session_state["mmr_override"][p] = new_val
 
         col_b1, col_b2, _ = st.columns([1.5, 1.5, 3])
         with col_b1:
@@ -1046,6 +1070,10 @@ else:
 
         total_chosen = len(selected_players)
 
+        # 获取最终生效战力（优先考虑手动微调设定）
+        def get_effective_mmr(player_id):
+            return st.session_state.get("mmr_override", {}).get(player_id, float(df.loc[player_id, "MMR"]))
+
         if balance_btn:
             if total_chosen < 2:
                 st.warning("⚠️ 至少需要选择 2 位玩家才能进行对抗分队！")
@@ -1058,8 +1086,8 @@ else:
 
                 for candidate_blue in combinations(player_list, blue_size):
                     candidate_red = [p for p in player_list if p not in candidate_blue]
-                    m_blue = sum(df.loc[p, "MMR"] for p in candidate_blue)
-                    m_red = sum(df.loc[p, "MMR"] for p in candidate_red)
+                    m_blue = sum(get_effective_mmr(p) for p in candidate_blue)
+                    m_red = sum(get_effective_mmr(p) for p in candidate_red)
                     avg_blue = m_blue / len(candidate_blue)
                     avg_red = m_red / len(candidate_red)
                     
@@ -1089,8 +1117,8 @@ else:
             blue_team = st.session_state["assigned_blue"]
             red_team = st.session_state["assigned_red"]
 
-            blue_total = round(sum(df.loc[p, "MMR"] for p in blue_team), 1)
-            red_total = round(sum(df.loc[p, "MMR"] for p in red_team), 1)
+            blue_total = round(sum(get_effective_mmr(p) for p in blue_team), 1)
+            red_total = round(sum(get_effective_mmr(p) for p in red_team), 1)
             blue_avg = round(blue_total / len(blue_team), 1) if blue_team else 0
             red_avg = round(red_total / len(red_team), 1) if red_team else 0
             diff_score = round(abs(blue_total - red_total), 1)
@@ -1103,7 +1131,7 @@ else:
             for p in blue_team:
                 p_name = short_name(p)
                 p_wr = df.loc[p, "胜率_num"]
-                p_mmr = df.loc[p, "MMR"]
+                p_mmr = get_effective_mmr(p)
                 p_ak = df.loc[p, "场均击杀"]
                 blue_items.append(
                     f"<div class='team-roster-item'>"
@@ -1116,7 +1144,7 @@ else:
             for p in red_team:
                 p_name = short_name(p)
                 p_wr = df.loc[p, "胜率_num"]
-                p_mmr = df.loc[p, "MMR"]
+                p_mmr = get_effective_mmr(p)
                 p_ak = df.loc[p, "场均击杀"]
                 red_items.append(
                     f"<div class='team-roster-item'>"
