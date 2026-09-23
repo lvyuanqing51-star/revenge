@@ -220,6 +220,19 @@ button[data-testid="stBaseButton-secondary"]:hover {
     box-shadow: 0 3px 8px rgba(244, 63, 94, 0.2);
 }
 
+.rule-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #be185d;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    margin: 3px 6px 3px 0;
+}
+
 .team-arena-box {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -873,7 +886,7 @@ else:
 
         st.markdown("---")
 
-        # ---------------- 板块 D：赛前红蓝对阵作战室 (新增：👑 大腿均分模式) ----------------
+        # ---------------- 板块 D：赛前红蓝对阵作战室 (新增：🔗 宿敌/连体硬锁定) ----------------
         st.subheader("⚔️ 赛前阵营分队系统")
         
         if "custom_guests" not in st.session_state:
@@ -929,13 +942,50 @@ else:
                         del st.session_state["custom_guests"][g_name]
                         st.rerun()
 
+        # 核心功能升级：人情世故 & 宿敌锁定器
+        if "lock_rules" not in st.session_state:
+            st.session_state["lock_rules"] = [] # [{"type": "same", "p1": str, "p2": str}]
+
+        with st.expander("🔗 人情世故与宿敌羁绊绑定 (可选 - 强制同队 / 强制对立)"):
+            c_rule_a, c_rule_b, c_rule_btn1, c_rule_btn2 = st.columns([2.5, 2.5, 2, 2])
+            with c_rule_a:
+                rule_p1 = st.selectbox("玩家 1", options=selected_players, format_func=lambda x: short_name(x), key="sel_rule_p1")
+            with c_rule_b:
+                rem_options = [p for p in selected_players if p != rule_p1]
+                rule_p2 = st.selectbox("玩家 2", options=rem_options, format_func=lambda x: short_name(x), key="sel_rule_p2") if rem_options else None
+            
+            with c_rule_btn1:
+                if st.button("🔗 锁定同队 (连体)", use_container_width=True):
+                    if rule_p1 and rule_p2:
+                        # 避免重复
+                        st.session_state["lock_rules"] = [r for r in st.session_state["lock_rules"] if not ({r["p1"], r["p2"]} == {rule_p1, rule_p2})]
+                        st.session_state["lock_rules"].append({"type": "same", "p1": rule_p1, "p2": rule_p2})
+                        st.rerun()
+            with c_rule_btn2:
+                if st.button("⚔️ 锁定对立 (宿敌)", use_container_width=True):
+                    if rule_p1 and rule_p2:
+                        st.session_state["lock_rules"] = [r for r in st.session_state["lock_rules"] if not ({r["p1"], r["p2"]} == {rule_p1, rule_p2})]
+                        st.session_state["lock_rules"].append({"type": "diff", "p1": rule_p1, "p2": rule_p2})
+                        st.rerun()
+
+            if st.session_state["lock_rules"]:
+                st.caption("当前生效的硬性规则：")
+                chips_html = []
+                for idx, r in enumerate(st.session_state["lock_rules"]):
+                    lbl = "🔗 必须同队" if r["type"] == "same" else "⚔️ 必须对立"
+                    chips_html.append(f'<span class="rule-chip">{short_name(r["p1"])} {lbl} {short_name(r["p2"])}</span>')
+                st.markdown("".join(chips_html), unsafe_allow_html=True)
+                if st.button("🗑️ 清空所有锁定规则"):
+                    st.session_state["lock_rules"] = []
+                    st.rerun()
+
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
-            balance_btn = st.button("⚖️ 战力天平平衡", type="primary", use_container_width=True, help="全局计算，使双方总战力最接近")
+            balance_btn = st.button("⚖️ 战力天平平衡", type="primary", use_container_width=True, help="在满足羁绊锁定的前提下，使双方总战力最接近")
         with col_b2:
-            carry_spread_btn = st.button("👑 大腿均分模式", use_container_width=True, help="强制将最强的两大腿与最弱的两挂件分别拆开至红蓝两边，腰部选手精密配平")
+            carry_spread_btn = st.button("👑 大腿均分模式", use_container_width=True, help="在满足羁绊锁定的前提下，强力大腿与挂件两边均分，腰部选手精密配平")
         with col_b3:
-            random_btn = st.button("🎲 盲盒随机分配", use_container_width=True, help="完全随机打乱分组")
+            random_btn = st.button("🎲 盲盒随机分配", use_container_width=True, help="在满足羁绊锁定的前提下，完全随机分组")
 
         if "assigned_blue" not in st.session_state:
             st.session_state["assigned_blue"] = []
@@ -950,9 +1000,25 @@ else:
                 return float(df.loc[p_id, "MMR"])
             return 50.0
 
+        # 检查某种分组是否满足当前所有的强制同队/对立规则
+        def check_rules_valid(team_b_set, team_r_set):
+            for rule in st.session_state["lock_rules"]:
+                p1, p2 = rule["p1"], rule["p2"]
+                # 只有在两人都被选中的情况下才检验
+                if (p1 in team_b_set or p1 in team_r_set) and (p2 in team_b_set or p2 in team_r_set):
+                    if rule["type"] == "same":
+                        # 必须都在蓝方，或都在红方
+                        if not ((p1 in team_b_set and p2 in team_b_set) or (p1 in team_r_set and p2 in team_r_set)):
+                            return False
+                    elif rule["type"] == "diff":
+                        # 必须分属两方
+                        if not ((p1 in team_b_set and p2 in team_r_set) or (p1 in team_r_set and p2 in team_b_set)):
+                            return False
+            return True
+
         total_chosen = len(selected_players)
 
-        # 模式 1：全局纯战力平衡
+        # 模式 1：全局纯战力平衡 (带约束求解)
         if balance_btn:
             if total_chosen < 2:
                 st.warning("⚠️ 至少选择 2 位玩家才能进行分队！")
@@ -964,6 +1030,8 @@ else:
 
                 for cand_b in combinations(p_list, blue_size):
                     cand_r = [p for p in p_list if p not in cand_b]
+                    if not check_rules_valid(set(cand_b), set(cand_r)):
+                        continue
                     m_b = sum(get_player_mmr(p) for p in cand_b)
                     m_r = sum(get_player_mmr(p) for p in cand_r)
                     avg_b, avg_r = m_b / len(cand_b), m_r / len(cand_r)
@@ -972,38 +1040,36 @@ else:
                         best_diff = diff
                         best_b, best_r = list(cand_b), list(cand_r)
 
-                st.session_state["assigned_blue"] = best_b
-                st.session_state["assigned_red"] = best_r
-                st.session_state["split_mode"] = f"⚖️ 战力天平平衡 ({len(best_b)}v{len(best_r)})"
+                if not best_b:
+                    st.error("❌ 无法满足当前设定的羁绊锁定规则！请检查是否存在互相冲突的规则（例如同时要求同队又对立）。")
+                else:
+                    st.session_state["assigned_blue"] = best_b
+                    st.session_state["assigned_red"] = best_r
+                    st.session_state["split_mode"] = f"⚖️ 战力天平平衡 ({len(best_b)}v{len(best_r)})"
 
-        # 模式 2：👑 大腿均分模式（核心新功能）
+        # 模式 2：👑 大腿均分模式 (带约束求解)
         elif carry_spread_btn:
             if total_chosen < 4:
                 st.warning("⚠️ 大腿均分模式至少需要 4 位出战玩家！")
             else:
                 p_list = sorted(list(selected_players), key=lambda x: get_player_mmr(x), reverse=True)
-                
-                # 提取最强大哥两位，与最小挂件两位
                 top1, top2 = p_list[0], p_list[1]
                 bot1, bot2 = p_list[-1], p_list[-2]
 
-                # 中坚力量
                 middle_pool = p_list[2:-2]
-                blue_needed = (total_chosen // 2) - 2 # 蓝方还需补几个人
+                blue_needed = (total_chosen // 2) - 2
 
                 best_diff = float("inf")
                 best_b, best_r = [], []
 
-                # 两种大哥和挂件交叉搭配方案：
-                # 方案 A: 蓝方=(top1, bot2), 红方=(top2, bot1)
-                # 方案 B: 蓝方=(top1, bot1), 红方=(top2, bot2)
                 for (b_anchor, r_anchor) in [([top1, bot2], [top2, bot1]), ([top1, bot1], [top2, bot2])]:
                     if blue_needed > 0 and middle_pool:
                         for cand_mid_b in combinations(middle_pool, blue_needed):
                             cand_mid_r = [p for p in middle_pool if p not in cand_mid_b]
                             team_b = b_anchor + list(cand_mid_b)
                             team_r = r_anchor + list(cand_mid_r)
-                            
+                            if not check_rules_valid(set(team_b), set(team_r)):
+                                continue
                             m_b = sum(get_player_mmr(p) for p in team_b)
                             m_r = sum(get_player_mmr(p) for p in team_r)
                             diff = abs(m_b - m_r)
@@ -1013,28 +1079,41 @@ else:
                     else:
                         team_b = b_anchor + middle_pool
                         team_r = r_anchor
-                        m_b = sum(get_player_mmr(p) for p in team_b)
-                        m_r = sum(get_player_mmr(p) for p in team_r)
-                        diff = abs(m_b - m_r)
-                        if diff < best_diff:
-                            best_diff = diff
-                            best_b, best_r = team_b, team_r
+                        if check_rules_valid(set(team_b), set(team_r)):
+                            m_b = sum(get_player_mmr(p) for p in team_b)
+                            m_r = sum(get_player_mmr(p) for p in team_r)
+                            diff = abs(m_b - m_r)
+                            if diff < best_diff:
+                                best_diff = diff
+                                best_b, best_r = team_b, team_r
 
-                st.session_state["assigned_blue"] = best_b
-                st.session_state["assigned_red"] = best_r
-                st.session_state["split_mode"] = f"👑 大腿均分·带头大哥模式 ({len(best_b)}v{len(best_r)})"
+                if not best_b:
+                    st.error("❌ 无法满足当前设定的羁绊锁定规则！大腿与挂件的绑定可能与同队/对立冲突，建议使用普通战力平衡模式。")
+                else:
+                    st.session_state["assigned_blue"] = best_b
+                    st.session_state["assigned_red"] = best_r
+                    st.session_state["split_mode"] = f"👑 大腿均分·带头大哥模式 ({len(best_b)}v{len(best_r)})"
 
-        # 模式 3：随机盲盒
+        # 模式 3：随机盲盒 (带约束求解)
         elif random_btn:
             if total_chosen < 2:
                 st.warning("⚠️ 至少选择 2 位玩家才能进行分队！")
             else:
-                shuffled = list(selected_players)
-                random.shuffle(shuffled)
-                blue_size = total_chosen // 2
-                st.session_state["assigned_blue"] = shuffled[:blue_size]
-                st.session_state["assigned_red"] = shuffled[blue_size:]
-                st.session_state["split_mode"] = f"🎲 盲盒随机分配 ({len(st.session_state['assigned_blue'])}v{len(st.session_state['assigned_red'])})"
+                found = False
+                for _ in range(100):
+                    shuffled = list(selected_players)
+                    random.shuffle(shuffled)
+                    blue_size = total_chosen // 2
+                    cand_b = shuffled[:blue_size]
+                    cand_r = shuffled[blue_size:]
+                    if check_rules_valid(set(cand_b), set(cand_r)):
+                        st.session_state["assigned_blue"] = cand_b
+                        st.session_state["assigned_red"] = cand_r
+                        st.session_state["split_mode"] = f"🎲 盲盒随机分配 ({len(cand_b)}v{len(cand_r)})"
+                        found = True
+                        break
+                if not found:
+                    st.error("❌ 随机抽签 100 次均无法满足当前羁绊锁定规则，请尝试减少冲突规则！")
 
         # 渲染对阵结果
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
@@ -1269,75 +1348,33 @@ else:
                 status_tip = "发挥稳定：胜负交替，在场上保持中流砥柱表现。"
                 status_color = "#64748b"
 
-            # ---------------- 严谨且趣味满分的勋章体系 ----------------
+            # 勋章体系
             badges_data = []
-
-            # 1. 极致高光类（严格门槛）
             if p_hist["max_dmg_share"] >= 38.0 or score_dmg >= 92:
-                badges_data.append((
-                    "💥 血条消失术",
-                    "【核爆级主C】曾在正规局单场打出 38%+ 恐怖输出占比，瞬间融化对手血条"
-                ))
+                badges_data.append(("💥 血条消失术", "【核爆级主C】曾在正规局单场打出 38%+ 恐怖输出占比，瞬间融化对手血条"))
             if p_hist["max_taken_share"] >= 38.0 or score_tank >= 92:
-                badges_data.append((
-                    "🛡️ 叹息之壁",
-                    "【铁血不坏身】曾在正规局单场吸收 38%+ 承伤占比，如高山般掩护全队"
-                ))
+                badges_data.append(("🛡️ 叹息之壁", "【铁血不坏身】曾在正规局单场吸收 38%+ 承伤占比，如高山般掩护全队"))
             if p_hist["max_kill"] >= 16 or score_kill >= 92:
-                badges_data.append((
-                    "🩸 绝命赏金客",
-                    "【超神收割机】曾在正规局单场斩获 16+ 击杀，无情屠戮敌阵"
-                ))
-
-            # 2. 趣味行为 & 梗标签
+                badges_data.append(("🩸 绝命赏金客", "【超神收割机】曾在正规局单场斩获 16+ 击杀，无情屠戮敌阵"))
             if p_hist["max_death"] >= 10:
-                badges_data.append((
-                    "🎰 慈善赌圣",
-                    "【全自动取款机】曾单场阵亡 10+ 次，给对手送出巨额悬赏经济！"
-                ))
+                badges_data.append(("🎰 慈善赌圣", "【全自动取款机】曾单场阵亡 10+ 次，给对手送出巨额悬赏经济！"))
             if p_hist["min_death_win"] <= 1 and p_g_total >= 3:
-                badges_data.append((
-                    "🏕️ 泉水指挥官",
-                    "【保分艺术家】胜局中曾打出 0 阵亡或仅死 1 次，拉扯保命玩成艺术"
-                ))
+                badges_data.append(("🏕️ 泉水指挥官", "【保分艺术家】胜局中曾打出 0 阵亡或仅死 1 次，拉扯保命玩成艺术"))
             if p_hist["max_assist"] >= 18 or score_assist >= 90:
-                badges_data.append((
-                    "🚑 全图救护车",
-                    "【团战发动机】单场豪取 18+ 助攻，全图到处都有他的控制与掩护"
-                ))
+                badges_data.append(("🚑 全图救护车", "【团战发动机】单场豪取 18+ 助攻，全图到处都有他的控制与掩护"))
             if p_hist["svp_cnt"] >= 2:
-                badges_data.append((
-                    "🪓 悲情孤勇者",
-                    "【尽力局局长】多次在落败局打出 35%+ 火力或 11+ 杀，奈何带不动队友"
-                ))
+                badges_data.append(("🪓 悲情孤勇者", "【尽力局局长】多次在落败局打出 35%+ 火力或 11+ 杀，奈何带不动队友"))
             if p_kills >= 6.0 and dmg_share <= 18.0:
-                badges_data.append((
-                    "🎯 致命K头怪",
-                    "【经济吸收器】击杀数名列前茅但输出占比偏低，人头收割手艺纯熟"
-                ))
-
-            # 3. 真实全勤老将（杜绝 8 局就全勤）
+                badges_data.append(("🎯 致命K头怪", "【经济吸收器】击杀数名列前茅但输出占比偏低，人头收割手艺纯熟"))
             if total_games_all >= 12 and (p_g_total / total_games_all) >= 0.80:
-                badges_data.append((
-                    "🏛️ 内战活化石",
-                    f"【真·全勤标兵】在总计 {total_games_all} 场内战中出战 {p_g_total} 场 (出勤率 {(p_g_total/total_games_all)*100:.0f}%)"
-                ))
+                badges_data.append(("🏛️ 内战活化石", f"【真·全勤标兵】在总计 {total_games_all} 场内战中出战 {p_g_total} 场 (出勤率 {(p_g_total/total_games_all)*100:.0f}%)"))
             elif p_g_total >= 10:
-                badges_data.append((
-                    "🎖️ 资深百战将",
-                    f"【久经沙场】内战累计出战已达 {p_g_total} 局，经验老道的中流砥柱"
-                ))
+                badges_data.append(("🎖️ 资深百战将", f"【久经沙场】内战累计出战已达 {p_g_total} 局，经验老道的中流砥柱"))
 
             if not badges_data:
-                badges_data.append((
-                    "🌱 未来可期",
-                    "【新晋潜能股】正在积蓄战力，距离解锁首个高光/趣味勋章仅差一步"
-                ))
+                badges_data.append(("🌱 未来可期", "【新晋潜能股】正在积蓄战力，距离解锁首个高光/趣味勋章仅差一步"))
 
-            badges_html = "".join([
-                f'<span class="badge-tag" title="{tip}">{name}</span>' 
-                for name, tip in badges_data
-            ])
+            badges_html = "".join([f'<span class="badge-tag" title="{tip}">{name}</span>' for name, tip in badges_data])
 
             col_radar, col_detail = st.columns([1.2, 1])
 
@@ -1360,7 +1397,6 @@ else:
                     </div>
                 """, unsafe_allow_html=True)
 
-            # 个人专属档案与成就勋章卡
             st.markdown(f"""
                 <div class="stat-card" style="margin-top:6px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecdd3;padding-bottom:8px;margin-bottom:10px;">
