@@ -5,6 +5,7 @@ import time
 import base64
 import difflib
 import re
+import random
 from io import BytesIO
 from itertools import combinations
 from collections import defaultdict
@@ -254,31 +255,91 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-/* 分队战队卡片专用 */
-.team-balancer-card-blue {
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(2, 132, 199, 0.05));
-    border: 1px solid rgba(56, 189, 248, 0.5);
+/* ================= 高级红蓝对阵分队器 CSS ================= */
+.team-arena-container {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    margin-top: 10px;
+    margin-bottom: 25px;
+}
+.team-column-blue {
+    background: linear-gradient(180deg, rgba(14, 165, 233, 0.18) 0%, rgba(15, 23, 42, 0.4) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.4);
     border-radius: 12px;
     padding: 16px;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
 }
-.team-balancer-card-red {
-    background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(225, 29, 72, 0.05));
-    border: 1px solid rgba(251, 113, 133, 0.5);
+.team-column-red {
+    background: linear-gradient(180deg, rgba(244, 63, 94, 0.18) 0%, rgba(15, 23, 42, 0.4) 100%);
+    border: 1px solid rgba(251, 113, 133, 0.4);
     border-radius: 12px;
     padding: 16px;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.15);
 }
-.team-player-item {
+.team-header-title {
+    font-size: 1.15rem;
+    font-weight: 800;
     display: flex;
     justify-content: space-between;
-    padding: 6px 8px;
-    margin-bottom: 4px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 6px;
-    font-size: 0.95rem;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+}
+.blue-title {
+    color: #38bdf8;
+    border-bottom: 2px solid rgba(56, 189, 248, 0.4);
+}
+.red-title {
+    color: #fb7185;
+    border-bottom: 2px solid rgba(251, 113, 133, 0.4);
+}
+.team-roster-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+.team-roster-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+.player-tag {
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1.02rem;
+}
+.player-score-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.vs-divider-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 10px 0;
+}
+.vs-glow-text {
+    font-size: 2.2rem;
+    font-weight: 900;
+    font-style: italic;
+    background: linear-gradient(180deg, #fef08a 0%, #ea580c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(234, 88, 12, 0.8);
+    margin-bottom: 6px;
 }
 
 /* 亮感磨砂电竞表格容器 */
@@ -597,7 +658,7 @@ st.caption("💡 微信内无法直接拉起语音？请点击右上角「···
 
 st.write("")
 
-# ---------------- 主界面 2：趣味头衔、单人巅峰、双人羁绊与胜率总榜 ----------------
+# ---------------- 主界面 2：趣味头衔、单人巅峰、双人羁绊、智能分队与胜率总榜 ----------------
 records = load_records()
 
 if not records:
@@ -705,8 +766,7 @@ else:
         df["KD"] = (df["击杀"] / df["死亡"].replace(0, 1)).round(2)
         df["KDA_num"] = ((df["击杀"] + df["助攻"]) / df["死亡"].replace(0, 1)).round(2)
 
-        # 计算玩家战力评级分 (MMR)，用于智能分队
-        # 规则：胜率占 60%，KDA 上限封顶 6.0 占 40%；新人不足 3 局取均值 50 分
+        # 战力分 (MMR) 计算模型
         def calculate_mmr(row):
             if row["总场次"] < 3:
                 return 50.0
@@ -940,79 +1000,139 @@ else:
 
         st.markdown("---")
 
-        # ---------------- 板块 D：赛前智能公平分队器 ----------------
-        with st.expander("⚖️ 海克斯智能公平分队器 (赛前红蓝对抗推演)", expanded=False):
-            st.caption("基于控制台历史胜率与综合 KDA 自动计算选手 MMR 战力，通过算法寻找战力最均衡的红蓝对抗配置。")
-            all_known_players = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
-            default_selection = all_known_players[:10] if len(all_known_players) >= 10 else all_known_players
+        # ---------------- 板块 D：赛前红蓝对阵作战室（双模分队器） ----------------
+        st.subheader("⚔️ 赛前阵营分队系统")
+        
+        all_known_players = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
+        default_selection = all_known_players[:10] if len(all_known_players) >= 10 else all_known_players
 
-            selected_10 = st.multiselect(
-                "请选择今晚参与内战的 10 位玩家：",
-                options=all_known_players,
-                default=default_selection,
-                format_func=lambda x: f"{short_name(x)} (出场{int(df.loc[x, '总场次'])}局 | 战力{df.loc[x, 'MMR']})"
+        selected_10 = st.multiselect(
+            "选择出战的 10 位群友：",
+            options=all_known_players,
+            default=default_selection,
+            format_func=lambda x: f"{short_name(x)} (出场{int(df.loc[x, '总场次'])}局 | 胜率{df.loc[x, '胜率_num']}% | 战力{df.loc[x, 'MMR']})"
+        )
+
+        col_b1, col_b2, _ = st.columns([1.5, 1.5, 3])
+        with col_b1:
+            balance_btn = st.button("⚖️ 战力天平平衡分配", type="primary", use_container_width=True)
+        with col_b2:
+            random_btn = st.button("🎲 听天由命随机盲盒", use_container_width=True)
+
+        # 初始化分队状态
+        if "assigned_blue" not in st.session_state:
+            st.session_state["assigned_blue"] = []
+            st.session_state["assigned_red"] = []
+            st.session_state["split_mode"] = ""
+
+        if balance_btn:
+            if len(selected_10) != 10:
+                st.warning(f"⚠️ 当前选择了 {len(selected_10)} 人，请精确勾选 10 位玩家！")
+            else:
+                best_diff = float("inf")
+                best_blue = []
+                best_red = []
+                player_list = list(selected_10)
+
+                for candidate_blue in combinations(player_list, 5):
+                    candidate_red = [p for p in player_list if p not in candidate_blue]
+                    m_blue = sum(df.loc[p, "MMR"] for p in candidate_blue)
+                    m_red = sum(df.loc[p, "MMR"] for p in candidate_red)
+                    diff = abs(m_blue - m_red)
+                    if diff < best_diff:
+                        best_diff = diff
+                        best_blue = list(candidate_blue)
+                        best_red = list(candidate_red)
+
+                st.session_state["assigned_blue"] = best_blue
+                st.session_state["assigned_red"] = best_red
+                st.session_state["split_mode"] = "⚖️ 战力天平最优平衡"
+
+        elif random_btn:
+            if len(selected_10) != 10:
+                st.warning(f"⚠️ 当前选择了 {len(selected_10)} 人，请精确勾选 10 位玩家！")
+            else:
+                shuffled = list(selected_10)
+                random.shuffle(shuffled)
+                st.session_state["assigned_blue"] = shuffled[:5]
+                st.session_state["assigned_red"] = shuffled[5:]
+                st.session_state["split_mode"] = "🎲 听天由命盲盒随机"
+
+        # 渲染对阵舞台卡片
+        if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
+            blue_team = st.session_state["assigned_blue"]
+            red_team = st.session_state["assigned_red"]
+
+            blue_total = round(sum(df.loc[p, "MMR"] for p in blue_team), 1)
+            red_total = round(sum(df.loc[p, "MMR"] for p in red_team), 1)
+            blue_avg = round(blue_total / 5, 1)
+            red_avg = round(red_total / 5, 1)
+            diff_score = round(abs(blue_total - red_total), 1)
+
+            st.write("")
+            st.caption(f"当前模式：**{st.session_state['split_mode']}** ｜ 双方总战力差：**{diff_score} 分**")
+
+            # 蓝队卡片条目拼接
+            blue_items = []
+            for p in blue_team:
+                p_name = short_name(p)
+                p_wr = df.loc[p, "胜率_num"]
+                p_mmr = df.loc[p, "MMR"]
+                blue_items.append(
+                    f"<div class='team-roster-item'>"
+                    f"<span class='player-tag'>🛡️ {p_name}</span>"
+                    f"<span class='player-score-badge' style='background:rgba(56,189,248,0.2);color:#38bdf8;'>胜率 {p_wr}% · 战力 {p_mmr}</span>"
+                    f"</div>"
+                )
+
+            # 红队卡片条目拼接
+            red_items = []
+            for p in red_team:
+                p_name = short_name(p)
+                p_wr = df.loc[p, "胜率_num"]
+                p_mmr = df.loc[p, "MMR"]
+                red_items.append(
+                    f"<div class='team-roster-item'>"
+                    f"<span class='player-tag'>⚔️ {p_name}</span>"
+                    f"<span class='player-score-badge' style='background:rgba(251,113,133,0.2);color:#fb7185;'>胜率 {p_wr}% · 战力 {p_mmr}</span>"
+                    f"</div>"
+                )
+
+            arena_html = (
+                f"<div class='team-arena-container'>"
+                f"<div style='display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;'>"
+                f"<div style='flex:1;min-width:280px;' class='team-column-blue'>"
+                f"<div class='team-header-title blue-title'>"
+                f"<span>🔵 蓝色方阵营</span><span>均分: {blue_avg}</span>"
+                f"</div>"
+                f"{''.join(blue_items)}"
+                f"</div>"
+                f"<div style='flex:0 0 100px;display:flex;align-items:center;justify-content:center;' class='vs-divider-box'>"
+                f"<div class='vs-glow-text'>VS</div>"
+                f"<span style='font-size:0.78rem;color:#94a3b8;'>分差 {diff_score}</span>"
+                f"</div>"
+                f"<div style='flex:1;min-width:280px;' class='team-column-red'>"
+                f"<div class='team-header-title red-title'>"
+                f"<span>🔴 红色方阵营</span><span>均分: {red_avg}</span>"
+                f"</div>"
+                f"{''.join(red_items)}"
+                f"</div>"
+                f"</div>"
+                f"</div>"
             )
 
-            col_btn1, col_btn2 = st.columns([1, 4])
-            with col_btn1:
-                calc_team_btn = st.button("⚡ 测算最佳对阵", type="primary")
+            st.markdown(arena_html, unsafe_allow_html=True)
 
-            if calc_team_btn:
-                if len(selected_10) != 10:
-                    st.warning(f"⚠️ 当前已勾选 {len(selected_10)} 人，请精确选择 10 位玩家进行五对五分队！")
-                else:
-                    # 组合推演：计算两队战力差绝对值最小的分组
-                    best_diff = float("inf")
-                    best_blue = []
-                    best_red = []
-                    player_list = list(selected_10)
+            # 复制战书文本
+            copy_text = (
+                f"【海克斯内战·双方名单】\n"
+                f"🔵 蓝方(均分{blue_avg}): {'、'.join([short_name(p) for p in blue_team])}\n"
+                f"🔴 红方(均分{red_avg}): {'、'.join([short_name(p) for p in red_team])}\n"
+                f"⚡ 战力分差: {diff_score} | 比赛模式: {st.session_state['split_mode']}"
+            )
+            st.text_area("📋 微信/群聊对战名单复制：", value=copy_text, height=100)
 
-                    # 寻找 10 选 5 的所有组合 (252种)
-                    for team_blue_candidate in combinations(player_list, 5):
-                        team_red_candidate = [p for p in player_list if p not in team_blue_candidate]
-                        mmr_blue = sum(df.loc[p, "MMR"] for p in team_blue_candidate)
-                        mmr_red = sum(df.loc[p, "MMR"] for p in team_red_candidate)
-                        diff = abs(mmr_blue - mmr_red)
-                        if diff < best_diff:
-                            best_diff = diff
-                            best_blue = list(team_blue_candidate)
-                            best_red = list(team_red_candidate)
-
-                    blue_total_mmr = round(sum(df.loc[p, "MMR"] for p in best_blue), 1)
-                    red_total_mmr = round(sum(df.loc[p, "MMR"] for p in best_red), 1)
-                    blue_avg_mmr = round(blue_total_mmr / 5, 1)
-                    red_avg_mmr = round(red_total_mmr / 5, 1)
-
-                    st.write("")
-                    col_t1, col_t2 = st.columns(2)
-                    with col_t1:
-                        blue_html_items = "".join([
-                            f"<div class='team-player-item'><span>{short_name(p)}</span>"
-                            f"<span style='color:#38bdf8;'>胜率 {df.loc[p, '胜率_num']}% | 战力 {df.loc[p, 'MMR']}</span></div>"
-                            for p in best_blue
-                        ])
-                        st.markdown(f"""
-                            <div class="team-balancer-card-blue">
-                                <div style="font-size:1.1rem;font-weight:800;color:#38bdf8;margin-bottom:8px;">🔵 推荐蓝方阵容 (平均战力: {blue_avg_mmr})</div>
-                                {blue_html_items}
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                    with col_t2:
-                        red_html_items = "".join([
-                            f"<div class='team-player-item'><span>{short_name(p)}</span>"
-                            f"<span style='color:#fb7185;'>胜率 {df.loc[p, '胜率_num']}% | 战力 {df.loc[p, 'MMR']}</span></div>"
-                            for p in best_red
-                        ])
-                        st.markdown(f"""
-                            <div class="team-balancer-card-red">
-                                <div style="font-size:1.1rem;font-weight:800;color:#fb7185;margin-bottom:8px;">🔴 推荐红方阵容 (平均战力: {red_avg_mmr})</div>
-                                {red_html_items}
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                    st.caption(f"🎯 算法已完成推演：两队总战力分差仅为 **{round(best_diff, 1)} 分**，局势极度均衡！")
-
+        st.markdown("---")
         st.subheader("📊 胜率总榜")
 
         # 排序
@@ -1025,6 +1145,7 @@ else:
             wr_badge = f"<span class='hextech-badge-win'>{wr_val}%</span>" if wr_val >= 50 else f"<span class='hextech-badge-loss'>{wr_val}%</span>"
             kd_str = f"{row['KD']:.2f}"
             kda_str = f"{row['KDA_num']:.2f}"
+            mmr_val = f"{row['MMR']:.1f}"
             p_name = short_name(player_id)
 
             total_games = int(row['总场次'])
@@ -1041,6 +1162,7 @@ else:
                 f"<td>{wins}</td>"
                 f"<td>{losses}</td>"
                 f"<td>{wr_badge}</td>"
+                f"<td style='color:#a5f3fc;font-weight:700;'>{mmr_val}</td>"
                 f"<td style='color:#38bdf8;font-weight:700;'>{kd_str}</td>"
                 f"<td style='color:#fef08a;font-weight:700;'>{kda_str}</td>"
                 f"<td>{kills}</td>"
@@ -1056,7 +1178,7 @@ else:
             f'<thead><tr>'
             f'<th style="text-align:left;padding-left:20px;">玩家</th>'
             f'<th>总场次</th><th>胜场</th><th>负场</th><th>胜率</th>'
-            f'<th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
+            f'<th>战力(MMR)</th><th>KD比</th><th>KDA</th><th>击杀</th><th>死亡</th><th>助攻</th>'
             f'</tr></thead>'
             f'<tbody>{"".join(table_rows)}</tbody>'
             f'</table></div>'
