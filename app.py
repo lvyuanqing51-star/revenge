@@ -21,7 +21,7 @@ TARGET_QIANQIU = "千秋种我一栗卿#52652"
 
 st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wide")
 
-# ---------------- 温润淡粉 (Sakura Pastel) + 变量覆盖 CSS ----------------
+# ---------------- 页面 CSS ----------------
 st.markdown("""
 <style>
 :root, [data-theme="light"], .stApp {
@@ -47,7 +47,6 @@ h2, h3 {
     font-weight: 700 !important;
 }
 
-/* 多选框角色标签全面粉晶化 */
 div[data-baseweb="tag"],
 span[data-baseweb="tag"],
 li[data-baseweb="tag"],
@@ -108,7 +107,6 @@ li[data-baseweb="menu-item"]:hover {
     color: #be185d !important;
 }
 
-/* 语音作战室三大专属微光按钮 */
 div[data-testid="stLinkButton"] a {
     border-radius: 12px !important;
     font-weight: 700 !important;
@@ -398,13 +396,12 @@ def short_name(full_name):
         return "未知"
     return str(full_name).split("#")[0]
 
-# ---------------- 2. 原生均衡 SVG 六边形雷达生成器 ----------------
+# ---------------- 2. 原生 SVG 六边形雷达生成器 ----------------
 def generate_radar_svg(values, categories):
     size = 320
     cx, cy, r = size / 2, size / 2, 105
     total = len(values)
     
-    # 绘制背景底网（4层同心刻度，增加参照感）
     grid_polys = []
     for level in [0.25, 0.5, 0.75, 1.0]:
         pts = []
@@ -415,7 +412,6 @@ def generate_radar_svg(values, categories):
             pts.append(f"{x:.1f},{y:.1f}")
         grid_polys.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#fecdd3" stroke-width="1.2" stroke-dasharray="3,3"/>')
     
-    # 绘制轴线与清晰标签
     axis_lines = []
     labels = []
     for i in range(total):
@@ -428,7 +424,6 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
-    # 绘制数值多边形
     data_pts = []
     data_dots = []
     for i in range(total):
@@ -599,10 +594,9 @@ else:
         "damage_shares": [], "taken_shares": [], "team_kill_shares": [], "kp_shares": []
     })
     
-    # 专属六边形统计池：严格过滤 ≥ 6 人的正规对局，剔除 1v1、2v2 残局造成的占比虚高
     radar_stats_pool = defaultdict(lambda: {
         "games_6p": 0, "kills": 0, "deaths": 0, "assists": 0,
-        "damage_shares": [], "taken_shares": [], "kp_shares": []
+        "damage_shares": [], "taken_shares": [], "kp_shares": [], "death_shares": []
     })
 
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
@@ -614,8 +608,7 @@ else:
 
     for game_idx, r in enumerate(records):
         players_in_game = r.get("players", [])
-        total_p_cnt = len(players_in_game)
-        is_valid_6p_game = total_p_cnt >= 6  # 核心判断：是否为 6 人及以上的标准对局
+        is_valid_6p_game = len(players_in_game) >= 6
 
         blue_team = []
         red_team = []
@@ -643,8 +636,8 @@ else:
             is_win = bool(p.get("is_winner"))
             side = str(p.get("team", "")).upper()
             team_k = blue_total_k if side == "BLUE" else red_total_k
+            team_d = blue_total_d if side == "BLUE" else red_total_d
 
-            # 全局统计
             stats[fname]["总场次"] += 1
             stats[fname]["胜场" if is_win else "负场"] += 1
             stats[fname]["击杀"] += k
@@ -654,7 +647,6 @@ else:
             dmg_s = p.get("damage_share")
             taken_s = p.get("taken_share")
 
-            # 核心过滤：只有在 ≥ 6 人的对局中，才采纳伤害与承伤占比进入六边形雷达
             if is_valid_6p_game:
                 radar_stats_pool[fname]["games_6p"] += 1
                 radar_stats_pool[fname]["kills"] += k
@@ -675,6 +667,8 @@ else:
 
                 if team_k > 0:
                     radar_stats_pool[fname]["kp_shares"].append((k + a) / team_k)
+                if team_d > 0:
+                    radar_stats_pool[fname]["death_shares"].append(d / team_d)
 
             if k > max_single_kill["val"]:
                 max_single_kill = {"player": fname, "val": k, "game_idx": game_idx + 1}
@@ -935,7 +929,6 @@ else:
                 st.session_state["assigned_red"] = shuffled[blue_size:]
                 st.session_state["split_mode"] = f"🎲 听天由命盲盒随机 ({len(st.session_state['assigned_blue'])}v{len(st.session_state['assigned_red'])})"
 
-        # 渲染对阵结果
         if st.session_state["assigned_blue"] and st.session_state["assigned_red"]:
             blue_team = st.session_state["assigned_blue"]
             red_team = st.session_state["assigned_red"]
@@ -1055,92 +1048,95 @@ else:
         )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-        # ---------------- 板块 E：全新六维战术图谱（仅采样 ≥6 人正规对局） ----------------
+        # ---------------- 板块 E：全新科学锚定·六维战术图谱 (≥6人局) ----------------
         st.markdown("---")
         st.subheader("🎯 选手局内战术图谱 (仅统计 ≥6 人正规对局)")
 
-        # 仅筛选在 ≥ 6 人对局中至少出场过 1 次的选手供选择
         valid_radar_players = [p for p, data in radar_stats_pool.items() if data["games_6p"] > 0]
         active_player_options = sorted(valid_radar_players, key=lambda x: radar_stats_pool[x]["games_6p"], reverse=True)
 
         if not active_player_options:
-            st.info("💡 暂无 6 人及以上的对局记录。当有 3v3 或 5v5 标准内战录入后将自动生成雷达图！")
+            st.info("💡 暂无 6 人及以上的对局记录。录入标准内战截图后自动生成雷达图！")
         else:
             c_sel, _ = st.columns([2.5, 3.5])
             with c_sel:
                 target_p = st.selectbox("选择要分析的群友档案：", active_player_options, format_func=lambda x: short_name(x))
             
-            # 1. 采集全群在 ≥6 人对局中的战术均值，进行平稳的相对标定
-            all_metrics = {}
-            for p_name_key in active_player_options:
-                p_radar = radar_stats_pool[p_name_key]
-                t_games = p_radar["games_6p"]
-                
-                # 伤害输出
-                d_list = p_radar["damage_shares"]
-                d_val = (sum(d_list) / len(d_list)) if d_list else (float(p_radar["kills"]) / t_games * 2.2)
-                
-                # 承受伤害
-                tk_list = p_radar["taken_shares"]
-                tk_val = (sum(tk_list) / len(tk_list)) if tk_list else (float(p_radar["deaths"]) / t_games * 2.5)
-                
-                # 参团率
-                kp_l = p_radar["kp_shares"]
-                kp_val = (sum(kp_l) / len(kp_l)) if kp_l else (float(p_radar["kills"] + p_radar["assists"]) / max(1.0, float(p_radar["kills"] + p_radar["assists"] + 6.0)))
-                
-                # 场均击杀、助攻、保命
-                k_val = float(p_radar["kills"]) / t_games
-                a_val = float(p_radar["assists"]) / t_games
-                d_rate = float(p_radar["deaths"]) / t_games
-                surv_val = max(0.5, 14.0 - d_rate)  # 死亡越少，保命值越高
-                
-                all_metrics[p_name_key] = {
-                    "dmg": d_val, "tank": tk_val, "kp": kp_val,
-                    "kill": k_val, "assist": a_val, "surv": surv_val
-                }
+            p_radar = radar_stats_pool[target_p]
+            valid_g = p_radar["games_6p"]
+            
+            # 基础场均指标
+            p_kills = float(p_radar["kills"] / valid_g)
+            p_deaths = float(p_radar["deaths"] / valid_g)
+            p_assists = float(p_radar["assists"] / valid_g)
 
-            # 2. 平稳线性相对标定算法：映射至合理的 35 ~ 95 分区间，既有清晰区分度，又不会严重畸变
-            def get_balanced_score(val, key_name):
-                vals = [m[key_name] for m in all_metrics.values()]
-                min_v, max_v = min(vals), max(vals)
-                if max_v == min_v:
-                    return 65.0
-                ratio = (val - min_v) / (max_v - min_v)
-                return round(35.0 + ratio * 60.0, 1)
+            # 1. 伤害输出 (Damage Output)：以 20% 为 65 分基准线平滑映射
+            dmg_list = p_radar["damage_shares"]
+            dmg_share = (sum(dmg_list) / len(dmg_list)) if dmg_list else (p_kills * 2.3)
+            if dmg_share <= 20.0:
+                score_dmg = 40.0 + (dmg_share / 20.0) * 25.0
+            else:
+                score_dmg = 65.0 + min(1.0, (dmg_share - 20.0) / 15.0) * 28.0
 
-            curr = all_metrics[target_p]
-            score_dmg = get_balanced_score(curr["dmg"], "dmg")
-            score_tank = get_balanced_score(curr["tank"], "tank")
-            score_kp = get_balanced_score(curr["kp"], "kp")
-            score_kill = get_balanced_score(curr["kill"], "kill")
-            score_assist = get_balanced_score(curr["assist"], "assist")
-            score_surv = get_balanced_score(curr["surv"], "surv")
+            # 2. 承受伤害 (Damage Taken)：以 20% 为中线，结合抗伤转化质量
+            taken_list = p_radar["taken_shares"]
+            taken_share = (sum(taken_list) / len(taken_list)) if taken_list else (p_deaths * 2.4)
+            d_share_list = p_radar["death_shares"]
+            avg_d_share = (sum(d_share_list) / len(d_share_list)) if d_share_list else 0.20
+            
+            # 抗伤转化率：吃得多但阵亡率正常或偏低说明抗伤质量高
+            efficiency = min(1.3, taken_share / max(10.0, avg_d_share * 100.0))
+            if taken_share <= 20.0:
+                score_tank = (38.0 + (taken_share / 20.0) * 27.0) * efficiency
+            else:
+                score_tank = (65.0 + min(1.0, (taken_share - 20.0) / 14.0) * 28.0) * efficiency
+            score_tank = max(35.0, min(95.0, score_tank))
 
-            # 清晰易懂的标准电竞维度标签
+            # 3. 参团活跃 (KP / 参团率)：55%及格(65分)，75%顶尖(90分)
+            kp_list = p_radar["kp_shares"]
+            avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else (p_kills + p_assists) / max(1.0, p_kills + p_assists + 5.0)
+            if avg_kp <= 0.55:
+                score_kp = 35.0 + (avg_kp / 0.55) * 30.0
+            else:
+                score_kp = 65.0 + min(1.0, (avg_kp - 0.55) / 0.25) * 28.0
+
+            # 4 & 5. 收割 (Kills) 与 助攻 (Assists) 解耦互锁偏向
+            ka_total = max(1.0, p_kills + p_assists)
+            kill_bias = p_kills / ka_total  # 偏向比：刺客/AD趋向0.6~0.8，辅助/肉坦趋向0.1~0.3
+            
+            raw_k_score = min(92.0, 40.0 + (p_kills / 10.0) * 50.0)
+            raw_a_score = min(92.0, 40.0 + (p_assists / 12.0) * 50.0)
+            
+            score_kill = max(35.0, min(95.0, raw_k_score * (0.7 + kill_bias * 0.5)))
+            score_assist = max(35.0, min(95.0, raw_a_score * (1.2 - kill_bias * 0.5)))
+
+            # 6. 保命能力 (Survival)：基于队内阵亡占比逆向打分
+            if avg_d_share <= 0.20:
+                score_surv = 65.0 + ((0.20 - avg_d_share) / 0.12) * 28.0
+            else:
+                score_surv = 65.0 - ((avg_d_share - 0.20) / 0.15) * 30.0
+            score_surv = max(35.0, min(95.0, score_surv))
+
             categories = ['伤害输出', '承受伤害', '参团活跃', '人头收割', '助攻开团', '保命能力']
-            values = [score_dmg, score_tank, score_kp, score_kill, score_assist, score_surv]
+            values = [round(score_dmg, 1), round(score_tank, 1), round(score_kp, 1), round(score_kill, 1), round(score_assist, 1), round(score_surv, 1)]
 
-            # 战术风格评定
-            if score_dmg >= 75 and score_kill >= 75:
-                style_title, style_badge = "🗡️ 绝对主C / 团队火力核心", "delta-pink"
-            elif score_tank >= 75 and score_assist >= 70:
+            # 战术打标判定
+            if score_dmg >= 78 and score_kill >= 75:
+                style_title, style_badge = "🗡️ 绝对主C / 团队核心火力", "delta-pink"
+            elif score_tank >= 78 and score_assist >= 70:
                 style_title, style_badge = "🛡️ 铁血开团 / 护航巨盾", "delta-blue"
-            elif score_kp >= 75:
+            elif score_kp >= 78:
                 style_title, style_badge = "🌐 全图游走 / 节奏发动机", "delta-gold"
-            elif score_surv >= 75 and score_dmg <= 50:
+            elif score_surv >= 78 and score_dmg <= 55:
                 style_title, style_badge = "🕊️ 稳健拉扯 / 保命大师", "delta-gray"
+            elif score_kill >= 75 and score_surv <= 50:
+                style_title, style_badge = "🩸 突进刺客 / 极限兑换", "delta-pink"
             else:
                 style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-pink"
 
-            target_radar_data = radar_stats_pool[target_p]
-            valid_g = target_radar_data["games_6p"]
-            p_kills = float(target_radar_data["kills"] / valid_g)
-            p_deaths = float(target_radar_data["deaths"] / valid_g)
-            p_assists = float(target_radar_data["assists"] / valid_g)
-
-            dmg_disp = f"{curr['dmg']:.1f}%"
-            tank_disp = f"{curr['tank']:.1f}%"
-            kp_disp = f"{round(curr['kp'] * 100, 1)}%"
+            dmg_disp = f"{dmg_share:.1f}%"
+            tank_disp = f"{taken_share:.1f}%"
+            kp_disp = f"{round(avg_kp * 100, 1)}%"
 
             col_radar, col_detail = st.columns([1.2, 1])
 
@@ -1154,11 +1150,11 @@ else:
                         <div class="stat-card-player">{short_name(target_p)}</div>
                         <div class="stat-card-delta {style_badge}">{style_title}</div>
                         <div style="font-size:0.88rem;color:#475569;line-height:2.0;margin-top:10px;">
-                            <div>• <b>标准对局有效样本</b>: {valid_g} 局 (已过滤残局)</div>
+                            <div>• <b>标准对局有效样本</b>: {valid_g} 局 (已剔除残局)</div>
                             <div>• <b>场均伤害占比</b>: <span style="color:#e11d48;font-weight:700;">{dmg_disp}</span></div>
                             <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{tank_disp}</span></div>
                             <div>• <b>平均团战参团率</b>: <span style="color:#ca8a04;font-weight:700;">{kp_disp}</span></div>
-                            <div>• <b>有效场均表现</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
+                            <div>• <b>标准场均数据</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
