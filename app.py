@@ -398,13 +398,13 @@ def short_name(full_name):
         return "未知"
     return str(full_name).split("#")[0]
 
-# ---------------- 2. 原生精美 SVG 六边形雷达生成器 ----------------
+# ---------------- 2. 原生均衡 SVG 六边形雷达生成器 ----------------
 def generate_radar_svg(values, categories):
     size = 320
     cx, cy, r = size / 2, size / 2, 105
     total = len(values)
     
-    # 绘制背景底网（4层同心刻度，增加层次分明感）
+    # 绘制背景底网（4层同心刻度，增加参照感）
     grid_polys = []
     for level in [0.25, 0.5, 0.75, 1.0]:
         pts = []
@@ -428,7 +428,7 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
-    # 绘制动态数值多边形
+    # 绘制数值多边形
     data_pts = []
     data_dots = []
     for i in range(total):
@@ -463,7 +463,6 @@ with st.sidebar:
     records = load_records()
     st.metric("总计收录对局", f"{len(records)} 局")
 
-    # 一键重扫历史截图补充输出/承伤
     if records:
         if st.button("🔄 一键重扫历史截图 (补充输出/承伤)", help="读取 records.json 里的截图，让 AI 提取输出与承伤"):
             if not key:
@@ -599,6 +598,13 @@ else:
         "总场次": 0, "胜场": 0, "负场": 0, "击杀": 0, "死亡": 0, "助攻": 0,
         "damage_shares": [], "taken_shares": [], "team_kill_shares": [], "kp_shares": []
     })
+    
+    # 专属六边形统计池：严格过滤 ≥ 6 人的正规对局，剔除 1v1、2v2 残局造成的占比虚高
+    radar_stats_pool = defaultdict(lambda: {
+        "games_6p": 0, "kills": 0, "deaths": 0, "assists": 0,
+        "damage_shares": [], "taken_shares": [], "kp_shares": []
+    })
+
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
@@ -607,12 +613,16 @@ else:
     max_single_assist = {"player": "", "val": -1, "game_idx": 0}
 
     for game_idx, r in enumerate(records):
+        players_in_game = r.get("players", [])
+        total_p_cnt = len(players_in_game)
+        is_valid_6p_game = total_p_cnt >= 6  # 核心判断：是否为 6 人及以上的标准对局
+
         blue_team = []
         red_team = []
         blue_total_k, red_total_k = 0, 0
         blue_total_d, red_total_d = 0, 0
         
-        for p in r.get("players", []):
+        for p in players_in_game:
             side = str(p.get("team", "")).upper()
             k = int(p.get("kills", 0))
             d = int(p.get("deaths", 0))
@@ -623,7 +633,7 @@ else:
                 red_total_k += k
                 red_total_d += d
 
-        for p in r.get("players", []):
+        for p in players_in_game:
             raw_pname = p.get("player_name", "")
             if not raw_pname:
                 continue
@@ -634,6 +644,7 @@ else:
             side = str(p.get("team", "")).upper()
             team_k = blue_total_k if side == "BLUE" else red_total_k
 
+            # 全局统计
             stats[fname]["总场次"] += 1
             stats[fname]["胜场" if is_win else "负场"] += 1
             stats[fname]["击杀"] += k
@@ -641,22 +652,29 @@ else:
             stats[fname]["助攻"] += a
 
             dmg_s = p.get("damage_share")
-            if dmg_s is not None:
-                try:
-                    stats[fname]["damage_shares"].append(float(dmg_s))
-                except Exception:
-                    pass
-            
             taken_s = p.get("taken_share")
-            if taken_s is not None:
-                try:
-                    stats[fname]["taken_shares"].append(float(taken_s))
-                except Exception:
-                    pass
 
-            if team_k > 0:
-                stats[fname]["team_kill_shares"].append(k / team_k)
-                stats[fname]["kp_shares"].append((k + a) / team_k)
+            # 核心过滤：只有在 ≥ 6 人的对局中，才采纳伤害与承伤占比进入六边形雷达
+            if is_valid_6p_game:
+                radar_stats_pool[fname]["games_6p"] += 1
+                radar_stats_pool[fname]["kills"] += k
+                radar_stats_pool[fname]["deaths"] += d
+                radar_stats_pool[fname]["assists"] += a
+
+                if dmg_s is not None:
+                    try:
+                        radar_stats_pool[fname]["damage_shares"].append(float(dmg_s))
+                    except Exception:
+                        pass
+                
+                if taken_s is not None:
+                    try:
+                        radar_stats_pool[fname]["taken_shares"].append(float(taken_s))
+                    except Exception:
+                        pass
+
+                if team_k > 0:
+                    radar_stats_pool[fname]["kp_shares"].append((k + a) / team_k)
 
             if k > max_single_kill["val"]:
                 max_single_kill = {"player": fname, "val": k, "game_idx": game_idx + 1}
@@ -1037,70 +1055,72 @@ else:
         )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-        # ---------------- 板块 E：全新群内动态相对标定·六维图谱 ----------------
+        # ---------------- 板块 E：全新六维战术图谱（仅采样 ≥6 人正规对局） ----------------
         st.markdown("---")
-        st.subheader("🎯 选手局内战术图谱")
+        st.subheader("🎯 选手局内战术图谱 (仅统计 ≥6 人正规对局)")
 
-        active_player_options = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
+        # 仅筛选在 ≥ 6 人对局中至少出场过 1 次的选手供选择
+        valid_radar_players = [p for p, data in radar_stats_pool.items() if data["games_6p"] > 0]
+        active_player_options = sorted(valid_radar_players, key=lambda x: radar_stats_pool[x]["games_6p"], reverse=True)
 
-        if active_player_options:
+        if not active_player_options:
+            st.info("💡 暂无 6 人及以上的对局记录。当有 3v3 或 5v5 标准内战录入后将自动生成雷达图！")
+        else:
             c_sel, _ = st.columns([2.5, 3.5])
             with c_sel:
                 target_p = st.selectbox("选择要分析的群友档案：", active_player_options, format_func=lambda x: short_name(x))
             
-            # 1. 预计算群内所有出场玩家的基础战术均值，用于动态拉扯（彻底拉开差异）
+            # 1. 采集全群在 ≥6 人对局中的战术均值，进行平稳的相对标定
             all_metrics = {}
             for p_name_key in active_player_options:
-                row_item = df.loc[p_name_key]
-                t_games = int(row_item["总场次"])
-                if t_games == 0:
-                    continue
+                p_radar = radar_stats_pool[p_name_key]
+                t_games = p_radar["games_6p"]
                 
                 # 伤害输出
-                d_list = row_item["damage_shares"]
-                d_val = (sum(d_list) / len(d_list)) if d_list else (float(row_item["击杀"]) / t_games * 2.2)
+                d_list = p_radar["damage_shares"]
+                d_val = (sum(d_list) / len(d_list)) if d_list else (float(p_radar["kills"]) / t_games * 2.2)
                 
                 # 承受伤害
-                tk_list = row_item["taken_shares"]
-                tk_val = (sum(tk_list) / len(tk_list)) if tk_list else (float(row_item["死亡"]) / t_games * 2.5)
+                tk_list = p_radar["taken_shares"]
+                tk_val = (sum(tk_list) / len(tk_list)) if tk_list else (float(p_radar["deaths"]) / t_games * 2.5)
                 
                 # 参团率
-                kp_l = row_item["kp_shares"]
-                kp_val = (sum(kp_l) / len(kp_l)) if kp_l else (float(row_item["击杀"] + row_item["助攻"]) / max(1.0, float(row_item["击杀"] + row_item["助攻"] + 6.0)))
+                kp_l = p_radar["kp_shares"]
+                kp_val = (sum(kp_l) / len(kp_l)) if kp_l else (float(p_radar["kills"] + p_radar["assists"]) / max(1.0, float(p_radar["kills"] + p_radar["assists"] + 6.0)))
                 
-                # 击杀、助攻、保命
-                k_val = float(row_item["击杀"]) / t_games
-                a_val = float(row_item["助攻"]) / t_games
-                d_rate = float(row_item["死亡"]) / t_games
-                surv_val = 15.0 - min(d_rate, 12.0)  # 死亡越少，分值越高
+                # 场均击杀、助攻、保命
+                k_val = float(p_radar["kills"]) / t_games
+                a_val = float(p_radar["assists"]) / t_games
+                d_rate = float(p_radar["deaths"]) / t_games
+                surv_val = max(0.5, 14.0 - d_rate)  # 死亡越少，保命值越高
                 
                 all_metrics[p_name_key] = {
                     "dmg": d_val, "tank": tk_val, "kp": kp_val,
                     "kill": k_val, "assist": a_val, "surv": surv_val
                 }
 
-            # 提取群内极值做 Min-Max 相对归一化，拉开 30 ~ 95 分梯度
-            def get_scaled_score(val, key_name):
+            # 2. 平稳线性相对标定算法：映射至合理的 35 ~ 95 分区间，既有清晰区分度，又不会严重畸变
+            def get_balanced_score(val, key_name):
                 vals = [m[key_name] for m in all_metrics.values()]
                 min_v, max_v = min(vals), max(vals)
                 if max_v == min_v:
                     return 65.0
                 ratio = (val - min_v) / (max_v - min_v)
-                return round(30.0 + ratio * 65.0, 1)
+                return round(35.0 + ratio * 60.0, 1)
 
             curr = all_metrics[target_p]
-            score_dmg = get_scaled_score(curr["dmg"], "dmg")
-            score_tank = get_scaled_score(curr["tank"], "tank")
-            score_kp = get_scaled_score(curr["kp"], "kp")
-            score_kill = get_scaled_score(curr["kill"], "kill")
-            score_assist = get_scaled_score(curr["assist"], "assist")
-            score_surv = get_scaled_score(curr["surv"], "surv")
+            score_dmg = get_balanced_score(curr["dmg"], "dmg")
+            score_tank = get_balanced_score(curr["tank"], "tank")
+            score_kp = get_balanced_score(curr["kp"], "kp")
+            score_kill = get_balanced_score(curr["kill"], "kill")
+            score_assist = get_balanced_score(curr["assist"], "assist")
+            score_surv = get_balanced_score(curr["surv"], "surv")
 
-            # 通俗直观、标准电竞的六大维度标签
+            # 清晰易懂的标准电竞维度标签
             categories = ['伤害输出', '承受伤害', '参团活跃', '人头收割', '助攻开团', '保命能力']
             values = [score_dmg, score_tank, score_kp, score_kill, score_assist, score_surv]
 
-            # 战术风格打标
+            # 战术风格评定
             if score_dmg >= 75 and score_kill >= 75:
                 style_title, style_badge = "🗡️ 绝对主C / 团队火力核心", "delta-pink"
             elif score_tank >= 75 and score_assist >= 70:
@@ -1112,13 +1132,12 @@ else:
             else:
                 style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-pink"
 
-            p_data = df.loc[target_p]
-            p_games = int(p_data["总场次"])
-            p_kills = float(p_data["场均击杀"])
-            p_deaths = float(p_data["死亡"] / p_games) if p_games > 0 else 0.0
-            p_assists = float(p_data["助攻"] / p_games) if p_games > 0 else 0.0
+            target_radar_data = radar_stats_pool[target_p]
+            valid_g = target_radar_data["games_6p"]
+            p_kills = float(target_radar_data["kills"] / valid_g)
+            p_deaths = float(target_radar_data["deaths"] / valid_g)
+            p_assists = float(target_radar_data["assists"] / valid_g)
 
-            # 简洁直白呈现，不再带“采样”字样
             dmg_disp = f"{curr['dmg']:.1f}%"
             tank_disp = f"{curr['tank']:.1f}%"
             kp_disp = f"{round(curr['kp'] * 100, 1)}%"
@@ -1135,11 +1154,11 @@ else:
                         <div class="stat-card-player">{short_name(target_p)}</div>
                         <div class="stat-card-delta {style_badge}">{style_title}</div>
                         <div style="font-size:0.88rem;color:#475569;line-height:2.0;margin-top:10px;">
+                            <div>• <b>标准对局有效样本</b>: {valid_g} 局 (已过滤残局)</div>
                             <div>• <b>场均伤害占比</b>: <span style="color:#e11d48;font-weight:700;">{dmg_disp}</span></div>
                             <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{tank_disp}</span></div>
                             <div>• <b>平均团战参团率</b>: <span style="color:#ca8a04;font-weight:700;">{kp_disp}</span></div>
-                            <div>• <b>局内基础场均</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
-                            <div>• <b>综合战力 (MMR)</b>: <span style="color:#be185d;font-weight:800;">{p_data['MMR']:.1f} 分</span></div>
+                            <div>• <b>有效场均表现</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
