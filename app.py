@@ -24,12 +24,10 @@ st.set_page_config(page_title="海克斯内战", page_icon="⚔️", layout="wid
 # ---------------- 温润淡粉 (Sakura Pastel) + 变量覆盖 CSS ----------------
 st.markdown("""
 <style>
-/* 核心穿透：从根源直接覆写 Streamlit 的 primaryColor 变量，彻底消灭刺眼大红色 */
 :root, [data-theme="light"], .stApp {
     --primary-color: #f43f5e !important;
 }
 
-/* 全局背景：柔和樱花淡粉渐变 */
 .stApp {
     background: linear-gradient(135deg, #fff5f5 0%, #ffe4e6 50%, #fed7aa 100%) !important;
     background-attachment: fixed !important;
@@ -37,7 +35,6 @@ st.markdown("""
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 顶部主标题渐变 */
 h1 {
     background: linear-gradient(90deg, #e11d48 0%, #db2777 50%, #9333ea 100%) !important;
     -webkit-background-clip: text !important;
@@ -50,7 +47,7 @@ h2, h3 {
     font-weight: 700 !important;
 }
 
-/* 彻底重写多选框名字标签：全面改为草莓粉晶柔和徽章，消灭刺眼红框 */
+/* 多选框角色标签全面粉晶化 */
 div[data-baseweb="tag"],
 span[data-baseweb="tag"],
 li[data-baseweb="tag"],
@@ -72,7 +69,6 @@ div[data-testid="stMultiSelect"] [data-baseweb="tag"] * {
     fill: #db2777 !important;
 }
 
-/* 多选框外壳与消灭自带输入槽边框 */
 div[data-testid="stMultiSelect"] > div > div,
 div[data-baseweb="select"] > div {
     background-color: #ffffff !important;
@@ -92,7 +88,6 @@ div[data-baseweb="select"] div[data-baseweb="base-input"] {
     color: #334155 !important;
 }
 
-/* 弹出菜单：实体纯白，杜绝文字穿透重叠 */
 div[data-baseweb="popover"],
 div[data-baseweb="popover"] > div,
 ul[data-baseweb="menu"] {
@@ -113,7 +108,7 @@ li[data-baseweb="menu-item"]:hover {
     color: #be185d !important;
 }
 
-/* 三大连麦作战室专属发光按钮 */
+/* 语音作战室三大专属微光按钮 */
 div[data-testid="stLinkButton"] a {
     border-radius: 12px !important;
     font-weight: 700 !important;
@@ -125,38 +120,25 @@ div[data-testid="stLinkButton"] a {
 div[data-testid="stLinkButton"] a:hover {
     transform: translateY(-2px);
 }
-/* 大厅专属：暖金微光 */
 div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a {
     background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%) !important;
     border: 2px solid #eab308 !important;
     box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3) !important;
     color: #854d0e !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) div[data-testid="stLinkButton"] a:hover {
-    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5) !important;
-}
-/* 蓝方专属：海蓝微光 */
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a {
     background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
     border: 2px solid #0284c7 !important;
     box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
     color: #0369a1 !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) div[data-testid="stLinkButton"] a:hover {
-    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5) !important;
-}
-/* 红方专属：绯红微光 */
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a {
     background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%) !important;
     border: 2px solid #e11d48 !important;
     box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3) !important;
     color: #9f1239 !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-    box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5) !important;
-}
 
-/* 输入框与操作按钮 */
 div[data-testid="stTextInput"] input {
     background-color: #ffffff !important;
     border: 1px solid #fbcfe8 !important;
@@ -211,7 +193,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
 .delta-blue { background: #e0f2fe; color: #0284c7; }
 .delta-gray { background: #f1f5f9; color: #64748b; }
 
-/* 红蓝对阵看板与复制区 */
 .team-arena-box {
     background: #ffffff;
     border: 1px solid #fecdd3;
@@ -241,7 +222,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
     box-shadow: 0 4px 12px rgba(244, 114, 182, 0.1);
 }
 
-/* 表格容器 */
 .clean-table-box {
     width: 100%;
     overflow-x: auto;
@@ -273,7 +253,6 @@ button[data-testid="stBaseButton-secondary"]:hover {
     background: #fff5f5;
 }
 
-/* 侧边栏 */
 section[data-testid="stSidebar"] {
     background-color: #fff5f5 !important;
     border-right: 1px solid #fecdd3 !important;
@@ -376,6 +355,7 @@ def save_records(records):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
 
+# 升级后的 AI 识别引擎：自动提取输出占比与承伤占比
 def analyze_image(img_bytes, api_key):
     client = OpenAI(
         api_key=api_key,
@@ -383,13 +363,15 @@ def analyze_image(img_bytes, api_key):
         timeout=40.0
     )
     b64 = base64.b64encode(img_bytes).decode('utf-8')
+    
     prompt = (
-        "这是英雄联盟掌盟战绩结算截图。\n"
-        "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID与KDA数值。\n"
-        "不要识别英雄。\n"
+        "这是英雄联盟掌盟对局结算截图。\n"
+        "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID、KDA数值。\n"
+        "若截图中有输出占比（例如 25% 或 25.4%）或承伤占比，请一并识别提取为数值（无百分号，如 25.4）。若截图中未显示输出或承伤占比，对应字段填 null。\n"
         "请严格输出合法JSON：\n"
-        '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "is_winner": true}]}'
+        '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "damage_share": 24.5, "taken_share": 20.1, "is_winner": true}]}'
     )
+    
     resp = client.chat.completions.create(
         model="qwen-vl-max",
         messages=[{"role": "user", "content": [
@@ -409,13 +391,13 @@ def short_name(full_name):
         return "未知"
     return str(full_name).split("#")[0]
 
-# ---------------- 2. 原生 SVG 六边形雷达生成器 (无需 Plotly 依赖) ----------------
+# ---------------- 2. 原生精美 SVG 六边形雷达生成器 ----------------
 def generate_radar_svg(values, categories):
     size = 320
     cx, cy, r = size / 2, size / 2, 105
     total = len(values)
     
-    # 绘制背景底网（3层同心多边形）
+    # 绘制背景底网（3层多边形）
     grid_polys = []
     for level in [0.33, 0.66, 1.0]:
         pts = []
@@ -426,7 +408,7 @@ def generate_radar_svg(values, categories):
             pts.append(f"{x:.1f},{y:.1f}")
         grid_polys.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#fecdd3" stroke-width="1.2" stroke-dasharray="3,3"/>')
     
-    # 绘制轴线与文本标签
+    # 绘制轴线与标签
     axis_lines = []
     labels = []
     for i in range(total):
@@ -439,7 +421,7 @@ def generate_radar_svg(values, categories):
         ty = cy - (r + 14) * math.sin(angle)
         labels.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="11" font-weight="700" fill="#9f1239" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
 
-    # 绘制数值多边形
+    # 绘制数据多边形
     data_pts = []
     data_dots = []
     for i in range(total):
@@ -487,10 +469,12 @@ with st.sidebar:
         
         p_rows = []
         for p in curr_record.get("players", []):
+            dmg_s = f"{p.get('damage_share')}%" if p.get('damage_share') is not None else "--"
             p_rows.append({
                 "阵营": p.get("team", ""),
                 "玩家ID": short_name(p.get("player_name", "")),
                 "K/D/A": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
+                "输出占比": dmg_s,
                 "胜负": "胜" if p.get("is_winner") else "负"
             })
         if p_rows:
@@ -549,7 +533,7 @@ with c2:
 with c3:
     st.link_button("🔴 红方作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
 
-# ---------------- 主界面 2：数据汇总与分析 ----------------
+# ---------------- 主界面 2：数据汇总与局内硬核统计 ----------------
 records = load_records()
 
 if not records:
@@ -571,7 +555,10 @@ else:
             return TARGET_QIANQIU
         return fname
 
-    stats = defaultdict(lambda: {"总场次": 0, "胜场": 0, "负场": 0, "击杀": 0, "死亡": 0, "助攻": 0})
+    stats = defaultdict(lambda: {
+        "总场次": 0, "胜场": 0, "负场": 0, "击杀": 0, "死亡": 0, "助攻": 0,
+        "damage_shares": [], "taken_shares": [], "team_kill_shares": [], "kp_shares": []
+    })
     synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
     nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
@@ -582,7 +569,21 @@ else:
     for game_idx, r in enumerate(records):
         blue_team = []
         red_team = []
+        blue_total_k, red_total_k = 0, 0
+        blue_total_d, red_total_d = 0, 0
         
+        # 预统计两队总人头与阵亡
+        for p in r.get("players", []):
+            side = str(p.get("team", "")).upper()
+            k = int(p.get("kills", 0))
+            d = int(p.get("deaths", 0))
+            if side == "BLUE":
+                blue_total_k += k
+                blue_total_d += d
+            elif side == "RED":
+                red_total_k += k
+                red_total_d += d
+
         for p in r.get("players", []):
             raw_pname = p.get("player_name", "")
             if not raw_pname:
@@ -591,12 +592,34 @@ else:
 
             k, d, a = int(p.get("kills", 0)), int(p.get("deaths", 0)), int(p.get("assists", 0))
             is_win = bool(p.get("is_winner"))
+            side = str(p.get("team", "")).upper()
+            team_k = blue_total_k if side == "BLUE" else red_total_k
 
             stats[fname]["总场次"] += 1
             stats[fname]["胜场" if is_win else "负场"] += 1
             stats[fname]["击杀"] += k
             stats[fname]["死亡"] += d
             stats[fname]["助攻"] += a
+
+            # 提取输出占比与承伤占比
+            dmg_s = p.get("damage_share")
+            if dmg_s is not None:
+                try:
+                    stats[fname]["damage_shares"].append(float(dmg_s))
+                except Exception:
+                    pass
+            
+            taken_s = p.get("taken_share")
+            if taken_s is not None:
+                try:
+                    stats[fname]["taken_shares"].append(float(taken_s))
+                except Exception:
+                    pass
+
+            # 提取真实局内击杀贡献率与参团率
+            if team_k > 0:
+                stats[fname]["team_kill_shares"].append(k / team_k)
+                stats[fname]["kp_shares"].append((k + a) / team_k)
 
             if k > max_single_kill["val"]:
                 max_single_kill = {"player": fname, "val": k, "game_idx": game_idx + 1}
@@ -605,10 +628,9 @@ else:
             if a > max_single_assist["val"]:
                 max_single_assist = {"player": fname, "val": a, "game_idx": game_idx + 1}
 
-            team_side = str(p.get("team", "")).upper()
-            if team_side == "BLUE":
+            if side == "BLUE":
                 blue_team.append((fname, is_win))
-            elif team_side == "RED":
+            elif side == "RED":
                 red_team.append((fname, is_win))
 
         for t in [blue_team, red_team]:
@@ -978,9 +1000,9 @@ else:
         )
         st.markdown(custom_table_html, unsafe_allow_html=True)
 
-        # ---------------- 板块 E：选手六边形战力档案 (原生 SVG 零依赖版) ----------------
+        # ---------------- 板块 E：选手六维战术局内雷达 (含输出/承伤占比) ----------------
         st.markdown("---")
-        st.subheader("🎯 选手六边形战力档案")
+        st.subheader("🎯 选手局内战术图谱 (输出/承伤占比驱动)")
 
         active_player_options = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True)
 
@@ -991,33 +1013,58 @@ else:
             
             p_data = df.loc[target_p]
             p_games = int(p_data["总场次"])
-            p_wr = float(p_data["胜率_num"])
-            p_kd = float(p_data["KD"])
-            p_kda = float(p_data["KDA_num"])
             p_kills = float(p_data["场均击杀"])
             p_deaths = float(p_data["死亡"] / p_games) if p_games > 0 else 0.0
             p_assists = float(p_data["助攻"] / p_games) if p_games > 0 else 0.0
 
-            # 维度计算 (0 - 100 分)
-            score_kill = min(100.0, (p_kills / 10.0) * 100.0)
-            score_surv = max(10.0, min(100.0, 100.0 - (p_deaths - 2.0) * 11.0)) if p_deaths >= 2 else 100.0
-            score_assist = min(100.0, (p_assists / 12.0) * 100.0)
-            score_kd = min(100.0, (p_kd / 3.0) * 100.0)
-            score_kda = min(100.0, (p_kda / 5.0) * 100.0)
-            score_wr = min(100.0, p_wr * 1.0)
-
-            categories = ['击杀爆发', '保命生存', '团队助攻', 'KD压制', '综合KDA', '胜率掌控']
-            values = [round(score_kill, 1), round(score_surv, 1), round(score_assist, 1), round(score_kd, 1), round(score_kda, 1), round(score_wr, 1)]
-
-            avg_score = round(sum(values) / len(values), 1)
-            if avg_score >= 85:
-                tier_title, tier_badge = "👑 S+ 独断万古通天代", "delta-pink"
-            elif avg_score >= 70:
-                tier_title, tier_badge = "🔥 A 级 稳健中流砥柱", "delta-gold"
-            elif avg_score >= 55:
-                tier_title, tier_badge = "🛡️ B 级 团队基石工兵", "delta-blue"
+            # 1. 核心输出维度 (Damage Output)：优先取截图像素识别的输出占比，若老截图无占比则用击杀收割估算
+            dmg_list = p_data["damage_shares"]
+            if dmg_list:
+                avg_dmg_share = sum(dmg_list) / len(dmg_list)
+                score_dmg = min(100.0, (avg_dmg_share / 30.0) * 100.0)
+                dmg_display_txt = f"{avg_dmg_share:.1f}% (截图真实采样)"
             else:
-                tier_title, tier_badge = "🌱 C 级 随缘摸鱼先锋", "delta-gray"
+                score_dmg = min(100.0, (p_kills / 10.0) * 90.0)
+                dmg_display_txt = "估算模式 (待新截图录入)"
+
+            # 2. 铁血承伤维度 (Frontline Tanking)：优先取承伤占比，若无则结合场均阵亡控制计算
+            taken_list = p_data["taken_shares"]
+            if taken_list:
+                avg_taken_share = sum(taken_list) / len(taken_list)
+                score_taken = min(100.0, (avg_taken_share / 30.0) * 100.0)
+                taken_display_txt = f"{avg_taken_share:.1f}% (截图真实采样)"
+            else:
+                score_taken = max(20.0, min(100.0, 40.0 + p_deaths * 6.0))
+                taken_display_txt = "估算模式 (待新截图录入)"
+
+            # 3. 团队参团率 (KP)
+            kp_list = p_data["kp_shares"]
+            avg_kp = (sum(kp_list) / len(kp_list)) if kp_list else min(0.9, (p_kills + p_assists) / max(1.0, (p_kills + p_assists + 5.0)))
+            score_kp = min(100.0, (avg_kp / 0.75) * 100.0)
+
+            # 4. 绝对终结 (Finishing)
+            score_finish = min(100.0, (p_kills / 10.0) * 100.0)
+
+            # 5. 团队赋能 (Team Support)
+            score_support = min(100.0, (p_assists / 12.0) * 100.0)
+
+            # 6. 生存意志 (Survival)
+            score_surv = max(10.0, min(100.0, 100.0 - (p_deaths - 2.0) * 11.0)) if p_deaths >= 2 else 100.0
+
+            categories = ['绝对火力', '铁血承伤', '团战参团', '终结收割', '团队赋能', '生存保命']
+            values = [round(score_dmg, 1), round(score_taken, 1), round(score_kp, 1), round(score_finish, 1), round(score_support, 1), round(score_surv, 1)]
+
+            # 战术风格打标
+            if score_dmg >= 80 and score_finish >= 80:
+                style_title, style_badge = "🗡️ 绝对主C / 火力终结者", "delta-pink"
+            elif score_taken >= 75 and score_support >= 70:
+                style_title, style_badge = "🛡️ 铁血开团 / 护航巨盾", "delta-blue"
+            elif score_kp >= 80:
+                style_title, style_badge = "🌐 全图游走 / 节奏发动机", "delta-gold"
+            elif score_surv >= 80 and score_dmg <= 60:
+                style_title, style_badge = "🕊️ 稳健拉扯 / 保命大师", "delta-gray"
+            else:
+                style_title, style_badge = "⚖️ 均衡打法 / 团队中坚", "delta-pink"
 
             col_radar, col_detail = st.columns([1.2, 1])
 
@@ -1027,14 +1074,15 @@ else:
             with col_detail:
                 st.markdown(f"""
                     <div class="stat-card" style="margin-top:20px;">
-                        <div class="stat-card-title">选手能力综合评定</div>
+                        <div class="stat-card-title">局内战术角色画像</div>
                         <div class="stat-card-player">{short_name(target_p)}</div>
-                        <div class="stat-card-delta {tier_badge}">{tier_title} (综评: {avg_score})</div>
-                        <div style="font-size:0.88rem;color:#64748b;line-height:1.9;margin-top:10px;">
-                            <div>• <b>出场局次</b>: {p_games} 局 (胜率: <span style="color:#e11d48;font-weight:700;">{p_wr}%</span>)</div>
-                            <div>• <b>场均数据</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
-                            <div>• <b>攻防比率</b>: KD {p_kd:.2f} ｜ KDA {p_kda:.2f}</div>
-                            <div>• <b>当前 MMR</b>: <span style="color:#0284c7;font-weight:800;">{p_data['MMR']:.1f} 分</span></div>
+                        <div class="stat-card-delta {style_badge}">{style_title}</div>
+                        <div style="font-size:0.86rem;color:#475569;line-height:1.9;margin-top:10px;">
+                            <div>• <b>场均火力占比</b>: <span style="color:#e11d48;font-weight:700;">{dmg_display_txt}</span></div>
+                            <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:700;">{taken_display_txt}</span></div>
+                            <div>• <b>局均团战参团率</b>: <span style="color:#ca8a04;font-weight:700;">{round(avg_kp*100, 1)}%</span></div>
+                            <div>• <b>局内基础场均</b>: {p_kills:.1f} 杀 / {p_deaths:.1f} 亡 / {p_assists:.1f} 助</div>
+                            <div>• <b>实力评分 (MMR)</b>: <span style="color:#be185d;font-weight:800;">{p_data['MMR']:.1f} 分</span></div>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
