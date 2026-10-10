@@ -251,10 +251,11 @@ def load_records():
                 with open(DATA_FILE, "w", encoding="utf-8") as f:
                     json.dump(cloud_data, f, ensure_ascii=False, indent=2)
             except Exception: pass
-            return cloud_data
-    return local_data
+            return remove_result_banners(cloud_data)
+    return remove_result_banners(local_data)
 
 def save_records(records):
+    records = remove_result_banners(records)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
     push_records_to_github(records)
@@ -265,6 +266,21 @@ def is_result_banner(name):
     compact = re.sub(r"[\s\u200b\ufeff]+", "", str(name or ""))
     compact = compact.strip("!！:：。.")
     return compact in {"敌方胜利", "我方胜利", "敌方失败", "我方失败", "对方胜利", "对方失败"}
+
+
+def remove_result_banners(records):
+    # 历史文件、云端同步和备份恢复均可能带入旧的误识别条目。
+    # 只排除标题行，保留该局其他玩家及全部对局信息。
+    cleaned = []
+    for record in records:
+        copy = dict(record)
+        copy["players"] = [
+            dict(player) for player in record.get("players", [])
+            if not is_result_banner(player.get("player_name"))
+            and not is_result_banner(clean_player_name_strict(player.get("player_name", "")))
+        ]
+        cleaned.append(copy)
+    return cleaned
 
 
 def validate_recognition(result):
