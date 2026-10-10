@@ -260,6 +260,47 @@ def save_records(records):
     push_records_to_github(records)
 
 # ---------------- 智能视觉识别 ----------------
+def is_result_banner(name):
+    # 只匹配完整标题；“敌方胜利#12345”等真实 ID 不按标题删除。
+    compact = re.sub(r"[\s\u200b\ufeff]+", "", str(name or ""))
+    compact = compact.strip("!！:：。.")
+    return compact in {"敌方胜利", "我方胜利", "敌方失败", "我方失败", "对方胜利", "对方失败"}
+
+
+def validate_recognition(result):
+    if not isinstance(result, dict) or not isinstance(result.get("players"), list):
+        raise ValueError("识别结果缺少玩家列表，本次未保存，请重新上传清晰的完整结算截图。")
+    winner = str(result.get("winning_team", "")).strip().upper()
+    if winner not in {"BLUE", "RED"}:
+        raise ValueError("无法确定蓝红双方胜负，本次未保存；请上传能看清双方阵营的截图。")
+    players = []
+    for raw_player in result["players"]:
+        if not isinstance(raw_player, dict):
+            raise ValueError("玩家数据格式异常，本次未保存。")
+        if is_result_banner(raw_player.get("player_name")):
+            continue
+        player = dict(raw_player)
+        name = clean_player_name_strict(player.get("player_name", ""))
+        side = str(player.get("team", "")).strip().upper()
+        if not name or side not in {"BLUE", "RED"}:
+            raise ValueError("存在无法确认的玩家 ID 或阵营，本次未保存，请重新上传截图。")
+        player.update(player_name=name, team=side, is_winner=(side == winner))
+        for field in ("kills", "deaths", "assists"):
+            value = player.get(field)
+            if isinstance(value, bool) or value is None or not re.fullmatch(r"\d+", str(value)):
+                raise ValueError(f"玩家 {name} 的 KDA 不完整，本次未保存。")
+            player[field] = int(value)
+        players.append(player)
+    if len(players) != 10 or any(sum(p["team"] == side for p in players) != 5 for side in ("BLUE", "RED")):
+        raise ValueError(
+            f"排除胜负标题后识别到 {len(players)} 位玩家，需要蓝红双方各 5 人。"
+            "本次未保存，请上传包含完整 10 人 ID 和 KDA 的结算截图。"
+        )
+    if len({p["player_name"] for p in players}) != 10:
+        raise ValueError("玩家 ID 存在重复，本次未保存，请检查截图清晰度。")
+    return {**result, "winning_team": winner, "players": players}
+
+
 def analyze_image(img_bytes, api_key):
     model_name = st.session_state.get(
         "vision_model", get_secret("DASHSCOPE_MODEL", "qwen3-vl-plus")
@@ -279,6 +320,10 @@ def analyze_image(img_bytes, api_key):
     prompt = (
         "这是英雄联盟掌盟对局结算截图。\n"
         "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID、KDA数值。\n"
+        "只从双方玩家列表中的实际玩家行提取 ID，每位玩家必须对应同一行的击杀、死亡和助攻。\n"
+        "敌方胜利、我方胜利、敌方失败、我方失败、对方胜利等是界面胜负标题，绝不能当作玩家 ID。\n"
+        "不要为了凑满10人而编造名字或用标题替代；看不清或缺失的玩家请省略，交由程序校验。\n"
+        "敌方和我方是相对视角，不能直接等同于红方和蓝方；必须根据截图阵营信息判断，不能确定则 winning_team 填 null。\n"
         "若截图中有输出占比（例如 25% 或 25.4%）或承伤占比，请一并识别提取为数值（无百分号，如 25.4）。若截图中未显示输出或承伤占比，对应字段填 null。\n"
         "请严格输出合法JSON：\n"
         '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "damage_share": 24.5, "taken_share": 20.1, "is_winner": true}]}'
@@ -303,7 +348,7 @@ def analyze_image(img_bytes, api_key):
     raw = resp.choices[0].message.content.strip()
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     clean_str = match.group(0) if match else raw
-    return json.loads(clean_str)
+    return validate_recognition(json.loads(clean_str))
 
 def short_name(full_name):
     return str(full_name).split("#")[0] if full_name else "未知"
