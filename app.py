@@ -251,7 +251,7 @@ def save_records(records):
         json.dump(records, f, ensure_ascii=False, indent=2)
     push_records_to_github(records)
 
-# ---------------- 智能视觉识别 (已修复 404 Model Not Found) ----------------
+# ---------------- 智能视觉识别 (恢复原生稳定单模型，杜绝 403 连锁反应) ----------------
 def analyze_image(img_bytes, api_key):
     client = OpenAI(
         api_key=api_key,
@@ -262,33 +262,23 @@ def analyze_image(img_bytes, api_key):
     prompt = (
         "这是英雄联盟掌盟对局结算截图。\n"
         "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID、KDA数值。\n"
-        "若截图中有输出占比（如 25.4%）或承伤占比，请提取为纯数值（无百分号，如 25.4）。若未显示则填 null。\n"
-        "必须严格输出合法JSON：\n"
+        "若截图中有输出占比（例如 25% 或 25.4%）或承伤占比，请一并识别提取为数值（无百分号，如 25.4）。若截图中未显示输出或承伤占比，对应字段填 null。\n"
+        "请严格输出合法JSON：\n"
         '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "damage_share": 24.5, "taken_share": 20.1, "is_winner": true}]}'
     )
-    candidate_models = ["qwen-vl-max-latest", "qwen-vl-plus", "qwen-vl-max"]
-    last_err = None
-    for model_name in candidate_models:
-        try:
-            resp = client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
-                ]}],
-                response_format={"type": "json_object"},
-                temperature=0.1
-            )
-            raw = resp.choices[0].message.content.strip()
-            match = re.search(r'\{.*\}', raw, re.DOTALL)
-            return json.loads(match.group(0) if match else raw)
-        except Exception as e:
-            last_err = e
-            err_str = str(e).lower()
-            if "model_not_found" in err_str or "not exist" in err_str or "404" in err_str:
-                continue
-            raise e
-    raise last_err
+    resp = client.chat.completions.create(
+        model="qwen-vl-max",
+        messages=[{"role": "user", "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+        ]}],
+        response_format={"type": "json_object"},
+        temperature=0.1
+    )
+    raw = resp.choices[0].message.content.strip()
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    clean_str = match.group(0) if match else raw
+    return json.loads(clean_str)
 
 def short_name(full_name):
     return str(full_name).split("#")[0] if full_name else "未知"
