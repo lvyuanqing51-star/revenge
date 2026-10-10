@@ -14,7 +14,7 @@ from collections import defaultdict
 import streamlit as st
 import pandas as pd
 from PIL import Image
-from openai import OpenAI
+from openai import OpenAI, NotFoundError
 
 DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
@@ -259,11 +259,20 @@ def save_records(records):
         json.dump(records, f, ensure_ascii=False, indent=2)
     push_records_to_github(records)
 
-# ---------------- 智能视觉识别 (恢复原生稳定单模型，杜绝 403 连锁反应) ----------------
+# ---------------- 智能视觉识别 ----------------
 def analyze_image(img_bytes, api_key):
+    model_name = st.session_state.get(
+        "vision_model", get_secret("DASHSCOPE_MODEL", "qwen3-vl-plus")
+    ).strip()
+    base_url = st.session_state.get(
+        "vision_base_url",
+        get_secret("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    ).strip().rstrip("/")
+    if not model_name or not base_url:
+        raise ValueError("请在左侧模型接口设置中填写模型 ID 和 Base URL。")
     client = OpenAI(
         api_key=api_key,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        base_url=base_url,
         timeout=45.0
     )
     b64 = base64.b64encode(img_bytes).decode('utf-8')
@@ -274,15 +283,23 @@ def analyze_image(img_bytes, api_key):
         "请严格输出合法JSON：\n"
         '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "damage_share": 24.5, "taken_share": 20.1, "is_winner": true}]}'
     )
-    resp = client.chat.completions.create(
-        model="qwen-vl-max",
-        messages=[{"role": "user", "content": [
-            {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
-        ]}],
-        response_format={"type": "json_object"},
-        temperature=0.1
-    )
+    try:
+        resp = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+            ]}],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+    except NotFoundError as exc:
+        raise ValueError(
+            f"接口返回 404，当前模型：{model_name}，Base URL：{base_url}。"
+            "请核对百炼控制台中的模型 ID、服务开通状态、API Key 所属地域及套餐对应的接口地址。"
+            "可在左侧模型接口设置中修改。原始错误："
+            f"{exc}"
+        ) from exc
     raw = resp.choices[0].message.content.strip()
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     clean_str = match.group(0) if match else raw
@@ -353,6 +370,21 @@ with st.sidebar:
     st.markdown("### 🎛️ 系统控制台")
     default_key = get_secret("DASHSCOPE_API_KEY")
     key = st.text_input("DashScope API Key", value=default_key, type="password", placeholder="sk-...")
+
+    with st.expander("⚙️ 模型接口设置"):
+        st.text_input(
+            "视觉模型 ID",
+            value=get_secret("DASHSCOPE_MODEL", "qwen3-vl-plus"),
+            key="vision_model",
+            help="填写百炼控制台中当前地域可调用的视觉模型 ID。",
+        )
+        st.text_input(
+            "Base URL",
+            value=get_secret("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            key="vision_base_url",
+            help="须与 API Key 所属地域及套餐对应；填写到 v1，不要添加 /chat/completions。",
+        )
+        st.caption("默认使用北京按量付费接口；其他地域或套餐请填写控制台提供的地址。")
 
     records = load_records()
     total_games_all = len(records)
