@@ -251,7 +251,7 @@ def save_records(records):
         json.dump(records, f, ensure_ascii=False, indent=2)
     push_records_to_github(records)
 
-# ---------------- 智能视觉识别 (已解决 404 Model Not Found) ----------------
+# ---------------- 智能视觉识别 (已修复 404 Model Not Found) ----------------
 def analyze_image(img_bytes, api_key):
     client = OpenAI(
         api_key=api_key,
@@ -266,7 +266,6 @@ def analyze_image(img_bytes, api_key):
         "必须严格输出合法JSON：\n"
         '{"winning_team": "BLUE", "players": [{"player_name": "ID", "team": "BLUE", "kills": 0, "deaths": 0, "assists": 0, "damage_share": 24.5, "taken_share": 20.1, "is_winner": true}]}'
     )
-    # 优先使用最新/最稳定的模型名，若 404 自动回退
     candidate_models = ["qwen-vl-max-latest", "qwen-vl-plus", "qwen-vl-max"]
     last_err = None
     for model_name in candidate_models:
@@ -320,7 +319,7 @@ def generate_radar_svg(values, categories):
     </div>
     """
 
-# ---------------- 侧边栏：模块化工作台 ----------------
+# ---------------- 侧边栏：控制台 ----------------
 with st.sidebar:
     st.markdown("### 🎛️ 系统控制台")
     default_key = st.secrets.get("DASHSCOPE_API_KEY", "") if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets else ""
@@ -544,17 +543,37 @@ with tab_ladder:
         h10 = not cand10.empty
         m1, m2, m3, m4 = st.columns(4)
         with m1:
-            n = cand10.sort_values(by="KDA_num", ascending=False).index[0] if h10 else "虚位以待"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">KDA之王</div><div class="metric-val-main">{short_name(n)}</div><div class="metric-badge badge-blue">{f"KDA {df.loc[n, \'KDA_num\']}" if h10 else "需满 10 局"}</div></div>', unsafe_allow_html=True)
+            if h10:
+                n1 = cand10.sort_values(by="KDA_num", ascending=False).index[0]
+                badge_kda_str = f"KDA {df.loc[n1, 'KDA_num']:.2f}"
+                name1_str = short_name(n1)
+            else:
+                name1_str, badge_kda_str = "虚位以待", "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">KDA之王</div><div class="metric-val-main">{name1_str}</div><div class="metric-badge badge-blue">{badge_kda_str}</div></div>', unsafe_allow_html=True)
         with m2:
-            n = cand10.sort_values(by="击杀", ascending=False).index[0] if h10 else "虚位以待"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计击杀王</div><div class="metric-val-main">{short_name(n)}</div><div class="metric-badge badge-gold">{f"{int(df.loc[n, \'击杀\'])} 杀" if h10 else "需满 10 局"}</div></div>', unsafe_allow_html=True)
+            if h10:
+                n2 = cand10.sort_values(by="击杀", ascending=False).index[0]
+                badge_k_str = f"{int(df.loc[n2, '击杀'])} 杀"
+                name2_str = short_name(n2)
+            else:
+                name2_str, badge_k_str = "虚位以待", "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计击杀王</div><div class="metric-val-main">{name2_str}</div><div class="metric-badge badge-gold">{badge_k_str}</div></div>', unsafe_allow_html=True)
         with m3:
-            n = cand10.sort_values(by="死亡", ascending=False).index[0] if h10 else "虚位以待"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计白给王</div><div class="metric-val-main">{short_name(n)}</div><div class="metric-badge badge-pink">{f"{int(df.loc[n, \'死亡\'])} 阵亡" if h10 else "需满 10 局"}</div></div>', unsafe_allow_html=True)
+            if h10:
+                n3 = cand10.sort_values(by="死亡", ascending=False).index[0]
+                badge_d_str = f"{int(df.loc[n3, '死亡'])} 阵亡"
+                name3_str = short_name(n3)
+            else:
+                name3_str, badge_d_str = "虚位以待", "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计白给王</div><div class="metric-val-main">{name3_str}</div><div class="metric-badge badge-pink">{badge_d_str}</div></div>', unsafe_allow_html=True)
         with m4:
-            n = cand10.sort_values(by="助攻", ascending=False).index[0] if h10 else "虚位以待"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计助攻王</div><div class="metric-val-main">{short_name(n)}</div><div class="metric-badge badge-blue">{f"{int(df.loc[n, \'助攻\'])} 助攻" if h10 else "需满 10 局"}</div></div>', unsafe_allow_html=True)
+            if h10:
+                n4 = cand10.sort_values(by="助攻", ascending=False).index[0]
+                badge_a_str = f"{int(df.loc[n4, '助攻'])} 助攻"
+                name4_str = short_name(n4)
+            else:
+                name4_str, badge_a_str = "虚位以待", "需满 10 局"
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计助攻王</div><div class="metric-val-main">{name4_str}</div><div class="metric-badge badge-blue">{badge_a_str}</div></div>', unsafe_allow_html=True)
 
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
         st.markdown('<div class="panel-header-title">🔗 阵营羁绊与宿敌</div>', unsafe_allow_html=True)
@@ -571,10 +590,17 @@ with tab_ladder:
         n_df = pd.DataFrame(nem_list)
         rp = n_df.iloc[0] if not n_df.empty else None
 
+        bp_txt = bp["p"] if bp is not None else "虚位以待"
+        bp_score = f"{int(bp['w'])}胜{int(bp['l'])}负" if bp is not None else "同队需满 5 局"
+        wp_txt = wp["p"] if wp is not None else "虚位以待"
+        wp_score = f"{int(wp['w'])}胜{int(wp['l'])}负" if wp is not None else "同队需满 5 局"
+        rp_txt = rp["d"] if rp is not None else "虚位以待"
+        rp_score = f"{int(rp['w'])}胜{int(rp['l'])}负" if rp is not None else "交手需满 5 局"
+
         k1, k2, k3 = st.columns(3)
-        with k1: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">黄金搭档 (≥5局)</div><div class="metric-val-main">{bp["p"] if bp is not None else "虚位以待"}</div><div class="metric-badge badge-blue">{f"{int(bp[\'w\'])}胜{int(bp[\'l\'])}负" if bp is not None else "同队需满 5 局"}</div></div>', unsafe_allow_html=True)
-        with k2: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">难兄难弟 (≥5局)</div><div class="metric-val-main">{wp["p"] if wp is not None else "虚位以待"}</div><div class="metric-badge badge-pink">{f"{int(wp[\'w\'])}胜{int(wp[\'l\'])}负" if wp is not None else "同队需满 5 局"}</div></div>', unsafe_allow_html=True)
-        with k3: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">一生之敌 (≥5局)</div><div class="metric-val-main">{rp["d"] if rp is not None else "虚位以待"}</div><div class="metric-badge badge-gold">{f"{int(rp[\'w\'])}胜{int(rp[\'l\'])}负" if rp is not None else "交手需满 5 局"}</div></div>', unsafe_allow_html=True)
+        with k1: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">黄金搭档 (≥5局)</div><div class="metric-val-main">{bp_txt}</div><div class="metric-badge badge-blue">{bp_score}</div></div>', unsafe_allow_html=True)
+        with k2: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">难兄难弟 (≥5局)</div><div class="metric-val-main">{wp_txt}</div><div class="metric-badge badge-pink">{wp_score}</div></div>', unsafe_allow_html=True)
+        with k3: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">一生之敌 (≥5局)</div><div class="metric-val-main">{rp_txt}</div><div class="metric-badge badge-gold">{rp_score}</div></div>', unsafe_allow_html=True)
 
 # ================= Tab 2: 赛前阵营分队系统 =================
 with tab_match:
@@ -743,10 +769,11 @@ with tab_radar:
         if ph["svp_cnt"] >= 2: badges.append("🪓 悲情孤勇者 (败局C位多次尽力)")
         if not badges: badges.append("🌱 未来可期 (新晋选手积蓄战力)")
 
+        badge_spans = " ".join([f'<span class="badge-tag">{b}</span>' for b in badges])
         st.markdown(f"""
         <div class="card-panel">
             <div class="panel-header-title">🏅 个人成就勋章</div>
-            <div>{' '.join([f'<span class=\"badge-tag\">{b}</span>' for b in badges])}</div>
+            <div>{badge_spans}</div>
         </div>
         """, unsafe_allow_html=True)
 
