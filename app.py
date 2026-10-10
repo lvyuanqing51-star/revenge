@@ -187,8 +187,16 @@ def build_canonical_name_map(all_raw_names: list) -> dict:
 def get_md5(data): return hashlib.md5(data).hexdigest()
 
 # ---------------- 1.5 GitHub 云端持久化引擎 ----------------
+def get_secret(name, default=""):
+    # 未配置 secrets.toml 时，仍允许打开页面和使用本地战绩。
+    try:
+        return st.secrets.get(name, default)
+    except FileNotFoundError:
+        return default
+
+
 def get_github_auth():
-    return st.secrets.get("GITHUB_TOKEN", ""), st.secrets.get("GITHUB_REPO", "")
+    return get_secret("GITHUB_TOKEN"), get_secret("GITHUB_REPO")
 
 def fetch_records_from_github():
     token, repo = get_github_auth()
@@ -288,31 +296,62 @@ def generate_radar_svg(values, categories):
     size, r = 320, 105
     cx = cy = size / 2
     total = len(values)
-    grid_polys = [
-        f'<polygon points="{" ".join([f"{cx + r * lvl * math.cos(math.pi/2 - 2*math.pi*i/total):.1f},{cy - r * lvl * math.sin(math.pi/2 - 2*math.pi*i/total):.1f}" for i in range(total)])}" fill="none" stroke="#fbcfe8" stroke-width="1.2" stroke-dasharray="3,3"/>'
-        for lvl in [0.25, 0.5, 0.75, 1.0]
-    ]
-    axis_lines, labels = [], []
+    grid_polys = []
+    for lvl in [0.25, 0.5, 0.75, 1.0]:
+        points = []
+        for i in range(total):
+            ang = math.pi / 2 - 2 * math.pi * i / total
+            points.append(
+                f"{cx + r * lvl * math.cos(ang):.1f},"
+                f"{cy - r * lvl * math.sin(ang):.1f}"
+            )
+        points_str = " ".join(points)
+        grid_polys.append(
+            f'<polygon points="{points_str}" fill="none" '
+            'stroke="#fbcfe8" stroke-width="1.2" stroke-dasharray="3,3"/>'
+        )
+
+    axis_lines, labels, data_pts, circles = [], [], [], []
     for i in range(total):
-        ang = math.pi / 2 - (2 * math.pi * i / total)
-        axis_lines.append(f'<line x1="{cx}" y1="{cy}" x2="{cx + r * math.cos(ang):.1f}" y2="{cy - r * math.sin(ang):.1f}" stroke="#fbcfe8" stroke-width="1.2"/>')
-        labels.append(f'<text x="{cx + (r + 26) * math.cos(ang):.1f}" y="{cy - (r + 14) * math.sin(ang):.1f}" font-size="11" font-weight="800" fill="#72092c" text-anchor="middle" dominant-baseline="central">{categories[i]}</text>')
-    data_pts = [f"{cx + r * (min(max(values[i], 12.0), 100.0) / 100.0) * math.cos(math.pi/2 - 2*math.pi*i/total):.1f},{cy - r * (min(max(values[i], 12.0), 100.0) / 100.0) * math.sin(math.pi/2 - 2*math.pi*i/total):.1f}" for i in range(total)]
+        ang = math.pi / 2 - 2 * math.pi * i / total
+        axis_lines.append(
+            f'<line x1="{cx}" y1="{cy}" '
+            f'x2="{cx + r * math.cos(ang):.1f}" '
+            f'y2="{cy - r * math.sin(ang):.1f}" '
+            'stroke="#fbcfe8" stroke-width="1.2"/>'
+        )
+        labels.append(
+            f'<text x="{cx + (r + 26) * math.cos(ang):.1f}" '
+            f'y="{cy - (r + 14) * math.sin(ang):.1f}" '
+            'font-size="11" font-weight="800" fill="#72092c" '
+            f'text-anchor="middle" dominant-baseline="central">{categories[i]}</text>'
+        )
+        scale = min(max(values[i], 12.0), 100.0) / 100.0
+        x = cx + r * scale * math.cos(ang)
+        y = cy - r * scale * math.sin(ang)
+        data_pts.append(f"{x:.1f},{y:.1f}")
+        circles.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="#881337"/>')
+
+    grid_svg = "".join(grid_polys)
+    axes_svg = "".join(axis_lines)
+    points_svg = " ".join(data_pts)
+    circles_svg = "".join(circles)
+    labels_svg = "".join(labels)
     return f"""
     <div style="display:flex;justify-content:center;padding:6px 0;">
         <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
-            {''.join(grid_polys)}{''.join(axis_lines)}
-            <polygon points="{" ".join(data_pts)}" fill="rgba(114, 9, 44, 0.25)" stroke="#72092c" stroke-width="2.6"/>
-            {''.join([f'<circle cx="{pt.split(",")[0]}" cy="{pt.split(",")[1]}" r="4" fill="#881337"/>' for pt in data_pts])}
-            {''.join(labels)}
+            {grid_svg}{axes_svg}
+            <polygon points="{points_svg}" fill="rgba(114, 9, 44, 0.25)" stroke="#72092c" stroke-width="2.6"/>
+            {circles_svg}{labels_svg}
         </svg>
     </div>
     """
 
+
 # ---------------- 侧边栏：控制台 ----------------
 with st.sidebar:
     st.markdown("### 🎛️ 系统控制台")
-    default_key = st.secrets.get("DASHSCOPE_API_KEY", "") if hasattr(st, "secrets") and "DASHSCOPE_API_KEY" in st.secrets else ""
+    default_key = get_secret("DASHSCOPE_API_KEY")
     key = st.text_input("DashScope API Key", value=default_key, type="password", placeholder="sk-...")
 
     records = load_records()
