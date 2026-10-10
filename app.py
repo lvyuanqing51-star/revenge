@@ -29,7 +29,7 @@ st.set_page_config(
 )
 
 # ---------------- 专业级·黑金与醇厚酒红 (Burgundy & Obsidian Gold) 视觉系统 ----------------
-st.markdown("""
+CSS_STYLES = """
 <style>
 :root, [data-theme="light"], .stApp {
     --primary-color: #881337 !important;
@@ -112,4 +112,6 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkB
     color: #ffe4e6 !important;
 }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) div[data-testid="stLinkButton"] a:hover {
-    border-color: #fb7185
+    border-color: #fb7185 !important;
+    box-shadow: 0 0 0 2px #e11d48, 0 8px 24px rgba(244, 63, 94, 0.65) !important;
+    color: #ffffff !important
