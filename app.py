@@ -11,6 +11,7 @@ import urllib.request
 from io import BytesIO
 from itertools import combinations
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -254,11 +255,13 @@ def load_records():
             return remove_result_banners(cloud_data)
     return remove_result_banners(local_data)
 
-def save_records(records):
+def save_records(records, sync_cloud=True):
     records = remove_result_banners(records)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
-    push_records_to_github(records)
+    if sync_cloud:
+        return push_records_to_github(records)
+    return None
 
 # ---------------- 智能视觉识别 ----------------
 def is_result_banner(name):
@@ -314,7 +317,7 @@ def validate_recognition(result):
     return {**result, "winning_team": winner, "players": players}
 
 
-def analyze_image(img_bytes, api_key):
+def get_vision_settings():
     model_name = st.session_state.get(
         "vision_model", get_secret("DASHSCOPE_MODEL", "qwen3-vl-plus")
     ).strip()
@@ -324,12 +327,44 @@ def analyze_image(img_bytes, api_key):
     ).strip().rstrip("/")
     if not model_name or not base_url:
         raise ValueError("请在左侧模型接口设置中填写模型 ID 和 Base URL。")
+    return {
+        "model_name": model_name,
+        "base_url": base_url,
+        "optimize_image": st.session_state.get("optimize_image", True),
+    }
+
+
+def prepare_vision_image(img_bytes, optimize=True):
+    with Image.open(BytesIO(img_bytes)) as img:
+        original_mime = Image.MIME.get(img.format, "image/jpeg")
+        if not optimize:
+            return base64.b64encode(img_bytes).decode("utf-8"), original_mime
+        original_size = img.size
+        # 限制宽度，保留长截图的高度，避免将小字缩得过小。
+        if img.width > 1920:
+            img = img.resize(
+                (1920, max(1, round(img.height * 1920 / img.width))),
+                Image.Resampling.LANCZOS,
+            )
+        buf = BytesIO()
+        img.convert("RGB").save(buf, format="JPEG", quality=92)
+        encoded = buf.getvalue()
+        if img.size == original_size and len(encoded) >= len(img_bytes):
+            return base64.b64encode(img_bytes).decode("utf-8"), original_mime
+        return base64.b64encode(encoded).decode("utf-8"), "image/jpeg"
+
+
+def analyze_image(img_bytes, api_key, settings=None):
+    # 工作线程传入配置快照，不读取 Streamlit 的 session_state 或 secrets。
+    if settings is None:
+        settings = get_vision_settings()
+    model_name, base_url = settings["model_name"], settings["base_url"]
+    b64, image_mime = prepare_vision_image(img_bytes, settings.get("optimize_image", True))
     client = OpenAI(
         api_key=api_key,
         base_url=base_url,
         timeout=45.0
     )
-    b64 = base64.b64encode(img_bytes).decode('utf-8')
     prompt = (
         "这是英雄联盟掌盟对局结算截图。\n"
         "请识别整局胜负（BLUE或RED），以及截图中能确认的玩家游戏ID、KDA数值；允许人数不足10人或双方人数不等。\n"
@@ -346,7 +381,7 @@ def analyze_image(img_bytes, api_key):
             model=model_name,
             messages=[{"role": "user", "content": [
                 {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+                {"type": "image_url", "image_url": {"url": f"data:{image_mime};base64,{b64}"}}
             ]}],
             response_format={"type": "json_object"},
             temperature=0.1
@@ -358,10 +393,23 @@ def analyze_image(img_bytes, api_key):
             "可在左侧模型接口设置中修改。原始错误："
             f"{exc}"
         ) from exc
+    finally:
+        client.close()
     raw = resp.choices[0].message.content.strip()
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     clean_str = match.group(0) if match else raw
     return validate_recognition(json.loads(clean_str))
+
+
+def recognize_upload_job(data, digest, api_key, settings):
+    started = time.perf_counter()
+    try:
+        result = analyze_image(data, api_key, settings=settings)
+        result["md5"] = digest
+        result["image_thumb"] = compress_image_to_b64(data)
+        return result, None, time.perf_counter() - started
+    except Exception as exc:
+        return None, str(exc), time.perf_counter() - started
 
 def short_name(full_name):
     return str(full_name).split("#")[0] if full_name else "未知"
@@ -443,6 +491,9 @@ with st.sidebar:
             help="须与 API Key 所属地域及套餐对应；填写到 v1，不要添加 /chat/completions。",
         )
         st.caption("默认使用北京按量付费接口；其他地域或套餐请填写控制台提供的地址。")
+        st.slider("同时识别张数", 1, 3, value=3, key="vision_workers")
+        st.checkbox("压缩识别大图", value=True, key="optimize_image",
+                    help="图片宽度最多 1920 像素；昵称较小时可关闭后重试。")
 
     records = load_records()
     total_games_all = len(records)
@@ -903,38 +954,89 @@ with tab_upload:
         files = st.file_uploader("选择截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
         sub = st.form_submit_button("🚀 开始解析并录入", type="primary", use_container_width=True)
 
+    previous_report = st.session_state.get("upload_report")
+    if previous_report:
+        st.info(previous_report["summary"])
+        for message in previous_report["errors"]:
+            st.error(message)
+
     if sub:
-        if not files: st.warning("⚠️ 请先选择战绩截图！")
-        elif not key: st.warning("⚠️ 请在左侧控制台填入 DashScope API Key！")
+        if not files:
+            st.warning("⚠️ 请先选择战绩截图！")
+        elif not key:
+            st.warning("⚠️ 请在左侧控制台填入 DashScope API Key！")
         else:
-            records = load_records()
-            seen = {r.get("md5") for r in records if "md5" in r}
-            added = 0
-            bar = st.progress(0)
-            status_box = st.empty()
-            for idx, f in enumerate(files):
-                status_box.info(f"⏳ 正在分析第 {idx+1}/{len(files)} 张: {f.name}")
-                data = f.read()
-                h = get_md5(data)
-                if h in seen:
-                    st.warning(f"⚠️ {f.name} 已录入，已跳过。")
-                else:
-                    try:
-                        res = analyze_image(data, key)
-                        res["md5"] = h
-                        res["image_thumb"] = compress_image_to_b64(data)
-                        for p in res.get("players", []):
-                            p["player_name"] = clean_player_name_strict(p.get("player_name", ""))
-                        records.append(res)
-                        seen.add(h)
-                        added += 1
-                        save_records(records)
-                    except Exception as e:
-                        st.error(f"❌ {f.name} 录入失败: {e}")
-                bar.progress((idx + 1) / len(files))
-            status_box.empty()
-            if added > 0:
-                st.success(f"🎉 成功录入 {added} 局战绩并自动同步至云端！")
-                time.sleep(0.6)
+            try:
+                settings = get_vision_settings()
+            except ValueError as exc:
+                st.error(str(exc))
+            else:
+                batch_started = time.perf_counter()
+                records = load_records()
+                base_records = list(records)
+                seen = {r.get("md5") for r in records if "md5" in r}
+                jobs, errors, skipped = [], [], 0
+                for index, uploaded in enumerate(files):
+                    data = uploaded.getvalue()
+                    digest = get_md5(data)
+                    if digest in seen:
+                        skipped += 1
+                    else:
+                        # 同一批上传的重复文件也只请求一次模型。
+                        seen.add(digest)
+                        jobs.append((index, uploaded.name, data, digest))
+
+                bar = st.progress(0)
+                status_box = st.empty()
+                successes = {}
+                completed = 0
+                workers = min(st.session_state.get("vision_workers", 3), len(jobs))
+                if jobs:
+                    status_box.info(f"⏳ 正在识别 {len(jobs)} 张截图，同时处理 {workers} 张。")
+                    with ThreadPoolExecutor(max_workers=workers) as executor:
+                        futures = {
+                            executor.submit(recognize_upload_job, data, digest, key, settings): (index, name)
+                            for index, name, data, digest in jobs
+                        }
+                        for future in as_completed(futures):
+                            index, name = futures[future]
+                            result, error, elapsed = future.result()
+                            completed += 1
+                            if error:
+                                errors.append(f"❌ {name} 录入失败：{error}")
+                            else:
+                                successes[index] = result
+                                # 完成顺序可能不同；按上传顺序保存，维持对局时间顺序。
+                                records = base_records + [successes[i] for i in sorted(successes)]
+                                save_records(records, sync_cloud=False)
+                            bar.progress(completed / len(jobs))
+                            status_box.info(
+                                f"已完成 {completed}/{len(jobs)} 张，成功 {len(successes)} 张；"
+                                f"刚完成 {name}，耗时 {elapsed:.1f} 秒。"
+                            )
+
+                sync_message = ""
+                if successes:
+                    token, repo = get_github_auth()
+                    if token and repo:
+                        status_box.info("☁️ 识别已完成，正在统一同步 GitHub……")
+                        sync_started = time.perf_counter()
+                        synced = push_records_to_github(records)
+                        sync_elapsed = time.perf_counter() - sync_started
+                        if synced:
+                            sync_message = f"云端同步完成（{sync_elapsed:.1f} 秒）。"
+                        else:
+                            sync_message = "本地已保存，云端同步失败。"
+                            errors.append("请检查网络和 GitHub 配置；可先导出 JSON 备份，避免部署重启后丢失本地新记录。")
+                    else:
+                        sync_message = "已保存到本地，未配置云端同步。"
+
+                total_elapsed = time.perf_counter() - batch_started
+                summary = (
+                    f"本批成功 {len(successes)} 张，识别失败 {len(jobs) - len(successes)} 张，跳过重复 {skipped} 张，"
+                    f"总耗时 {total_elapsed:.1f} 秒。{sync_message}"
+                )
+                st.session_state["upload_report"] = {"summary": summary, "errors": errors}
+                status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
