@@ -307,12 +307,6 @@ def validate_recognition(result):
                 raise ValueError(f"玩家 {name} 的 KDA 不完整，本次未保存。")
             player[field] = int(value)
         players.append(player)
-    if len(players) != 10 or any(sum(p["team"] == side for p in players) != 5 for side in ("BLUE", "RED")):
-        raise ValueError(
-            f"排除胜负标题后识别到 {len(players)} 位玩家，需要蓝红双方各 5 人。"
-            "本次未保存，请上传包含完整 10 人 ID 和 KDA 的结算截图。"
-        )
-    if len({p["player_name"] for p in players}) != 10:
     if not players:
         raise ValueError("排除胜负标题后没有识别到有效玩家，本次未保存。")
     if len({p["player_name"] for p in players}) != len(players):
@@ -338,7 +332,6 @@ def analyze_image(img_bytes, api_key):
     b64 = base64.b64encode(img_bytes).decode('utf-8')
     prompt = (
         "这是英雄联盟掌盟对局结算截图。\n"
-        "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID、KDA数值。\n"
         "请识别整局胜负（BLUE或RED），以及截图中能确认的玩家游戏ID、KDA数值；允许人数不足10人或双方人数不等。\n"
         "只从双方玩家列表中的实际玩家行提取 ID，每位玩家必须对应同一行的击杀、死亡和助攻。\n"
         "敌方胜利、我方胜利、敌方失败、我方失败、对方胜利等是界面胜负标题，绝不能当作玩家 ID。\n"
