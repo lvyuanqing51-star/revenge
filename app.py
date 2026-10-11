@@ -313,6 +313,9 @@ def validate_recognition(result):
             "本次未保存，请上传包含完整 10 人 ID 和 KDA 的结算截图。"
         )
     if len({p["player_name"] for p in players}) != 10:
+    if not players:
+        raise ValueError("排除胜负标题后没有识别到有效玩家，本次未保存。")
+    if len({p["player_name"] for p in players}) != len(players):
         raise ValueError("玩家 ID 存在重复，本次未保存，请检查截图清晰度。")
     return {**result, "winning_team": winner, "players": players}
 
@@ -336,6 +339,7 @@ def analyze_image(img_bytes, api_key):
     prompt = (
         "这是英雄联盟掌盟对局结算截图。\n"
         "请识别整局胜负（BLUE或RED），以及全部10位玩家的游戏ID、KDA数值。\n"
+        "请识别整局胜负（BLUE或RED），以及截图中能确认的玩家游戏ID、KDA数值；允许人数不足10人或双方人数不等。\n"
         "只从双方玩家列表中的实际玩家行提取 ID，每位玩家必须对应同一行的击杀、死亡和助攻。\n"
         "敌方胜利、我方胜利、敌方失败、我方失败、对方胜利等是界面胜负标题，绝不能当作玩家 ID。\n"
         "不要为了凑满10人而编造名字或用标题替代；看不清或缺失的玩家请省略，交由程序校验。\n"
