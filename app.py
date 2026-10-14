@@ -1,6 +1,7 @@
 import os
 import json
 import hashlib
+import hmac
 import time
 import base64
 import difflib
@@ -9,6 +10,8 @@ import random
 import math
 import urllib.request
 from datetime import datetime, timezone
+from html import escape
+from urllib.parse import urlencode
 from io import BytesIO
 from itertools import combinations
 from collections import defaultdict
@@ -140,6 +143,7 @@ def load_config():
     return {"main_voice": "https://kook.top/", "blue_voice": "https://kook.top/", "red_voice": "https://kook.top/"}
 
 def save_config(cfg):
+    require_admin()
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
 
@@ -192,8 +196,65 @@ def get_secret(name, default=""):
     # 未配置 secrets.toml 时，仍允许打开页面和使用本地战绩。
     try:
         return st.secrets.get(name, default)
-    except FileNotFoundError:
+    except (FileNotFoundError, st.errors.StreamlitSecretNotFoundError):
         return default
+
+
+def admin_fingerprint():
+    password = str(get_secret("ADMIN_PASSWORD", ""))
+    return hashlib.sha256(password.encode("utf-8")).hexdigest() if password else ""
+
+
+def is_admin():
+    fingerprint = admin_fingerprint()
+    return bool(
+        fingerprint
+        and hmac.compare_digest(st.session_state.get("admin_grant", ""), fingerprint)
+        and time.time() < st.session_state.get("admin_expires", 0)
+    )
+
+
+def require_admin():
+    if not is_admin():
+        raise PermissionError("请先以管理员身份登录，才能修改数据。")
+
+
+def render_admin_login():
+    if is_admin():
+        st.success("管理员已登录")
+        if st.button("退出管理", key="admin_logout"):
+            for state_key in list(st.session_state):
+                if state_key.startswith(("admin_", "group_editor_", "review_")) or state_key in (
+                    "verify_drafts", "verification_flash", "vision_key_input", "verify_navigation",
+                ):
+                    st.session_state.pop(state_key, None)
+            st.rerun()
+        return
+    st.caption("访客模式 · 战绩只读")
+    if not admin_fingerprint():
+        st.info("管理功能尚未启用。请在应用 Secrets 中配置 ADMIN_PASSWORD。")
+        return
+    locked_until = st.session_state.get("admin_locked_until", 0)
+    with st.form("admin_login_form", clear_on_submit=True):
+        password = st.text_input("管理员密码", type="password")
+        login = st.form_submit_button("登录管理", disabled=time.time() < locked_until)
+    if time.time() < locked_until:
+        st.warning("尝试次数过多，请稍后重试。")
+    if login:
+        expected = admin_fingerprint()
+        actual = hashlib.sha256(password.encode("utf-8")).hexdigest()
+        if hmac.compare_digest(actual, expected):
+            st.session_state.admin_grant = expected
+            st.session_state.admin_expires = time.time() + 2 * 3600
+            st.session_state.admin_failures = 0
+            st.rerun()
+        else:
+            failures = st.session_state.get("admin_failures", 0) + 1
+            st.session_state.admin_failures = failures
+            if failures >= 5:
+                st.session_state.admin_locked_until = time.time() + 60
+                st.session_state.admin_failures = 0
+            st.error("密码不正确。")
 
 
 def get_github_auth():
@@ -215,6 +276,7 @@ def fetch_records_from_github():
     return None
 
 def push_records_to_github(records):
+    require_admin()
     token, repo = get_github_auth()
     if not token or not repo: return False
     url = f"https://api.github.com/repos/{repo}/contents/{DATA_FILE}"
@@ -256,6 +318,7 @@ def load_records():
     return remove_result_banners(local_data)
 
 def save_records(records, sync_cloud=True):
+    require_admin()
     records = remove_result_banners(records)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
@@ -506,8 +569,12 @@ def generate_radar_svg(values, categories):
 # ---------------- 侧边栏：控制台 ----------------
 with st.sidebar:
     st.markdown("### 🎛️ 系统控制台")
-    default_key = get_secret("DASHSCOPE_API_KEY")
-    key = st.text_input("DashScope API Key", value=default_key, type="password", placeholder="sk-...")
+    render_admin_login()
+    admin_mode = is_admin()
+    key = ""
+    if admin_mode:
+        default_key = get_secret("DASHSCOPE_API_KEY")
+        key = st.text_input("DashScope API Key", value=default_key, type="password", placeholder="sk-...", key="vision_key_input")
 
     with st.expander("⚙️ 模型接口设置"):
         st.text_input(
@@ -515,17 +582,19 @@ with st.sidebar:
             value=get_secret("DASHSCOPE_MODEL", "qwen3-vl-plus"),
             key="vision_model",
             help="填写百炼控制台中当前地域可调用的视觉模型 ID。",
+            disabled=not admin_mode,
         )
         st.text_input(
             "Base URL",
             value=get_secret("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             key="vision_base_url",
             help="须与 API Key 所属地域及套餐对应；填写到 v1，不要添加 /chat/completions。",
+            disabled=not admin_mode,
         )
         st.caption("默认使用北京按量付费接口；其他地域或套餐请填写控制台提供的地址。")
-        st.slider("同时识别张数", 1, 3, value=3, key="vision_workers")
+        st.slider("同时识别张数", 1, 3, value=3, key="vision_workers", disabled=not admin_mode)
         st.checkbox("压缩识别大图", value=True, key="optimize_image",
-                    help="图片宽度最多 1920 像素；昵称较小时可关闭后重试。")
+                    help="图片宽度最多 1920 像素；昵称较小时可关闭后重试。", disabled=not admin_mode)
 
     records = load_records()
     total_games_all = len(records)
@@ -536,11 +605,13 @@ with st.sidebar:
     stats_scope = st.radio(
         "胜率统计口径",
         ["仅已核验对局", "全部对局（含待核验）"],
+        index=1 if st.query_params.get("stats", "") == "all" else 0,
         help="为保证胜率可信，默认排除尚未人工确认胜负的对局。",
     )
 
     st.markdown("---")
-    if records and st.button("🔄 重新扫描历史截图", help="提取输出与承伤占比并补齐数据库", use_container_width=True):
+    if records and st.button("🔄 重新扫描历史截图", help="提取输出与承伤占比并补齐数据库", use_container_width=True, disabled=not admin_mode):
+        require_admin()
         if not key:
             st.warning("请先填入 DashScope API Key！")
         else:
@@ -568,9 +639,11 @@ with st.sidebar:
 
     with st.expander("💾 数据备份与恢复"):
         if records:
-            st.download_button("📤 导出完整数据 (JSON)", json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8'), "lol_records_backup.json", "application/json", use_container_width=True)
-        uploaded_backup = st.file_uploader("导入备份文件", type=["json"], key="backup_uploader")
-        if uploaded_backup is not None and st.button("📥 恢复数据", type="primary", use_container_width=True):
+            if admin_mode:
+                st.download_button("📤 导出完整数据 (JSON)", json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8'), "lol_records_backup.json", "application/json", use_container_width=True)
+        uploaded_backup = st.file_uploader("导入备份文件", type=["json"], key="backup_uploader", disabled=not admin_mode)
+        restore_checked = st.checkbox("确认用备份替换当前所有战绩", disabled=not admin_mode)
+        if uploaded_backup is not None and st.button("📥 恢复数据", type="primary", use_container_width=True, disabled=not admin_mode or not restore_checked):
             try:
                 save_records(json.load(uploaded_backup))
                 st.success("恢复成功并已同步！")
@@ -597,7 +670,9 @@ with st.sidebar:
                 "伤害": f"{p.get('damage_share')}%" if p.get('damage_share') is not None else "--"
             } for p in curr_record.get("players", [])]
             if p_rows: st.dataframe(pd.DataFrame(p_rows), hide_index=True)
-            if st.button("🗑️ 删除该局", key=f"del_g_{selected_idx}", use_container_width=True):
+            delete_checked = st.checkbox("确认删除该局", key=f"delete_checked_{selected_idx}", disabled=not admin_mode)
+            if st.button("🗑️ 删除该局", key=f"del_g_{selected_idx}", use_container_width=True, disabled=not admin_mode or not delete_checked):
+                require_admin()
                 records.pop(selected_idx)
                 save_records(records)
                 st.success("已删除该局！"); time.sleep(0.3); st.rerun()
@@ -607,7 +682,7 @@ with st.sidebar:
         new_main = st.text_input("大厅主语音", value=cfg.get("main_voice", ""))
         new_blue = st.text_input("🔵 蓝方语音", value=cfg.get("blue_voice", ""))
         new_red = st.text_input("🔴 红方语音", value=cfg.get("red_voice", ""))
-        if st.button("💾 保存链接", use_container_width=True):
+        if st.button("💾 保存链接", use_container_width=True, disabled=not admin_mode):
             save_config({"main_voice": new_main, "blue_voice": new_blue, "red_voice": new_red})
             st.success("已保存！"); time.sleep(0.3); st.rerun()
 
@@ -656,7 +731,9 @@ max_single_kill = {"player": "", "val": -1, "game_idx": 0}
 max_single_death = {"player": "", "val": -1, "game_idx": 0}
 max_single_assist = {"player": "", "val": -1, "game_idx": 0}
 
-for game_idx, r in enumerate(stats_records):
+for game_idx, r in enumerate(records):
+    if stats_scope == "仅已核验对局" and not is_record_verified(r):
+        continue
     players = r.get("players", [])
     valid_6p = len(players) >= 6
     blue_k = sum(int(p.get("kills", 0)) for p in players if str(p.get("team", "")).upper() == "BLUE")
@@ -757,8 +834,70 @@ with tab_ladder:
             kda_b = f"<span style='color:#b45309;font-weight:900;background:#fef9c3;padding:1px 6px;border-radius:4px;'>{row['KDA_num']:.2f}</span>" if row["KDA_num"] >= 3.5 else f"<b>{row['KDA_num']:.2f}</b>"
             medal = "🥇 " if r_idx == 0 else ("🥈 " if r_idx == 1 else ("🥉 " if r_idx == 2 else f"{r_idx+1} "))
             r_cls = "rank-1" if r_idx == 0 else ("rank-2" if r_idx == 1 else ("rank-3" if r_idx == 2 else ""))
-            t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{medal}{short_name(p_id)}</td><td>{int(row['总场次'])}</td><td style='color:#0284c7;'>{int(row['胜场'])}</td><td style='color:#e11d48;'>{int(row['负场'])}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td></tr>")
+            link_scope = "all" if stats_scope == "全部对局（含待核验）" else "verified"
+            profile_url = escape("?" + urlencode({"player": p_id, "stats": link_scope}), quote=True)
+            wins_url = escape("?" + urlencode({"player": p_id, "result": "wins", "stats": link_scope}), quote=True)
+            losses_url = escape("?" + urlencode({"player": p_id, "result": "losses", "stats": link_scope}), quote=True)
+            name_link = f"<a href='{profile_url}' target='_blank' rel='noopener noreferrer' style='color:inherit;text-decoration:underline;'>{medal}{escape(short_name(p_id))}</a>"
+            wins_link = f"<a href='{wins_url}' target='_blank' rel='noopener noreferrer' style='color:#0284c7;'>{int(row['胜场'])}</a>"
+            losses_link = f"<a href='{losses_url}' target='_blank' rel='noopener noreferrer' style='color:#e11d48;'>{int(row['负场'])}</a>"
+            t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{name_link}</td><td>{int(row['总场次'])}</td><td>{wins_link}</td><td>{losses_link}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td></tr>")
         st.markdown(f'<div class="ladder-table-box"><table class="ladder-table"><thead><tr><th style="text-align:left;padding-left:16px;">选手排位</th><th>总场次</th><th>胜局</th><th>负局</th><th>胜率</th><th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th></tr></thead><tbody>{"".join(t_rows)}</tbody></table></div>', unsafe_allow_html=True)
+
+        requested_player = st.query_params.get("player", "")
+        requested_result = st.query_params.get("result", "")
+        with st.expander("🔎 选手档案与逐局战绩 · 点击榜单昵称 / 胜局 / 负局查看", expanded=bool(requested_player)):
+            profile_options = list(df_sorted.index)
+            selected_profile = st.selectbox(
+                "查看选手", profile_options,
+                index=profile_options.index(requested_player) if requested_player in profile_options else 0,
+                key="profile_player_" + hashlib.sha256(requested_player.encode()).hexdigest()[:10],
+            )
+            profile_row = df.loc[selected_profile]
+            pc1, pc2, pc3, pc4 = st.columns(4)
+            pc1.metric("场次", int(profile_row["总场次"]))
+            pc2.metric("胜率", f"{profile_row['胜率_num']:.1f}%")
+            pc3.metric("KDA", f"{profile_row['KDA_num']:.2f}")
+            pc4.metric("MMR", f"{profile_row['MMR']:.1f}")
+            result_options = ["全部", "胜局", "负局"]
+            history_filter = st.radio(
+                "筛选个人战绩", result_options,
+                index={"wins": 1, "losses": 2}.get(requested_result, 0), horizontal=True,
+                key="profile_result_" + hashlib.sha256((requested_player + requested_result).encode()).hexdigest()[:10],
+            )
+            personal_matches = []
+            for original_index, match in enumerate(records):
+                if stats_scope == "仅已核验对局" and not is_record_verified(match):
+                    continue
+                for player in match.get("players", []):
+                    if get_final_name(player.get("player_name", "")) != selected_profile:
+                        continue
+                    won = str(player.get("team", "")).upper() == str(match.get("winning_team", "")).upper()
+                    if history_filter == "胜局" and not won or history_filter == "负局" and won:
+                        continue
+                    personal_matches.append((original_index, match, player, won))
+            if personal_matches:
+                personal_table = pd.DataFrame([{
+                    "对局": f"第 {i+1} 局", "结果": "胜" if won else "负",
+                    "分组": "A组" if player.get("team") == "BLUE" else "B组",
+                    "KDA": f"{player.get('kills', 0)}/{player.get('deaths', 0)}/{player.get('assists', 0)}",
+                    "核验": "已核验" if is_record_verified(match) else "待核验",
+                } for i, match, player, won in reversed(personal_matches)])
+                st.dataframe(personal_table, hide_index=True, use_container_width=True)
+                match_lookup = {i: match for i, match, _, _ in personal_matches}
+                personal_game = st.selectbox("查看对局详情", list(reversed(match_lookup)),
+                    format_func=lambda i: f"第 {i+1} 局", key=f"profile_game_{selected_profile}_{history_filter}")
+                detail = match_lookup[personal_game]
+                if detail.get("image_thumb"):
+                    st.image(f"data:image/jpeg;base64,{detail['image_thumb']}", use_container_width=True)
+                st.dataframe(pd.DataFrame([{
+                    "玩家 ID": p.get("player_name", ""),
+                    "分组": "A组" if p.get("team") == "BLUE" else "B组",
+                    "结果": "胜" if p.get("team") == detail.get("winning_team") else "负",
+                    "KDA": f"{p.get('kills', 0)}/{p.get('deaths', 0)}/{p.get('assists', 0)}",
+                } for p in detail.get("players", [])]), hide_index=True, use_container_width=True)
+            else:
+                st.info("当前筛选下没有对局。")
 
         st.markdown('<div class="panel-header-title">🔥 单场巅峰纪录</div>', unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
@@ -1010,6 +1149,13 @@ with tab_radar:
 with tab_verify:
     st.markdown('<div class="card-panel"><div class="panel-header-title">✅ 历史战绩胜负核验</div>', unsafe_allow_html=True)
     st.caption("A组 / B组只代表截图中的两块玩家列表，不代表游戏里的真实蓝方或红方。请以截图上的‘胜利 / 失败’文字为准。")
+    if not admin_mode:
+        st.info("访客可以查看核验记录；修改组别和保存核验结果需要管理员登录。")
+    if verification_flash := st.session_state.pop("verification_flash", None):
+        if verification_flash["level"] == "warning":
+            st.warning(verification_flash["text"])
+        else:
+            st.success(verification_flash["text"])
 
     if not records:
         st.info("💡 暂无历史对局。")
@@ -1021,9 +1167,13 @@ with tab_verify:
         vm2.metric("已核验", len(verified_indices))
         vm3.metric("待核验", len(pending_indices))
 
+        navigation = st.session_state.pop("verify_navigation", None)
+        if navigation:
+            st.session_state["verify_scope"] = navigation["scope"]
         verify_scope = st.radio(
             "查看范围", ["待核验", "已核验", "全部"], horizontal=True,
             help="建议先逐局清空待核验列表。",
+            key="verify_scope",
         )
         if verify_scope == "待核验":
             verify_choices = pending_indices
@@ -1035,9 +1185,14 @@ with tab_verify:
         if not verify_choices:
             st.success("🎉 当前列表没有需要处理的对局。")
         else:
+            ordered_choices = list(reversed(verify_choices))
+            if navigation and navigation.get("index") in verify_choices:
+                st.session_state["verify_game_index"] = navigation["index"]
+            if st.session_state.get("verify_game_index") not in verify_choices:
+                st.session_state["verify_game_index"] = ordered_choices[0]
             verify_idx = st.selectbox(
                 "选择要核验的对局",
-                list(reversed(verify_choices)),
+                ordered_choices,
                 format_func=lambda i: (
                     f"第 {i+1} 局 · "
                     f"{'已核验' if is_record_verified(records[i]) else '待核验'}"
@@ -1045,6 +1200,16 @@ with tab_verify:
                 key="verify_game_index",
             )
             verify_record = records[verify_idx]
+            draft_identity = str(verify_record.get("md5") or hashlib.sha256(
+                json.dumps(verify_record, ensure_ascii=False, sort_keys=True).encode()
+            ).hexdigest())
+            editor_revision = hashlib.sha256(json.dumps(verify_record, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:12]
+            draft_key = f"{draft_identity}_{editor_revision}"
+            drafts = st.session_state.setdefault("verify_drafts", {}) if admin_mode else {}
+            saved_draft = drafts.get(draft_key, {})
+            st.progress((len(verified_indices) / len(records)), text=f"已完成 {len(verified_indices)} / {len(records)} 局")
+            if saved_draft:
+                st.caption("已恢复本次会话中的未保存草稿。关闭页面后草稿可能丢失。")
             if verify_record.get("image_thumb"):
                 st.image(
                     f"data:image/jpeg;base64,{verify_record['image_thumb']}",
@@ -1056,17 +1221,16 @@ with tab_verify:
 
             st.markdown("#### 逐个核对玩家组别")
             st.caption("点击分组单元格可把误分的玩家移回 A组 / B组。请核对完整游戏 ID；下方名单会随修改更新。")
-            review_players = verify_record.get("players", [])
+            review_players = saved_draft.get("players", verify_record.get("players", []))
             editor_rows = [{
                 "玩家 ID": p.get("player_name", ""),
                 "分组": "A组" if str(p.get("team", "")).upper() == "BLUE" else "B组",
                 "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
             } for p in review_players]
-            editor_revision = hashlib.sha256(json.dumps(verify_record, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:12]
             edited_groups = st.data_editor(
                 pd.DataFrame(editor_rows), hide_index=True, use_container_width=True,
                 key=f"group_editor_{verify_idx}_{editor_revision}",
-                disabled=["玩家 ID", "KDA"],
+                disabled=["玩家 ID", "KDA"] if admin_mode else True,
                 column_config={"分组": st.column_config.SelectboxColumn(
                     "分组", options=["A组", "B组"], required=True,
                 )},
@@ -1111,25 +1275,41 @@ with tab_verify:
                 )
                 for side in ("BLUE", "RED")
             }
-            with st.form(f"verify_result_form_{verify_idx}"):
-                corrected_winner = st.radio(
-                    "对照截图，哪一组获胜？",
-                    ["BLUE", "RED"],
-                    index=0 if verify_record.get("winning_team") == "BLUE" else 1,
-                    format_func=lambda side: group_labels[side],
+            corrected_winner = st.radio(
+                "对照截图，哪一组获胜？", ["BLUE", "RED"],
+                index=0 if saved_draft.get("winner", verify_record.get("winning_team")) == "BLUE" else 1,
+                format_func=lambda side: group_labels[side],
+                key=f"review_winner_{draft_key}", disabled=not admin_mode,
+            )
+            if admin_mode:
+                drafts[draft_key] = {"players": corrected_players, "winner": corrected_winner}
+            confirmation_revision = hashlib.sha256(json.dumps(
+                [corrected_players, corrected_winner], ensure_ascii=False, sort_keys=True
+            ).encode()).hexdigest()[:12]
+            result_checked = st.checkbox(
+                "我已逐个核对玩家组别，并确认截图中的‘胜利 / 失败’结果",
+                key=f"review_confirm_{draft_key}_{confirmation_revision}", disabled=not admin_mode,
+            )
+            save_col, next_col = st.columns(2)
+            with save_col:
+                save_verification = st.button(
+                    "💾 保存核验结果", type="primary", use_container_width=True,
+                    disabled=not admin_mode, key=f"review_save_{draft_key}",
                 )
-                result_checked = st.checkbox("我已逐个核对玩家组别，并确认截图中的‘胜利 / 失败’结果")
-                save_verification = st.form_submit_button(
-                    "💾 保存核验结果", type="primary", use_container_width=True
+            with next_col:
+                save_and_next = st.button(
+                    "✅ 保存并核验下一局", use_container_width=True,
+                    disabled=not admin_mode, key=f"review_next_{draft_key}",
                 )
 
-            if save_verification:
+            if save_verification or save_and_next:
                 if not result_checked:
                     st.warning("请先对照原图确认，并勾选核验声明。")
                 elif not verify_groups["BLUE"] or not verify_groups["RED"]:
                     st.error("两组选手数据不完整，本次未保存。请先重新识别或修复记录。")
                 else:
                     try:
+                        require_admin()
                         latest_records = load_records()
                         if verify_idx >= len(latest_records) or latest_records[verify_idx] != verify_record:
                             raise ValueError("历史记录已发生变化，请刷新页面后重试。")
@@ -1140,11 +1320,25 @@ with tab_verify:
                         synced = save_records(latest_records)
                         sync_token, sync_repo = get_github_auth()
                         if sync_token and sync_repo and synced is False:
-                            st.warning("本地已校正，但云端同步失败；请立即导出 JSON 备份。")
+                            st.session_state.verification_flash = {
+                                "level": "warning", "text": "本地已校正，但云端同步失败；请立即导出 JSON 备份。",
+                            }
                         else:
                             save_place = "并同步云端" if sync_token and sync_repo else "到本地"
-                            st.success(f"核验结果已保存{save_place}，所有玩家的胜负字段已同步重建。")
-                        time.sleep(0.5)
+                            st.session_state.verification_flash = {
+                                "level": "success", "text": f"核验结果已保存{save_place}，所有玩家的胜负字段已同步重建。",
+                            }
+                        drafts.pop(draft_key, None)
+                        if save_and_next and not (sync_token and sync_repo and synced is False):
+                            remaining = [i for i in reversed(range(len(latest_records))) if not is_record_verified(latest_records[i])]
+                            later = [i for i in remaining if i < verify_idx]
+                            st.session_state.verify_navigation = {
+                                "scope": "待核验", "index": (later or remaining or [None])[0],
+                            }
+                            if not remaining:
+                                st.session_state.verification_flash["text"] += " 所有对局已核验完成。"
+                        else:
+                            st.session_state.verify_navigation = {"scope": "已核验", "index": verify_idx}
                         st.rerun()
                     except Exception as exc:
                         st.error(f"核验结果未保存：{exc}")
@@ -1156,8 +1350,11 @@ with tab_verify:
 with tab_upload:
     st.markdown('<div class="card-panel"><div class="panel-header-title">📸 战绩截图智能分析录入</div>', unsafe_allow_html=True)
     with st.form("upload_box", clear_on_submit=False):
-        files = st.file_uploader("选择截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
-        sub = st.form_submit_button("🚀 开始解析并录入", type="primary", use_container_width=True)
+        files = st.file_uploader("选择截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True, disabled=not admin_mode)
+        sub = st.form_submit_button("🚀 开始解析并录入", type="primary", use_container_width=True, disabled=not admin_mode)
+
+    if not admin_mode:
+        st.info("战绩录入需要管理员登录。")
 
     previous_report = st.session_state.get("upload_report")
     if previous_report:
@@ -1166,6 +1363,7 @@ with tab_upload:
             st.error(message)
 
     if sub:
+        require_admin()
         if not files:
             st.warning("⚠️ 请先选择战绩截图！")
         elif not key:
