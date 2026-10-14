@@ -15,7 +15,6 @@ from urllib.parse import urlencode
 from io import BytesIO
 from itertools import combinations
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -400,10 +399,15 @@ def is_record_verified(record):
     return record.get("result_verified") is True and record.get("groups_verified") is True
 
 
+def verification_digest(value):
+    digest = hashlib.sha256()
+    for chunk in json.JSONEncoder(ensure_ascii=False, sort_keys=True).iterencode(value):
+        digest.update(chunk.encode("utf-8"))
+    return digest.hexdigest()
+
+
 def verification_record_key(record):
-    revision = hashlib.sha256(json.dumps(
-        record, ensure_ascii=False, sort_keys=True
-    ).encode()).hexdigest()
+    revision = verification_digest(record)
     return f"{record.get('md5') or revision}_{revision[:12]}"
 
 
@@ -433,6 +437,8 @@ def prepare_batch_verification(snapshot, latest, selections):
 
 
 def render_batch_verification(records, admin_mode):
+    if not st.checkbox("打开批量核验", key="batch_verify_enabled"):
+        return
     with st.expander("📋 批量核验（勾选多局，一次保存）", expanded=False):
         st.caption("每页最多 10 局，仅处理待核验对局。先查看原图和完整名单，再勾选并确认胜方。玩家分组有误时请使用下方逐局核验。")
         drafts = st.session_state.get("verify_drafts", {})
@@ -444,9 +450,7 @@ def render_batch_verification(records, admin_mode):
             st.info("暂无可批量核验的对局。")
             return
 
-        snapshot_key = hashlib.sha256(json.dumps(
-            records, ensure_ascii=False, sort_keys=True
-        ).encode()).hexdigest()[:16]
+        snapshot_key = verification_digest(records)[:16]
         pages = (len(eligible) + 9) // 10
         page = st.selectbox("批量核验页码", range(pages),
                             format_func=lambda i: f"第 {i + 1} / {pages} 页",
@@ -479,8 +483,11 @@ def render_batch_verification(records, admin_mode):
             },
         )
         st.caption("获胜组默认沿用当前记录，可逐行修改。翻页分别提交；未勾选的对局不会保存。")
-        with st.expander("查看本页原始截图与玩家 KDA"):
-            for index in indices:
+        if st.checkbox("加载截图与玩家 KDA（一次一局）", key="batch_verify_preview"):
+            preview_index = st.selectbox("预览对局", indices,
+                                         format_func=lambda i: f"第 {i + 1} 局",
+                                         key=f"batch_verify_preview_{page_key}")
+            for index in [preview_index]:
                 record = records[index]
                 st.markdown(f"**第 {index + 1} 局**")
                 if record.get("image_thumb"):
@@ -718,7 +725,7 @@ with st.sidebar:
             disabled=not admin_mode,
         )
         st.caption("默认使用北京按量付费接口；其他地域或套餐请填写控制台提供的地址。")
-        st.slider("同时识别张数", 1, 3, value=3, key="vision_workers", disabled=not admin_mode)
+        st.caption("省内存模式：截图逐张识别，每批最多 10 张。")
         st.checkbox("压缩识别大图", value=True, key="optimize_image",
                     help="图片宽度最多 1920 像素；昵称较小时可关闭后重试。", disabled=not admin_mode)
 
@@ -765,7 +772,7 @@ with st.sidebar:
 
     with st.expander("💾 数据备份与恢复"):
         if records:
-            if admin_mode:
+            if admin_mode and st.checkbox("生成完整 JSON 备份（包含截图）", key="prepare_json_backup"):
                 st.download_button("📤 导出完整数据 (JSON)", json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8'), "lol_records_backup.json", "application/json", use_container_width=True)
         uploaded_backup = st.file_uploader("导入备份文件", type=["json"], key="backup_uploader", disabled=not admin_mode)
         restore_checked = st.checkbox("确认用备份替换当前所有战绩", disabled=not admin_mode)
@@ -788,7 +795,7 @@ with st.sidebar:
                 )
             )
             curr_record = records[selected_idx]
-            if curr_record.get("image_thumb"):
+            if curr_record.get("image_thumb") and st.checkbox("加载复盘截图", key="show_replay_image"):
                 st.image(f"data:image/jpeg;base64,{curr_record['image_thumb']}", use_container_width=True)
             p_rows = [{
                 "分组": "A组" if p.get("team") == "BLUE" else "B组", "玩家": short_name(p.get("player_name", "")),
@@ -941,13 +948,13 @@ if not df.empty:
     df["MMR"] = df.apply(calc_mmr, axis=1)
 
 # ---------------- 主界面 2：Tabs 视图 ----------------
-tab_ladder, tab_match, tab_radar, tab_verify, tab_upload = st.tabs([
+active_page = st.radio("功能页面", [
     "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 局内战术图谱与成就馆",
     "✅ 战绩核验", "📥 战绩智能录入"
-])
+], horizontal=True, key="active_page")
 
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
-with tab_ladder:
+if active_page == "📊 胜率天梯与荣誉榜":
     if df.empty:
         st.info("💡 暂无选手数据。请在战绩智能录入页面上传截图！")
     else:
@@ -1014,7 +1021,7 @@ with tab_ladder:
                 personal_game = st.selectbox("查看对局详情", list(reversed(match_lookup)),
                     format_func=lambda i: f"第 {i+1} 局", key=f"profile_game_{selected_profile}_{history_filter}")
                 detail = match_lookup[personal_game]
-                if detail.get("image_thumb"):
+                if detail.get("image_thumb") and st.checkbox("加载该局截图", key="show_profile_image"):
                     st.image(f"data:image/jpeg;base64,{detail['image_thumb']}", use_container_width=True)
                 st.dataframe(pd.DataFrame([{
                     "玩家 ID": p.get("player_name", ""),
@@ -1097,7 +1104,7 @@ with tab_ladder:
         with k3: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">一生之敌 (≥5局)</div><div class="metric-val-main">{rp_txt}</div><div class="metric-badge badge-gold">{rp_score}</div></div>', unsafe_allow_html=True)
 
 # ================= Tab 2: 赛前阵营分队系统 =================
-with tab_match:
+if active_page == "⚔️ 赛前阵营分队系统":
     if df.empty:
         st.info("💡 暂无选手历史数据，请先录入对局战绩。")
     else:
@@ -1211,7 +1218,7 @@ with tab_match:
             """, unsafe_allow_html=True)
 
 # ================= Tab 3: 局内战术图谱与成就馆 =================
-with tab_radar:
+if active_page == "🎯 局内战术图谱与成就馆":
     active_p = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True) if not df.empty else []
     if not active_p:
         st.info("💡 暂无选手数据。")
@@ -1272,7 +1279,7 @@ with tab_radar:
         """, unsafe_allow_html=True)
 
 # ================= Tab 4: 历史战绩胜负核验 =================
-with tab_verify:
+if active_page == "✅ 战绩核验":
     st.markdown('<div class="card-panel"><div class="panel-header-title">✅ 历史战绩胜负核验</div>', unsafe_allow_html=True)
     st.caption("A组 / B组只代表截图中的两块玩家列表，不代表游戏里的真实蓝方或红方。请以截图上的‘胜利 / 失败’文字为准。")
     if not admin_mode:
@@ -1339,11 +1346,12 @@ with tab_verify:
             if saved_draft:
                 st.caption("已恢复本次会话中的未保存草稿。关闭页面后草稿可能丢失。")
             if verify_record.get("image_thumb"):
-                st.image(
-                    f"data:image/jpeg;base64,{verify_record['image_thumb']}",
-                    caption=f"第 {verify_idx+1} 局原始结算截图",
-                    use_container_width=True,
-                )
+                if st.checkbox("加载本局核验截图", key="show_verify_image"):
+                    st.image(
+                        f"data:image/jpeg;base64,{verify_record['image_thumb']}",
+                        caption=f"第 {verify_idx+1} 局原始结算截图",
+                        use_container_width=True,
+                    )
             else:
                 st.warning("⚠️ 这局没有保存截图，请根据你掌握的原始记录确认；无法确认时不要标记为已核验。")
 
@@ -1475,7 +1483,7 @@ with tab_verify:
 
 
 # ================= Tab 5: 战绩智能录入 =================
-with tab_upload:
+if active_page == "📥 战绩智能录入":
     st.markdown('<div class="card-panel"><div class="panel-header-title">📸 战绩截图智能分析录入</div>', unsafe_allow_html=True)
     with st.form("upload_box", clear_on_submit=False):
         files = st.file_uploader("选择截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True, disabled=not admin_mode)
@@ -1494,6 +1502,8 @@ with tab_upload:
         require_admin()
         if not files:
             st.warning("⚠️ 请先选择战绩截图！")
+        elif len(files) > 10:
+            st.warning("为降低内存占用，每批最多上传 10 张，请分批选择。")
         elif not key:
             st.warning("⚠️ 请在左侧控制台填入 DashScope API Key！")
         else:
@@ -1515,36 +1525,31 @@ with tab_upload:
                     else:
                         # 同一批上传的重复文件也只请求一次模型。
                         seen.add(digest)
-                        jobs.append((index, uploaded.name, data, digest))
+                        jobs.append((index, uploaded.name, uploaded, digest))
+                    del data
 
                 bar = st.progress(0)
                 status_box = st.empty()
                 successes = {}
                 completed = 0
-                workers = min(st.session_state.get("vision_workers", 3), len(jobs))
                 if jobs:
-                    status_box.info(f"⏳ 正在识别 {len(jobs)} 张截图，同时处理 {workers} 张。")
-                    with ThreadPoolExecutor(max_workers=workers) as executor:
-                        futures = {
-                            executor.submit(recognize_upload_job, data, digest, key, settings): (index, name)
-                            for index, name, data, digest in jobs
-                        }
-                        for future in as_completed(futures):
-                            index, name = futures[future]
-                            result, error, elapsed = future.result()
-                            completed += 1
-                            if error:
-                                errors.append(f"❌ {name} 录入失败：{error}")
-                            else:
-                                successes[index] = result
-                                # 完成顺序可能不同；按上传顺序保存，维持对局时间顺序。
-                                records = base_records + [successes[i] for i in sorted(successes)]
-                                save_records(records, sync_cloud=False)
-                            bar.progress(completed / len(jobs))
-                            status_box.info(
-                                f"已完成 {completed}/{len(jobs)} 张，成功 {len(successes)} 张；"
-                                f"刚完成 {name}，耗时 {elapsed:.1f} 秒。"
-                            )
+                    status_box.info(f"⏳ 正在逐张识别 {len(jobs)} 张截图。")
+                    for index, name, uploaded, digest in jobs:
+                        data = uploaded.getvalue()
+                        result, error, elapsed = recognize_upload_job(data, digest, key, settings)
+                        del data
+                        completed += 1
+                        if error:
+                            errors.append(f"❌ {name} 录入失败：{error}")
+                        else:
+                            successes[index] = result
+                            records = base_records + [successes[i] for i in sorted(successes)]
+                            save_records(records, sync_cloud=False)
+                        bar.progress(completed / len(jobs))
+                        status_box.info(
+                            f"已完成 {completed}/{len(jobs)} 张，成功 {len(successes)} 张；"
+                            f"刚完成 {name}，耗时 {elapsed:.1f} 秒。"
+                        )
 
                 sync_message = ""
                 if successes:
