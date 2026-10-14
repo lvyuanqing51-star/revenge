@@ -317,16 +317,24 @@ def validate_recognition(result):
     return {**result, "winning_team": winner, "players": players}
 
 
-def correct_record_winner(record, winning_team, verified=True):
+def correct_record_winner(record, winning_team, verified=True, players=None):
     """统一修正一局的胜方，并重建该局每位玩家的胜负字段。"""
-    corrected = validate_recognition({**record, "winning_team": winning_team})
+    corrected = validate_recognition({
+        **record, "winning_team": winning_team,
+        "players": record.get("players", []) if players is None else players,
+    })
     corrected["result_verified"] = bool(verified)
+    corrected["groups_verified"] = bool(verified)
     corrected["result_source"] = "manual_review" if verified else "ai_unverified"
     if verified:
         corrected["result_verified_at"] = datetime.now(timezone.utc).isoformat()
     else:
         corrected.pop("result_verified_at", None)
     return corrected
+
+
+def is_record_verified(record):
+    return record.get("result_verified") is True and record.get("groups_verified") is True
 
 
 def get_vision_settings():
@@ -383,6 +391,10 @@ def analyze_image(img_bytes, api_key, settings=None):
         "这是英雄联盟掌盟对局结算截图。\n"
         "把截图中靠前/靠上的第一组玩家统一记为 BLUE，把第二组统一记为 RED；"
         "这里的 BLUE/RED 只是两组代号，不代表游戏里的真实蓝红方。\n"
+        "先定位双方玩家列表的标题和分隔边界，再逐行识别玩家所属组。"
+        "玩家展开的英雄技能、海克斯强化、符文、装备详情和大段说明仍属于该玩家所在组，"
+        "绝不能因为出现详情区、空白区或跨屏截图就切换组别。"
+        "只有明确的另一组标题/列表边界才能切换组；无法确定所属组的玩家请省略，不要猜测。\n"
         "只根据两组旁边明确显示的‘胜利/失败’文字判断 winning_team；"
         "若胜负文字看不清，winning_team 必须填 null，绝不能根据击杀、KDA、颜色或玩家强弱猜测。\n"
         "请识别截图中能确认的玩家游戏ID、KDA数值；允许人数不足10人或双方人数不等。\n"
@@ -517,7 +529,7 @@ with st.sidebar:
 
     records = load_records()
     total_games_all = len(records)
-    verified_games_all = sum(r.get("result_verified") is True for r in records)
+    verified_games_all = sum(is_record_verified(r) for r in records)
     gh_t, gh_r = get_github_auth()
     st.caption("🟢 **云端自动同步**: 已启用 (GitHub)" if gh_t and gh_r else "⚪ **云端自动同步**: 未配置 Token")
     st.caption(f"✅ **胜负已核验**: {verified_games_all}/{total_games_all} 局")
@@ -573,7 +585,7 @@ with st.sidebar:
                 format_func=lambda i: (
                     f"第 {i+1} 局 "
                     f"({'A组' if records[i].get('winning_team') == 'BLUE' else 'B组'}胜 · "
-                    f"{'已核验' if records[i].get('result_verified') is True else '待核验'})"
+                    f"{'已核验' if is_record_verified(records[i]) else '待核验'})"
                 )
             )
             curr_record = records[selected_idx]
@@ -622,7 +634,7 @@ if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
 
 # ---------------- 数据清洗与统计算法引擎 ----------------
 stats_records = (
-    [r for r in records if r.get("result_verified") is True]
+    [r for r in records if is_record_verified(r)]
     if stats_scope == "仅已核验对局"
     else records
 )
@@ -1002,8 +1014,8 @@ with tab_verify:
     if not records:
         st.info("💡 暂无历史对局。")
     else:
-        pending_indices = [i for i, r in enumerate(records) if r.get("result_verified") is not True]
-        verified_indices = [i for i, r in enumerate(records) if r.get("result_verified") is True]
+        pending_indices = [i for i, r in enumerate(records) if not is_record_verified(r)]
+        verified_indices = [i for i, r in enumerate(records) if is_record_verified(r)]
         vm1, vm2, vm3 = st.columns(3)
         vm1.metric("全部对局", len(records))
         vm2.metric("已核验", len(verified_indices))
@@ -1028,7 +1040,7 @@ with tab_verify:
                 list(reversed(verify_choices)),
                 format_func=lambda i: (
                     f"第 {i+1} 局 · "
-                    f"{'已核验' if records[i].get('result_verified') is True else '待核验'}"
+                    f"{'已核验' if is_record_verified(records[i]) else '待核验'}"
                 ),
                 key="verify_game_index",
             )
@@ -1042,11 +1054,39 @@ with tab_verify:
             else:
                 st.warning("⚠️ 这局没有保存截图，请根据你掌握的原始记录确认；无法确认时不要标记为已核验。")
 
+            st.markdown("#### 逐个核对玩家组别")
+            st.caption("点击分组单元格可把误分的玩家移回 A组 / B组。请核对完整游戏 ID；下方名单会随修改更新。")
+            review_players = verify_record.get("players", [])
+            editor_rows = [{
+                "玩家 ID": p.get("player_name", ""),
+                "分组": "A组" if str(p.get("team", "")).upper() == "BLUE" else "B组",
+                "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
+            } for p in review_players]
+            editor_revision = hashlib.sha256(json.dumps(verify_record, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:12]
+            edited_groups = st.data_editor(
+                pd.DataFrame(editor_rows), hide_index=True, use_container_width=True,
+                key=f"group_editor_{verify_idx}_{editor_revision}",
+                disabled=["玩家 ID", "KDA"],
+                column_config={"分组": st.column_config.SelectboxColumn(
+                    "分组", options=["A组", "B组"], required=True,
+                )},
+            )
+            corrected_players = []
+            for position, player in enumerate(review_players):
+                copy = dict(player)
+                label = edited_groups.iloc[position]["分组"]
+                copy["team"] = {"A组": "BLUE", "B组": "RED"}.get(label, "")
+                corrected_players.append(copy)
+            group_counts = {side: sum(p["team"] == side for p in corrected_players) for side in ("BLUE", "RED")}
+            st.caption(f"当前分组：A组 {group_counts['BLUE']} 人 / B组 {group_counts['RED']} 人")
+            if abs(group_counts["BLUE"] - group_counts["RED"]) > 1:
+                st.warning("两组人数差距较大，可能存在误分或漏识别；请对照截图逐个检查。人数提示不会自动改分组。")
+
             verify_groups = {}
             group_cols = st.columns(2)
             for group_pos, group_side in enumerate(("BLUE", "RED")):
                 group_players = [
-                    p for p in verify_record.get("players", [])
+                    p for p in corrected_players
                     if str(p.get("team", "")).upper() == group_side
                 ]
                 verify_groups[group_side] = group_players
@@ -1055,7 +1095,7 @@ with tab_verify:
                 with group_cols[group_pos]:
                     st.markdown(f"#### {group_label}{current_mark}")
                     group_rows = [{
-                        "玩家": short_name(p.get("player_name", "")),
+                        "玩家": p.get("player_name", ""),
                         "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
                     } for p in group_players]
                     if group_rows:
@@ -1078,7 +1118,7 @@ with tab_verify:
                     index=0 if verify_record.get("winning_team") == "BLUE" else 1,
                     format_func=lambda side: group_labels[side],
                 )
-                result_checked = st.checkbox("我已对照截图中的‘胜利 / 失败’文字确认结果")
+                result_checked = st.checkbox("我已逐个核对玩家组别，并确认截图中的‘胜利 / 失败’结果")
                 save_verification = st.form_submit_button(
                     "💾 保存核验结果", type="primary", use_container_width=True
                 )
@@ -1091,10 +1131,11 @@ with tab_verify:
                 else:
                     try:
                         latest_records = load_records()
-                        if verify_idx >= len(latest_records):
+                        if verify_idx >= len(latest_records) or latest_records[verify_idx] != verify_record:
                             raise ValueError("历史记录已发生变化，请刷新页面后重试。")
                         latest_records[verify_idx] = correct_record_winner(
-                            latest_records[verify_idx], corrected_winner, verified=True
+                            latest_records[verify_idx], corrected_winner, verified=True,
+                            players=corrected_players,
                         )
                         synced = save_records(latest_records)
                         sync_token, sync_repo = get_github_auth()
