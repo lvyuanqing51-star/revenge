@@ -224,7 +224,7 @@ def render_admin_login():
         st.success("管理员已登录")
         if st.button("退出管理", key="admin_logout"):
             for state_key in list(st.session_state):
-                if state_key.startswith(("admin_", "group_editor_", "review_")) or state_key in (
+                if state_key.startswith(("admin_", "group_editor_", "review_", "batch_verify_")) or state_key in (
                     "verify_drafts", "verification_flash", "vision_key_input", "verify_navigation",
                 ):
                     st.session_state.pop(state_key, None)
@@ -398,6 +398,132 @@ def correct_record_winner(record, winning_team, verified=True, players=None):
 
 def is_record_verified(record):
     return record.get("result_verified") is True and record.get("groups_verified") is True
+
+
+def verification_record_key(record):
+    revision = hashlib.sha256(json.dumps(
+        record, ensure_ascii=False, sort_keys=True
+    ).encode()).hexdigest()
+    return f"{record.get('md5') or revision}_{revision[:12]}"
+
+
+def prepare_batch_verification(snapshot, latest, selections):
+    """先校验整批，再生成新记录；任何一局异常都不写入。"""
+    if latest != snapshot:
+        raise ValueError("历史记录已发生变化，请刷新页面后重新选择对局。")
+    if not selections:
+        raise ValueError("请至少勾选一局。")
+    updated = list(latest)
+    seen = set()
+    for index, winner in selections:
+        if type(index) is not int or not 0 <= index < len(latest) or index in seen:
+            raise ValueError("对局选择无效或重复，请重新选择。")
+        seen.add(index)
+        record = latest[index]
+        if is_record_verified(record):
+            raise ValueError(f"第 {index + 1} 局已核验，请通过逐局核验修改。")
+        try:
+            corrected = correct_record_winner(record, winner, verified=True)
+            if {p["team"] for p in corrected["players"]} != {"BLUE", "RED"}:
+                raise ValueError("两组选手数据不完整，请进入逐局核验修复。")
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"第 {index + 1} 局：{exc}") from exc
+        updated[index] = corrected
+    return updated
+
+
+def render_batch_verification(records, admin_mode):
+    with st.expander("📋 批量核验（勾选多局，一次保存）", expanded=False):
+        st.caption("每页最多 10 局，仅处理待核验对局。先查看原图和完整名单，再勾选并确认胜方。玩家分组有误时请使用下方逐局核验。")
+        drafts = st.session_state.get("verify_drafts", {})
+        pending = [i for i in reversed(range(len(records))) if not is_record_verified(records[i])]
+        eligible = [i for i in pending if verification_record_key(records[i]) not in drafts]
+        if len(eligible) != len(pending):
+            st.info(f"有 {len(pending) - len(eligible)} 局包含逐局核验草稿，已从批量列表排除，请在下方继续核验并保存。")
+        if not eligible:
+            st.info("暂无可批量核验的对局。")
+            return
+
+        snapshot_key = hashlib.sha256(json.dumps(
+            records, ensure_ascii=False, sort_keys=True
+        ).encode()).hexdigest()[:16]
+        pages = (len(eligible) + 9) // 10
+        page = st.selectbox("批量核验页码", range(pages),
+                            format_func=lambda i: f"第 {i + 1} / {pages} 页",
+                            key=f"batch_verify_page_{snapshot_key}")
+        indices = eligible[page * 10:(page + 1) * 10]
+        page_key = snapshot_key + "_" + "_".join(map(str, indices))
+        rows = []
+        for index in indices:
+            record = records[index]
+            groups = {
+                side: [p for p in record.get("players", []) if str(p.get("team", "")).upper() == side]
+                for side in ("BLUE", "RED")
+            }
+            current_winner = {"BLUE": "A组", "RED": "B组"}.get(record.get("winning_team"), "待选择")
+            rows.append({
+                "选择": False, "对局": f"第 {index + 1} 局", "获胜组": current_winner,
+                "A组玩家": "、".join(str(p.get("player_name", "")) for p in groups["BLUE"]),
+                "B组玩家": "、".join(str(p.get("player_name", "")) for p in groups["RED"]),
+                "截图": "有" if record.get("image_thumb") else "无",
+            })
+        edited = st.data_editor(
+            pd.DataFrame(rows), hide_index=True, use_container_width=True,
+            disabled=["对局", "A组玩家", "B组玩家", "截图"] if admin_mode else True,
+            key=f"batch_verify_editor_{page_key}",
+            column_config={
+                "选择": st.column_config.CheckboxColumn("选择", required=True),
+                "获胜组": st.column_config.SelectboxColumn(
+                    "获胜组", options=["待选择", "A组", "B组"], required=True,
+                ),
+            },
+        )
+        st.caption("获胜组默认沿用当前记录，可逐行修改。翻页分别提交；未勾选的对局不会保存。")
+        with st.expander("查看本页原始截图与玩家 KDA"):
+            for index in indices:
+                record = records[index]
+                st.markdown(f"**第 {index + 1} 局**")
+                if record.get("image_thumb"):
+                    st.image(f"data:image/jpeg;base64,{record['image_thumb']}", use_container_width=True)
+                else:
+                    st.warning("没有保存截图，请根据原始记录核对；无法确认时请勿勾选。")
+                st.dataframe(pd.DataFrame([{
+                    "玩家 ID": p.get("player_name", ""),
+                    "分组": {"BLUE": "A组", "RED": "B组"}.get(str(p.get("team", "")).upper(), "未知"),
+                    "KDA": "/".join(str(p.get(field, "?")) for field in ("kills", "deaths", "assists")),
+                } for p in record.get("players", [])]), hide_index=True, use_container_width=True)
+
+        selections = [(indices[position], {"A组": "BLUE", "B组": "RED"}.get(row["获胜组"], ""))
+                      for position, (_, row) in enumerate(edited.iterrows()) if row["选择"]]
+        st.caption(f"本页已选择 {len(selections)} 局。")
+        confirmation_key = hashlib.sha256(json.dumps(selections).encode()).hexdigest()[:12]
+        confirmed = st.checkbox(
+            "我已逐局核对所选对局的玩家分组及胜负，并确认批量保存",
+            key=f"batch_verify_confirm_{page_key}_{confirmation_key}", disabled=not admin_mode,
+        )
+        if st.button("✅ 保存所选对局的核验结果", type="primary", use_container_width=True,
+                     key=f"batch_verify_save_{page_key}",
+                     disabled=not admin_mode or not selections or not confirmed):
+            try:
+                require_admin()
+                # 同一次重跑中，逐局编辑器可能尚未渲染，再检查已有草稿。
+                current_drafts = st.session_state.get("verify_drafts", {})
+                if any(verification_record_key(records[i]) in current_drafts for i, _ in selections):
+                    raise ValueError("所选对局包含未保存的逐局草稿，请先完成逐局核验。")
+                updated = prepare_batch_verification(records, load_records(), selections)
+                synced = save_records(updated)
+                token, repo = get_github_auth()
+                cloud_failed = bool(token and repo and synced is False)
+                suffix = "本地已保存，但云端同步失败，请立即导出 JSON 备份。" if cloud_failed else (
+                    "已保存并同步云端。" if token and repo else "已保存到本地。"
+                )
+                st.session_state.verification_flash = {
+                    "level": "warning" if cloud_failed else "success",
+                    "text": f"已批量核验 {len(selections)} 局，所有玩家胜负字段已同步重建。{suffix}",
+                }
+                st.rerun()
+            except Exception as exc:
+                st.error(f"批量核验未完成：{exc}")
 
 
 def get_vision_settings():
@@ -1166,6 +1292,8 @@ with tab_verify:
         vm1.metric("全部对局", len(records))
         vm2.metric("已核验", len(verified_indices))
         vm3.metric("待核验", len(pending_indices))
+
+        render_batch_verification(records, admin_mode)
 
         navigation = st.session_state.pop("verify_navigation", None)
         if navigation:
