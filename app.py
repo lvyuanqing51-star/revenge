@@ -840,13 +840,58 @@ if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
         f"另有 {total_games_all - verified_games_all} 局待核验，请前往「战绩核验」逐局确认。"
     )
 
+# ---------------- 页面导航与榜单人数范围 ----------------
+active_page = st.radio("功能页面", [
+    "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 局内战术图谱与成就馆",
+    "✅ 战绩核验", "📥 战绩智能录入"
+], horizontal=True, key="active_page")
+
+ladder_min_players = 0
+if active_page == "📊 胜率天梯与荣誉榜":
+    size_options = ["全部对局", "7人及以上对局"]
+    default_size = st.session_state.get(
+        "ladder_size_preference",
+        "7人及以上对局" if st.query_params.get("players", "") == "7" else "全部对局",
+    )
+    ladder_size = st.radio(
+        "榜单对局人数", size_options, index=size_options.index(default_size),
+        horizontal=True, key="ladder_size_widget",
+        help="按单局去重后的有效玩家数筛选，7人及以上包含恰好7人的对局。与侧栏核验口径同时生效。",
+    )
+    st.session_state.ladder_size_preference = ladder_size
+    ladder_min_players = 7 if ladder_size == "7人及以上对局" else 0
+
+
+def valid_player_count(record):
+    return len({
+        clean_player_name_strict(p.get("player_name", ""))
+        for p in record.get("players", [])
+        if clean_player_name_strict(p.get("player_name", ""))
+        and not is_result_banner(p.get("player_name", ""))
+        and str(p.get("team", "")).upper() in {"BLUE", "RED"}
+    })
+
+
+def match_in_stats(record):
+    return (
+        (stats_scope != "仅已核验对局" or is_record_verified(record))
+        and valid_player_count(record) >= ladder_min_players
+    )
+
+
 # ---------------- 数据清洗与统计算法引擎 ----------------
-stats_records = (
+base_stats_records = (
     [r for r in records if is_record_verified(r)]
     if stats_scope == "仅已核验对局"
     else records
 )
-all_raw = [p.get("player_name", "") for r in stats_records for p in r.get("players", []) if p.get("player_name")]
+stats_records = [r for r in base_stats_records if match_in_stats(r)]
+if active_page == "📊 胜率天梯与荣誉榜":
+    st.caption(
+        f"当前榜单：{'7人及以上对局' if ladder_min_players else '全部人数对局'} · "
+        f"{stats_scope} · 纳入 {len(stats_records)} 场。人数按已录入的不同有效玩家计算。"
+    )
+all_raw = [p.get("player_name", "") for r in base_stats_records for p in r.get("players", []) if p.get("player_name")]
 name_mapping = build_canonical_name_map(list(set(all_raw)))
 
 def get_final_name(pname):
@@ -865,7 +910,7 @@ max_single_death = {"player": "", "val": -1, "game_idx": 0}
 max_single_assist = {"player": "", "val": -1, "game_idx": 0}
 
 for game_idx, r in enumerate(records):
-    if stats_scope == "仅已核验对局" and not is_record_verified(r):
+    if not match_in_stats(r):
         continue
     players = r.get("players", [])
     valid_6p = len(players) >= 6
@@ -947,16 +992,10 @@ if not df.empty:
         return round(tot + (5.0 if float(r["场均击杀"]) >= 7.0 and float(r["KDA_num"]) >= 2.5 else 0.0), 1)
     df["MMR"] = df.apply(calc_mmr, axis=1)
 
-# ---------------- 主界面 2：Tabs 视图 ----------------
-active_page = st.radio("功能页面", [
-    "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 局内战术图谱与成就馆",
-    "✅ 战绩核验", "📥 战绩智能录入"
-], horizontal=True, key="active_page")
-
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
 if active_page == "📊 胜率天梯与荣誉榜":
     if df.empty:
-        st.info("💡 暂无选手数据。请在战绩智能录入页面上传截图！")
+        st.info("💡 当前核验状态和人数筛选下没有对局。可切换榜单范围，或先录入并核验战绩。")
     else:
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
         df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
@@ -968,8 +1007,8 @@ if active_page == "📊 胜率天梯与荣誉榜":
             medal = "🥇 " if r_idx == 0 else ("🥈 " if r_idx == 1 else ("🥉 " if r_idx == 2 else f"{r_idx+1} "))
             r_cls = "rank-1" if r_idx == 0 else ("rank-2" if r_idx == 1 else ("rank-3" if r_idx == 2 else ""))
             link_scope = "all" if stats_scope == "全部对局（含待核验）" else "verified"
-            wins_url = escape("?" + urlencode({"player": p_id, "result": "wins", "stats": link_scope}), quote=True)
-            losses_url = escape("?" + urlencode({"player": p_id, "result": "losses", "stats": link_scope}), quote=True)
+            wins_url = escape("?" + urlencode({"player": p_id, "result": "wins", "stats": link_scope, "players": ladder_min_players}), quote=True)
+            losses_url = escape("?" + urlencode({"player": p_id, "result": "losses", "stats": link_scope, "players": ladder_min_players}), quote=True)
             name_link = f"{medal}{escape(short_name(p_id))}"
             wins_link = f"<a href='{wins_url}' target='_blank' rel='noopener noreferrer' style='color:#0284c7;'>{int(row['胜场'])}</a>"
             losses_link = f"<a href='{losses_url}' target='_blank' rel='noopener noreferrer' style='color:#e11d48;'>{int(row['负场'])}</a>"
@@ -999,7 +1038,7 @@ if active_page == "📊 胜率天梯与荣誉榜":
             )
             personal_matches = []
             for original_index, match in enumerate(records):
-                if stats_scope == "仅已核验对局" and not is_record_verified(match):
+                if not match_in_stats(match):
                     continue
                 for player in match.get("players", []):
                     if get_final_name(player.get("player_name", "")) != selected_profile:
