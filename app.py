@@ -35,7 +35,7 @@ st.markdown("""
 <style>
 :root, [data-theme="light"], .stApp { --primary-color: #881337 !important; }
 .stApp {
-    background: radial-gradient(circle at 10% 20%, #fff1f2 0%, #fff5f5 45%, #fed7aa 100%) !important;
+    background: linear-gradient(145deg, #fbf9f8 0%, #faf5f5 100%) !important;
     background-attachment: fixed !important;
     color: #334155 !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -44,11 +44,11 @@ st.markdown("""
     display: flex; justify-content: space-between; align-items: center;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(254, 242, 242, 0.92) 100%);
     backdrop-filter: blur(14px); border: 1.5px solid #fecdd3; border-left: 6px solid #881337;
-    border-radius: 16px; padding: 16px 26px; margin-bottom: 22px;
-    box-shadow: 0 6px 24px rgba(114, 9, 44, 0.08);
+    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
+    box-shadow: 0 3px 12px rgba(114, 9, 44, 0.04);
 }
 .header-title {
-    font-size: 1.70rem; font-weight: 900;
+    font-size: 26px; font-weight: 800;
     background: linear-gradient(90deg, #881337 0%, #b91c1c 45%, #d97706 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
@@ -83,16 +83,16 @@ div[data-baseweb="tab"][aria-selected="true"] {
     color: #72092c !important; border-top: 3.5px solid #72092c !important;
 }
 .card-panel {
-    background: #ffffff; border: 1.2px solid #fecdd3; border-radius: 14px;
-    padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(114, 9, 44, 0.06);
+    background: #ffffff; border: 1px solid #ece5e2; border-radius: 14px;
+    padding: 20px; margin-bottom: 24px; box-shadow: 0 3px 12px rgba(114, 9, 44, 0.03);
 }
 .panel-header-title {
-    font-size: 1.15rem; font-weight: 800; color: #72092c; margin-bottom: 14px;
+    font-size: 18px; font-weight: 700; color: #72092c; margin: 24px 0 12px;
     border-left: 4px solid #72092c; padding-left: 10px;
 }
 .metric-stat-box {
-    background: #ffffff; border: 1.2px solid #fecdd3; border-radius: 14px;
-    padding: 16px 18px; box-shadow: 0 3px 10px rgba(114, 9, 44, 0.05);
+    background: #ffffff; border: 1px solid #ece5e2; border-radius: 14px;
+    padding: 20px; margin-bottom: 24px; box-shadow: 0 3px 10px rgba(114, 9, 44, 0.03);
 }
 .metric-title { font-size: 0.85rem; font-weight: 700; color: #881337; margin-bottom: 4px; }
 .metric-val-main { font-size: 1.45rem; font-weight: 900; color: #1e293b; }
@@ -111,15 +111,24 @@ div[data-baseweb="tab"][aria-selected="true"] {
     border-radius: 8px; margin: 3px 6px 3px 0; cursor: help;
 }
 .ladder-table-box {
-    width: 100%; overflow-x: auto; border: 1.5px solid #fecdd3; border-radius: 14px;
-    background: #ffffff; margin: 10px 0 22px 0;
+    width: 100%; overflow-x: auto; border: 1px solid #ece5e2; border-radius: 14px;
+    background: #ffffff; margin: 12px 0 24px;
 }
-.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: center; }
+.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: right; font-variant-numeric: tabular-nums; }
 .ladder-table th {
-    background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%); color: #72092c;
-    font-weight: 800; padding: 14px 10px; border-bottom: 2px solid #fbcfe8;
+    background: #faf5f6; color: #72092c;
+    font-weight: 700; padding: 14px 12px; border-bottom: 1px solid #e8dce0;
 }
-.ladder-table td { padding: 12px 8px; border-bottom: 1px solid #fff1f2; }
+.ladder-table th, .ladder-table td { border-left: 0; border-right: 0; }
+.ladder-table td { padding: 14px 12px; border-bottom: 1px solid #f0ebeb; }
+.ladder-table tbody tr:hover { box-shadow: inset 3px 0 #881337; }
+.stApp [data-testid="stCaptionContainer"] { font-size: 13px; color: #64748b; }
+.stApp h3, .stApp h4 { font-size: 18px; line-height: 1.5; }
+@media (max-width: 640px) {
+    .app-header-bar { padding: 16px; flex-wrap: wrap; gap: 12px; }
+    .header-title { font-size: 22px; }
+    .ladder-table th, .ladder-table td { padding: 10px 8px; white-space: nowrap; }
+}
 .rank-1 { background: rgba(254, 240, 138, 0.25) !important; }
 .rank-2 { background: rgba(241, 245, 249, 0.4) !important; }
 .rank-3 { background: rgba(254, 215, 170, 0.22) !important; }
@@ -716,142 +725,52 @@ def generate_radar_svg(values, categories):
     """
 
 
-# ---------------- 战情室视觉：可切回经典模式 ----------------
-WAR_ROOM_CSS = """
+# ---------------- 明亮酒红首屏：保留大标题与领跑者 ----------------
+HERO_CSS = """
 <style>
-.stApp {background:#100d14!important;color:#eee8f0!important;color-scheme:dark;}
-[data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 80% 0%,#421a2a55,transparent 55%),#100d14!important;}
-[data-testid="stHeader"] {background:#100d14dc;backdrop-filter:blur(12px);}
-.block-container {max-width:1420px;padding-top:2.3rem;padding-bottom:4rem;}
-section[data-testid="stSidebar"] {background:#17121c;border-right:1px solid #362934;}
-.stApp h1,.stApp h2,.stApp h3,.stApp h4,.stApp label {color:#eee8f0;}
-.stApp [data-testid="stMarkdownContainer"] p,.stApp [data-testid="stMarkdownContainer"] li {color:#d3c8d6;}
-.stApp [data-testid="stCaptionContainer"] p {color:#a798af!important;}
-.stApp [data-baseweb="select"]>div,.stApp [data-baseweb="input"],.stApp [data-baseweb="base-input"] {background:#251c2a!important;color:#f0e8f2!important;border-color:#4b394d!important;}
-.stApp input {color:#f0e8f2!important;}
-.stApp [data-testid="stExpander"] {border-color:#3c2d40;background:#1b1521;border-radius:12px;}
-.stApp [data-testid="stAlert"] {background:#252331;border:1px solid #49516a;}
-.stApp [data-testid="stFileUploaderDropzone"] {background:#251c2a;border:1px dashed #65465d;}
-.stApp [data-testid="stMetric"] {background:#1b1521;border:1px solid #3c2d40;border-radius:12px;padding:16px;}
-.stApp [data-testid="stMetricValue"] {color:#f3edf0;}
-.stApp button[kind="secondary"],.stApp button[kind="secondaryFormSubmit"] {background:#251b2a;color:#efe5ef;border:1px solid #50364a;border-radius:9px;}
-.stApp button[kind="primary"],.stApp button[kind="primaryFormSubmit"] {background:linear-gradient(120deg,#9d294e,#6e1c3c)!important;border:1px solid #cc5878!important;color:#fff!important;box-shadow:0 5px 22px #97274533;}
-.stApp button[kind="primary"]:hover {filter:brightness(1.12);}
-.stApp button:focus-visible,.stApp a:focus-visible {outline:2px solid #d8b873;outline-offset:3px;}
-.stApp [data-baseweb="tab"] {background:#241a2a!important;color:#d9c2ce!important;border-color:#543348!important;}
-.stApp [data-baseweb="tab"][aria-selected="true"] {background:#362034!important;color:#edd39e!important;border-top-color:#a32950!important;}
-.panel-header-title {color:#e9d5b0;border-left-color:#a32950;font-size:18px;margin:24px 0 14px;}
-.card-panel,.metric-stat-box {background:#1b1521;border:1px solid #3c2d40;box-shadow:none;padding:20px;margin-bottom:20px;}
-.metric-title {color:#bca9c5;font-weight:500;}.metric-val-main {color:#f3edf0;font-size:23px;}
-.stApp div[style*="background:#fff"] {background:#211824!important;border-color:#503446!important;}
-.stApp div[style*="color:#1e293b"],.stApp div[style*="color: #1e293b"] {color:#f3edf0!important;}
-.stApp div[style*="color:#475569"],.stApp div[style*="color:#64748b"] {color:#c6bacc!important;}
-.stApp span[style*="color:#72092c"],.stApp span[style*="color: #72092c"] {color:#edb3c8!important;}
-.stApp div[style*="color:#0284c7"] {color:#78cce1!important;}
-.stApp svg[viewBox="0 0 320 320"] text {fill:#d0b896;}
-.badge-tag {background:#352035;border-color:#674454;color:#e6c5d4;}
-.ladder-table-box {background:#1a1420;border:1px solid #3f2d40;border-radius:14px;margin:12px 0 24px;}
-.ladder-table {text-align:right;font-variant-numeric:tabular-nums;}
-.ladder-table th {background:#261a29;color:#d6bd91;border-bottom:1px solid #4c3547;padding:15px 12px;font-weight:600;white-space:nowrap;}
-.ladder-table td {color:#e3d9e7;border:0;border-bottom:1px solid #302433;padding:14px 12px;}
-.ladder-table tr:hover {box-shadow:inset 3px 0 #d8b873;background:#34212e;}
-.ladder-table td:nth-child(6) {color:#efb8ca!important;}.ladder-table td:nth-child(3) a {color:#79c9e0!important;}.ladder-table td:nth-child(4) a {color:#ef94ac!important;}
-.rank-1 {background:#d8b87312!important;}.rank-2 {background:#c5c8df08!important;}.rank-3 {background:#bb866b0a!important;}
-.war-room * {box-sizing:border-box;}
-.war-room {position:relative;isolation:isolate;border:1px solid #58402e;border-radius:22px;padding:28px 32px 30px;margin:0 0 20px;overflow:hidden;background:linear-gradient(125deg,#25141f 0%,#19131d 55%,#211c24 100%);color:#f3edf0;}
-.war-room:before {content:"";position:absolute;z-index:-1;inset:-60%;background:radial-gradient(ellipse at 65% 45%,#a3295033,transparent 40%);animation:room-glow 16s ease-in-out infinite alternate;pointer-events:none;}
-.war-room:after {content:"";position:absolute;inset:0;z-index:-1;opacity:.15;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='86'%3E%3Cpath d='M25 0H75L100 43 75 86H25L0 43Z' fill='none' stroke='%23d8b873' stroke-width='.7'/%3E%3C/svg%3E");mask-image:linear-gradient(90deg,transparent,#000);pointer-events:none;}
-.war-top {display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px;}
-.war-brand {display:flex;align-items:center;gap:10px;letter-spacing:2.4px;font-size:11px;font-weight:700;color:#cdb587;}
-.war-logo {width:31px;height:35px;display:grid;place-items:center;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#d8b873;color:#21151b;font-size:22px;letter-spacing:0;}
-.war-status {font-size:11px;color:#c5bdc8;padding:7px 11px;border:1px solid #ffffff18;border-radius:30px;background:#100d144d;white-space:nowrap;}
-.war-status:before {content:"";display:inline-block;width:6px;height:6px;background:#86c7ac;border-radius:50%;margin-right:8px;box-shadow:0 0 10px #86c7ac55;}
-.war-body {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.85fr);gap:40px;align-items:center;}
-.war-kicker {font-size:13px;letter-spacing:5px;color:#b39cae;margin-bottom:14px;}
-.war-title {font-size:clamp(30px,4.1vw,58px);line-height:1.2;font-weight:800;letter-spacing:-1px;margin:0 0 14px;}
-.war-title span {color:#e2c38a;}
-.war-description {font-size:13px;line-height:1.9;color:#ae9fae;max-width:450px;}
-.war-statline {display:flex;gap:30px;flex-wrap:wrap;margin-top:27px;}
-.war-statline strong {display:block;font:600 25px/1.2 ui-monospace,SFMono-Regular,monospace;color:#f3edf0;}
-.war-statline small {display:block;color:#a898aa;font-size:11px;margin-top:7px;}
-.champion {position:relative;padding:22px 24px;overflow:hidden;border:1px solid #a4814877;border-radius:16px;background:linear-gradient(140deg,#d8b8730d,#16101c 60%);box-shadow:0 15px 45px #0003;}
-.champion:after {content:"";position:absolute;top:-80%;left:-150%;width:60%;height:260%;background:linear-gradient(90deg,transparent,#ffe6aa0c,transparent);transform:rotate(25deg);animation:champ-shine 11s ease-in-out infinite;pointer-events:none;}
-.champion-eyebrow {display:flex;justify-content:space-between;gap:10px;color:#d7b77b;letter-spacing:2px;font-size:10px;}
-.champion-name {font-size:24px;font-weight:750;margin:17px 0 5px;color:#f4e8d3;overflow-wrap:anywhere;}
-.champion-id {color:#97859a;font-size:11px;overflow-wrap:anywhere;}
-.champion-score {display:flex;align-items:baseline;gap:8px;margin:18px 0 12px;}
-.champion-score strong {font:600 53px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:-3px;color:#edd39e;}
-.champion-score span {color:#b3a2b8;font-size:12px;}
-.champion-meta {font-size:12px;color:#baabbf;line-height:1.7;}
-.champion-form {display:flex;align-items:center;gap:5px;margin-top:15px;padding-top:12px;border-top:1px solid #ffffff10;}
-.champion-form small {color:#a895ae;font-size:10px;margin-right:8px;}
-.form-win,.form-loss {display:inline-grid;place-items:center;width:25px;height:25px;border-radius:5px;font-size:11px;}
-.form-win {background:#75bda51c;color:#9ad9bd;border:1px solid #75bda53d;}.form-loss {background:#c65b7d19;color:#e5a3b7;border:1px solid #c65b7d3d;}
-.war-spotlights {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 20px;}
-.war-spotlight {padding:18px 20px;background:#1b1521;border:1px solid #3d2d3e;border-radius:13px;position:relative;overflow:hidden;}
-.war-spotlight-label {color:#a68eac;font-size:11px;letter-spacing:1px;}
-.war-spotlight-value {font-size:20px;color:#eee2ed;font-weight:650;margin-top:10px;overflow-wrap:anywhere;}
-.war-spotlight-note {font-size:11px;color:#a48eaa;margin-top:6px;}
-.war-spotlight-number {color:#d8b873;font:600 22px ui-monospace,monospace;float:right;margin-left:12px;}
-.war-progress {height:3px;background:#51364a;border-radius:3px;margin-top:6px;overflow:hidden;min-width:54px;}
-.war-progress span {display:block;height:100%;background:#d8b873;border-radius:3px;}
-.war-vs {display:grid;grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr);align-items:center;gap:14px;margin:24px 0;}
-.war-team {padding:24px;border:1px solid #43709166;border-radius:16px;background:linear-gradient(140deg,#18304499,#16121c);}
-.war-team.red {border-color:#a2537566;background:linear-gradient(140deg,#3a1b3099,#16121c);}
-.war-team-label {font-size:11px;letter-spacing:2px;color:#8cbcd5;}.war-team.red .war-team-label{color:#dea1b8;}
-.war-team-score {font:600 40px ui-monospace,monospace;color:#e1edf5;margin:10px 0 4px;}
-.war-team-note {font-size:11px;color:#a092a8;margin-bottom:16px;}
-.war-team-player {display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #ffffff0b;font-size:13px;color:#e4dbe7;}
-.war-team-player span:last-child {color:#a592ae;font:12px ui-monospace,monospace;}
-.war-vs-center {font:italic 700 32px ui-monospace,monospace;color:#d8b873;text-align:center;}
-.vs-reveal {animation:vs-reveal .45s ease-out both;}
-@keyframes vs-reveal {from {opacity:0;transform:translateY(10px);}to {opacity:1;transform:translateY(0);}}
-@keyframes room-glow {from {transform:translate3d(-3%,0,0);}to {transform:translate3d(5%,3%,0);}}
-@keyframes champ-shine {0%,70% {left:-150%;}100% {left:180%;}}
-@media(max-width:800px) {.war-room{padding:22px}.war-body{grid-template-columns:1fr;gap:24px}.war-top{margin-bottom:24px}.war-status{font-size:10px}.champion{max-width:none}.war-title{font-size:38px}.war-statline{gap:24px}.war-room:before,.champion:after,.vs-reveal{animation:none}.war-spotlights{grid-template-columns:1fr}.war-spotlight{padding:14px 18px}.war-spotlight-value{font-size:18px}.block-container{padding-top:1.5rem}.war-vs{grid-template-columns:1fr}.war-vs-center{font-size:24px}}
-@media(prefers-reduced-motion:reduce) {.war-room:before,.champion:after,.vs-reveal{animation:none!important;}*{scroll-behavior:auto!important;transition:none!important;}}
+.war-room {background:linear-gradient(120deg,#fff 0%,#fcf7f7 100%);border:1px solid #e9dce0;border-radius:18px;padding:26px 30px;margin:0 0 24px;color:#334155;}
+.war-top {display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px;}
+.war-brand {display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:2px;font-weight:700;color:#881337;}
+.war-logo {display:grid;place-items:center;width:28px;height:32px;background:#881337;color:#f1dfb6;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);font-size:20px;letter-spacing:0;}
+.war-status {font-size:11px;color:#64748b;border:1px solid #e9dfe2;border-radius:20px;background:#fff;padding:6px 10px;white-space:nowrap;}
+.war-body {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.85fr);gap:36px;align-items:center;}
+.war-kicker {color:#947c86;font-size:12px;letter-spacing:4px;margin-bottom:12px;}
+.war-title {font-size:clamp(30px,4vw,50px);line-height:1.2;font-weight:800;letter-spacing:-1px;margin:0 0 14px;color:#72092c;}
+.war-title span {color:#ac7d36;}.war-description {font-size:13px;color:#7c6c77;line-height:1.9;max-width:450px;}
+.war-statline {display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;}
+.war-statline strong {display:block;color:#334155;font:600 24px/1.2 ui-monospace,SFMono-Regular,monospace;}
+.war-statline small {display:block;font-size:11px;color:#8b7c85;margin-top:6px;}
+.champion {padding:22px 24px;border:1px solid #e2cfaa;border-radius:14px;background:linear-gradient(130deg,#fffdf8,#fff);box-shadow:0 4px 16px #72092c05;}
+.champion-eyebrow {display:flex;justify-content:space-between;gap:10px;color:#a47e3f;font-size:10px;letter-spacing:1.5px;}
+.champion-name {font-size:24px;font-weight:750;color:#72092c;margin:16px 0 5px;overflow-wrap:anywhere;}
+.champion-id {color:#9b8c94;font-size:11px;overflow-wrap:anywhere;}
+.champion-score {display:flex;align-items:baseline;gap:9px;margin:18px 0 10px;}
+.champion-score strong {font:600 48px/1 ui-monospace,SFMono-Regular,monospace;color:#881337;letter-spacing:-2px;}
+.champion-score span,.champion-meta {color:#8b7c85;font-size:12px;line-height:1.8;}
+.champion-form {display:flex;gap:5px;align-items:center;border-top:1px solid #efe8dc;padding-top:12px;margin-top:14px;}
+.champion-form small {font-size:10px;color:#9b8c94;margin-right:7px;}
+.form-win,.form-loss {display:inline-grid;place-items:center;width:24px;height:24px;font-size:11px;border-radius:5px;}
+.form-win {color:#287858;background:#e9f5ee;}.form-loss {color:#a94364;background:#fbeef2;}
+@media(max-width:760px) {.war-room{padding:20px}.war-top{gap:10px;flex-wrap:wrap}.war-body{grid-template-columns:1fr;gap:22px}.war-title{font-size:36px}.war-statline{gap:22px}.champion{padding:20px}}
 </style>
 """
 
 
-def build_war_room_html(standings, history, total, verified, selected_matches, kill_record, assist_record, scope):
+def build_war_room_html(standings, history, total, verified, selected_matches, scope):
     """All showcased values come from the same records as the displayed ranking."""
     e = lambda value: escape(str(value))
     if standings.empty:
         name, full_name, winrate, matches, rating, recent = "等待首位登顶者", "核验战绩后，榜首将在这里亮相", "—", "—", "—", ""
-        active_name, active_matches = "等待选手登场", "—"
     else:
         ranked = standings.sort_values(["胜率_num", "总场次", "KDA_num"], ascending=False)
         full_name = str(ranked.index[0]); row = ranked.iloc[0]
         name, winrate, matches, rating = short_name(full_name), f"{row['胜率_num']:.1f}%", str(int(row['总场次'])), f"{row['MMR']:.1f}"
         recent = "".join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in history[full_name]["outcomes"][-5:])
-        active = standings.sort_values(["总场次", "胜率_num"], ascending=False).iloc[0]
-        active_name, active_matches = short_name(active.name), str(int(active["总场次"]))
-    def spotlight(label, value, number, note):
-        return f'<div class="war-spotlight"><div class="war-spotlight-label">{e(label)}</div><div class="war-spotlight-value"><span class="war-spotlight-number">{e(number)}</span>{e(value)}</div><div class="war-spotlight-note">{e(note)}</div></div>'
-    def record_spotlight(label, record, unit):
-        valid = record.get("val", -1) >= 0
-        return spotlight(label, short_name(record["player"]) if valid else "等待高光时刻", f"{record['val']} {unit}" if valid else "—", f"第 {record['game_idx']} 局 · 当前统计范围" if valid else "录入并核验战绩后展示")
     hero = f'''<div class="war-room">
 <div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div><span class="war-status">已核验 {verified} / {total} 局</span></div>
 <div class="war-body"><div><div class="war-kicker">海 克 斯 内 战</div><div class="war-title">今夜，<br>战力<span>全开。</span></div><div class="war-description">每一场内战，都值得被记住。<br>查看天梯、组织对局，留下属于你们的高光。</div><div class="war-statline"><div><strong>{total}</strong><small>累计收录对局</small></div><div><strong>{len(standings)}</strong><small>当前上榜选手</small></div><div><strong>{selected_matches}</strong><small>当前统计对局</small></div></div></div>
 <div class="champion"><div class="champion-eyebrow"><span>当前天梯领跑者</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
-    cards = '<div class="war-spotlights">' + record_spotlight("单场击杀纪录", kill_record, "杀") + record_spotlight("单场助攻纪录", assist_record, "助攻") + spotlight("当前范围 · 参赛最多", active_name, f"{active_matches} 场" if active_matches != "—" else "—", "按当前榜单范围计算") + '</div>'
-    return hero + cards
-
-
-def navigate_page(page):
-    st.session_state.active_page = page
-
-
-def build_vs_html(blue, red, rating_func, reveal=False):
-    def team_card(players, label, color):
-        mean = sum(rating_func(p) for p in players) / len(players)
-        roster = ''.join(
-            f'<div class="war-team-player"><span title="{escape(p, quote=True)}">{escape(short_name(p))}</span><span>{rating_func(p):.1f}</span></div>' for p in players
-        )
-        return f'<div class="war-team {color}"><div class="war-team-label">{label}</div><div class="war-team-score">{mean:.1f}</div><div class="war-team-note">平均战力 · {len(players)} 位选手</div>{roster}</div>'
-    return '<div class="war-vs'+(' vs-reveal' if reveal else '')+'">'+team_card(blue, 'BLUE SIDE / 蓝色方', 'blue')+'<div class="war-vs-center">VS</div>'+team_card(red, 'RED SIDE / 红色方', 'red')+'</div>'
+    return hero
 
 
 def render_admin_settings(records):
@@ -938,9 +857,7 @@ def render_admin_settings(records):
 
 # ---------------- 侧边栏：控制台 ----------------
 with st.sidebar:
-    visual_mode = st.radio("界面风格", ["海克斯战情室", "明亮经典"], key="visual_mode", horizontal=True)
-    if visual_mode == "海克斯战情室":
-        st.markdown(WAR_ROOM_CSS, unsafe_allow_html=True)
+    st.markdown(HERO_CSS, unsafe_allow_html=True)
     st.markdown("### 🎛️ 系统控制台")
     render_admin_login()
     admin_mode = is_admin()
@@ -991,21 +908,10 @@ with st.sidebar:
 # ---------------- 主界面 1：顶栏电竞控制台 ----------------
 cfg = load_config()
 front_slot = st.empty()
-go1, go2, go3 = st.columns(3)
-with go1:
-    st.button("查看天梯 →", type="primary", use_container_width=True, on_click=navigate_page, args=("📊 胜率天梯与荣誉榜",))
-with go2:
-    st.button("开始分队 →", use_container_width=True, on_click=navigate_page, args=("⚔️ 赛前阵营分队系统",))
-with go3:
-    if admin_mode:
-        st.button(f"核验待办 · {total_games_all - verified_games_all} 局 →", use_container_width=True, on_click=navigate_page, args=("✅ 战绩核验",))
-    else:
-        st.button("选手档案 →", use_container_width=True, on_click=navigate_page, args=("🎯 局内战术图谱与成就馆",))
-with st.expander("语音作战室 · 大厅 / 蓝方 / 红方"):
-    vc1, vc2, vc3 = st.columns(3)
-    with vc1: st.link_button("🎙️ 大厅语音", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
-    with vc2: st.link_button("🔵 蓝方语音", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
-    with vc3: st.link_button("🔴 红方语音", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
+vc1, vc2, vc3 = st.columns(3)
+with vc1: st.link_button("🎙️ 大厅语音作战室", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
+with vc2: st.link_button("🔵 蓝方语音作战室", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
+with vc3: st.link_button("🔴 红方语音作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
 st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
 if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
@@ -1145,18 +1051,11 @@ if not df.empty:
     df["MMR"] = df.apply(calc_mmr, axis=1)
 
 front_standings = df[df["总场次"] >= 10] if ladder_min_players == 7 and not df.empty else df
-if visual_mode == "海克斯战情室":
-    front_slot.markdown(build_war_room_html(
-        front_standings, player_history, total_games_all, verified_games_all,
-        len(stats_records), max_single_kill, max_single_assist,
-        stats_scope + (" · 7人及以上 / 至少10局上榜" if ladder_min_players == 7 else " · 全部人数"),
-    ), unsafe_allow_html=True)
-else:
-    front_slot.markdown(
-        f'<div class="app-header-bar"><div class="header-title">⚔️ 海克斯内战 · 战绩中心</div>'
-        f'<span class="badge-tag">已收录 {total_games_all} 场 · 已核验 {verified_games_all} 场</span></div>',
-        unsafe_allow_html=True,
-    )
+front_slot.markdown(build_war_room_html(
+    front_standings, player_history, total_games_all, verified_games_all,
+    len(stats_records),
+    stats_scope + (" · 7人及以上 / 至少10局上榜" if ladder_min_players == 7 else " · 全部人数"),
+), unsafe_allow_html=True)
 
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
 if active_page == "📊 胜率天梯与荣誉榜":
@@ -1166,7 +1065,10 @@ if active_page == "📊 胜率天梯与荣誉榜":
             df = df[df["总场次"] >= 10].copy()
     st.caption(f"当前核验口径：{stats_scope} · 纳入 {len(stats_records)} 场对局")
     if df.empty:
-        st.info("当前筛选下暂无符合条件的选手。7人榜需要累计至少10局，或切换为全部对局查看。")
+        if ladder_min_players == 7:
+            st.info("💡 暂无选手在当前核验口径下参加至少10场7人及以上对局。可切换为全部对局榜单，或继续录入并核验战绩。")
+        else:
+            st.info("💡 当前核验状态下没有对局。请先录入并核验战绩。")
     else:
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
         df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
@@ -1183,13 +1085,8 @@ if active_page == "📊 胜率天梯与荣誉榜":
             name_link = f"{medal}{escape(short_name(p_id))}"
             wins_link = f"<a href='{wins_url}' target='_blank' rel='noopener noreferrer' style='color:#0284c7;'>{int(row['胜场'])}</a>"
             losses_link = f"<a href='{losses_url}' target='_blank' rel='noopener noreferrer' style='color:#e11d48;'>{int(row['负场'])}</a>"
-            if visual_mode == "海克斯战情室":
-                wr_b = f'<b style="color:#e5c68d">{wr:.1f}%</b><div class="war-progress"><span style="width:{max(0, min(100, wr)):.1f}%"></span></div>'
-            recent_form = ''.join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in player_history[p_id]["outcomes"][-5:])
-            if visual_mode != "海克斯战情室":
-                recent_form = ' '.join('胜' if won else '负' for won in player_history[p_id]["outcomes"][-5:])
-            t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{name_link}</td><td>{int(row['总场次'])}</td><td>{wins_link}</td><td>{losses_link}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td><td style='white-space:nowrap;'>{recent_form}</td></tr>")
-        st.markdown(f'<div class="ladder-table-box"><table class="ladder-table"><thead><tr><th style="text-align:left;padding-left:16px;">选手排位</th><th>总场次</th><th>胜局</th><th>负局</th><th>胜率</th><th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th><th>近5局</th></tr></thead><tbody>{"".join(t_rows)}</tbody></table></div>', unsafe_allow_html=True)
+            t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{name_link}</td><td>{int(row['总场次'])}</td><td>{wins_link}</td><td>{losses_link}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td></tr>")
+        st.markdown(f'<div class="ladder-table-box"><table class="ladder-table"><thead><tr><th style="text-align:left;padding-left:16px;">选手排位</th><th>总场次</th><th>胜局</th><th>负局</th><th>胜率</th><th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th></tr></thead><tbody>{"".join(t_rows)}</tbody></table></div>', unsafe_allow_html=True)
 
         requested_player = st.query_params.get("player", "")
         requested_result = st.query_params.get("result", "")
@@ -1405,17 +1302,13 @@ if active_page == "⚔️ 赛前阵营分队系统":
             tb, tr = st.session_state["assigned_b"], st.session_state["assigned_r"]
             avg_b, avg_r = round(sum(get_mmr(p) for p in tb)/len(tb), 1), round(sum(get_mmr(p) for p in tr)/len(tr), 1)
             b_str, r_str = "、".join([short_name(p) for p in tb]), "、".join([short_name(p) for p in tr])
-            if visual_mode == "海克斯战情室":
-                st.markdown(build_vs_html(tb, tr, get_mmr, reveal=btn_bal or btn_car or btn_rnd), unsafe_allow_html=True)
-                st.caption(f"人均战力差 {abs(avg_b-avg_r):.1f} 分 · 评分来自当前统计口径")
-            else:
-                st.markdown(f"""
-                <div style="background:#fff;border:1.5px solid #fecdd3;border-radius:14px;padding:16px;margin:12px 0;">
-                    <div style="color:#0284c7;font-weight:800;margin-bottom:6px;">🔵 蓝色方 ({len(tb)}人 | 均分 {avg_b}): {b_str}</div>
-                    <div style="color:#72092c;font-weight:800;margin-bottom:6px;">🔴 红色方 ({len(tr)}人 | 均分 {avg_r}): {r_str}</div>
-                    <div style="color:#64748b;font-size:0.85rem;">⚡ 人均分差: {abs(avg_b - avg_r):.1f} 分</div>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="background:#fff;border:1.5px solid #fecdd3;border-radius:14px;padding:16px;margin:12px 0;">
+                <div style="color:#0284c7;font-weight:800;margin-bottom:6px;">🔵 蓝色方 ({len(tb)}人 | 均分 {avg_b}): {b_str}</div>
+                <div style="color:#72092c;font-weight:800;margin-bottom:6px;">🔴 红色方 ({len(tr)}人 | 均分 {avg_r}): {r_str}</div>
+                <div style="color:#64748b;font-size:0.85rem;">⚡ 人均分差: {abs(avg_b - avg_r):.1f} 分</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ================= Tab 3: 局内战术图谱与成就馆 =================
 if active_page == "🎯 局内战术图谱与成就馆":
@@ -1791,3 +1684,4 @@ if active_page == "📥 战绩智能录入":
                 status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
