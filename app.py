@@ -19,6 +19,7 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 
+APP_VERSION = "radar-titles-v2.0 · 2026-10-16"
 DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
@@ -668,62 +669,320 @@ def recognize_upload_job(data, digest, api_key, settings):
 def short_name(full_name):
     return str(full_name).split("#")[0] if full_name else "未知"
 
-# ---------------- 2. 原生 SVG 六边形雷达生成器 ----------------
-def generate_radar_svg(values, categories):
-    size, r = 320, 105
-    cx = cy = size / 2
-    total = len(values)
-    grid_polys = []
-    for lvl in [0.25, 0.5, 0.75, 1.0]:
-        points = []
-        for i in range(total):
-            ang = math.pi / 2 - 2 * math.pi * i / total
-            points.append(
-                f"{cx + r * lvl * math.cos(ang):.1f},"
-                f"{cy - r * lvl * math.sin(ang):.1f}"
+# ---------------- 雷达与称号引擎 v2（不改写战绩） ----------------
+PERFORMANCE_AXES = [
+    ("damage", "输出占比", "damage_share", False),
+    ("taken", "承伤占比", "taken_share", False),
+    ("participation", "参团", "participation", False),
+    ("kills", "击杀", "kills", False),
+    ("assists", "助攻", "assists", False),
+    ("survival", "低阵亡", "deaths", True),
+]
+
+
+def safe_percentage(value):
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        value = float(value)
+    except (ValueError, TypeError, OverflowError):
+        return None
+    return value if math.isfinite(value) and 0 <= value <= 100 else None
+
+
+def performance_rows(records, canonical_name, minimum_players=7):
+    """Keep measured values and trustworthy denominators; never infer damage from KDA."""
+    profiles, audit = {}, {"invalid_games": 0, "invalid_shares": 0, "included_games": 0}
+    for original_index, record in enumerate(records):
+        winner = str(record.get("winning_team", "")).upper()
+        if winner not in {"BLUE", "RED"}:
+            audit["invalid_games"] += 1
+            continue
+        clean, seen, invalid = [], set(), False
+        for player in record.get("players", []):
+            if not isinstance(player, dict):
+                invalid = True
+                break
+            name = canonical_name(player.get("player_name", ""))
+            side = str(player.get("team", "")).upper()
+            if not name or side not in {"BLUE", "RED"} or name in seen:
+                invalid = True
+                break
+            kda = []
+            for key in ("kills", "deaths", "assists"):
+                value = player.get(key)
+                if isinstance(value, bool) or value is None or not re.fullmatch(r"\d+(?:\.0+)?", str(value)):
+                    invalid = True
+                    break
+                kda.append(int(float(value)))
+            if invalid:
+                break
+            seen.add(name)
+            clean.append({**player, "name": name, "team": side,
+                          "kills": kda[0], "deaths": kda[1], "assists": kda[2]})
+        if invalid or not clean or {p["team"] for p in clean} != {"BLUE", "RED"}:
+            audit["invalid_games"] += 1
+            continue
+        if len(clean) < minimum_players:
+            continue
+        teams = {side: [p for p in clean if p["team"] == side] for side in ("BLUE", "RED")}
+        # Ten rows alone aren't enough if a record explicitly says its roster is incomplete.
+        inferred_full = len(clean) == 10 and all(len(t) == 5 for t in teams.values())
+        complete = record.get("roster_complete", inferred_full) is True
+        team_kills = {side: sum(p["kills"] for p in team) for side, team in teams.items()}
+        shares = {}
+        for side, team in teams.items():
+            for field in ("damage_share", "taken_share"):
+                values = [safe_percentage(p.get(field)) for p in team]
+                bad = sum(v for v in values if v is not None) > 103
+                if complete and all(v is not None for v in values):
+                    bad = bad or abs(sum(values) - 100) > 3
+                for player, value in zip(team, values):
+                    if bad or (player.get(field) is not None and value is None):
+                        audit["invalid_shares"] += 1
+                    shares[(player["name"], field)] = None if bad else value
+        audit["included_games"] += 1
+        for player in clean:
+            side, name = player["team"], player["name"]
+            involvement = player["kills"] + player["assists"]
+            participation = involvement / team_kills[side] if complete and team_kills[side] > 0 else None
+            if participation is not None and not 0 <= participation <= 1:
+                participation = None
+            row = dict(
+                index=original_index, won=side == winner,
+                kills=player["kills"], deaths=player["deaths"], assists=player["assists"],
+                damage_share=shares[(name, "damage_share")], taken_share=shares[(name, "taken_share")],
+                participation=participation, complete=complete, team_size=len(teams[side]),
             )
-        points_str = " ".join(points)
-        grid_polys.append(
-            f'<polygon points="{points_str}" fill="none" '
-            'stroke="#fbcfe8" stroke-width="1.2" stroke-dasharray="3,3"/>'
-        )
+            profiles.setdefault(name, []).append(row)
+    return profiles, audit
 
-    axis_lines, labels, data_pts, circles = [], [], [], []
-    for i in range(total):
-        ang = math.pi / 2 - 2 * math.pi * i / total
-        axis_lines.append(
-            f'<line x1="{cx}" y1="{cy}" '
-            f'x2="{cx + r * math.cos(ang):.1f}" '
-            f'y2="{cy - r * math.sin(ang):.1f}" '
-            'stroke="#fbcfe8" stroke-width="1.2"/>'
-        )
-        labels.append(
-            f'<text x="{cx + (r + 26) * math.cos(ang):.1f}" '
-            f'y="{cy - (r + 14) * math.sin(ang):.1f}" '
-            'font-size="11" font-weight="800" fill="#72092c" '
-            f'text-anchor="middle" dominant-baseline="central">{categories[i]}</text>'
-        )
-        scale = min(max(values[i], 12.0), 100.0) / 100.0
-        x = cx + r * scale * math.cos(ang)
-        y = cy - r * scale * math.sin(ang)
-        data_pts.append(f"{x:.1f},{y:.1f}")
-        circles.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="#881337"/>')
 
-    grid_svg = "".join(grid_polys)
-    axes_svg = "".join(axis_lines)
-    points_svg = " ".join(data_pts)
-    circles_svg = "".join(circles)
-    labels_svg = "".join(labels)
-    return f"""
-    <div style="display:flex;justify-content:center;padding:6px 0;">
-        <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
-            {grid_svg}{axes_svg}
-            <polygon points="{points_svg}" fill="rgba(114, 9, 44, 0.25)" stroke="#72092c" stroke-width="2.6"/>
-            {circles_svg}{labels_svg}
-        </svg>
-    </div>
-    """
+def summarize_performance(rows):
+    values = {}
+    counts = {}
+    for _, _, field, _ in PERFORMANCE_AXES:
+        valid = [row[field] for row in rows if row.get(field) is not None]
+        counts[field] = len(valid)
+        values[field] = sum(valid) / len(valid) if valid else None
+    return {"games": len(rows), "wins": sum(row["won"] for row in rows), "means": values, "counts": counts}
 
+
+def performance_ratings(profiles, minimum_games=5, minimum_peers=5, prior_games=5):
+    summaries = {name: summarize_performance(rows) for name, rows in profiles.items()}
+    rated = {}
+    for name, summary in summaries.items():
+        rated[name] = []
+        for axis, label, field, inverse in PERFORMANCE_AXES:
+            count, raw = summary["counts"][field], summary["means"][field]
+            peers = [item["means"][field] for item in summaries.values()
+                     if item["games"] >= minimum_games and item["counts"][field] >= 3]
+            score, percentile, reason = None, None, ""
+            if summary["games"] < minimum_games:
+                reason = f"至少需要{minimum_games}场有效对局"
+            elif raw is None or count < 3:
+                reason = "该维度至少需要3场有效实测数据"
+            elif len(peers) < minimum_peers:
+                reason = f"该维度至少需要{minimum_peers}位合格对照选手"
+            else:
+                less = sum(value < raw - 1e-9 for value in peers)
+                equal = sum(abs(value - raw) <= 1e-9 for value in peers)
+                percentile = 100 * (less + (equal - 1) / 2) / (len(peers) - 1)
+                if inverse:
+                    percentile = 100 - percentile
+                # Sample-size adjustment: n=5 keeps half the distance from the neutral 50.
+                confidence = count / (count + prior_games)
+                score = round(50 + (percentile - 50) * confidence, 1)
+            rated[name].append(dict(axis=axis, label=label, field=field, score=score,
+                                    percentile=percentile, raw=raw, count=count,
+                                    peers=len(peers), reason=reason))
+    return summaries, rated
+
+
+def title_facts(rows, ratings):
+    games = len(rows)
+    means = summarize_performance(rows)["means"]
+    current_streak, max_streak = 0, 0
+    for row in rows:
+        current_streak = current_streak + 1 if row["won"] else 0
+        max_streak = max(max_streak, current_streak)
+    damage = [row["damage_share"] for row in rows if row["damage_share"] is not None]
+    taken = [row["taken_share"] for row in rows if row["taken_share"] is not None]
+    participation = [row["participation"] for row in rows if row["participation"] is not None]
+    # Single-game share achievements use complete five-player sides, avoiding a 3v3 advantage.
+    five_player_damage = [row["damage_share"] for row in rows if row["complete"] and row["team_size"] == 5 and row["damage_share"] is not None]
+    five_player_taken = [row["taken_share"] for row in rows if row["complete"] and row["team_size"] == 5 and row["taken_share"] is not None]
+    facts = dict(
+        games=games, wins=sum(row["won"] for row in rows), streak=max_streak,
+        max_kill=max((row["kills"] for row in rows), default=0),
+        max_assist=max((row["assists"] for row in rows), default=0),
+        assists=sum(row["assists"] for row in rows),
+        max_damage=max(five_player_damage, default=0), max_taken=max(five_player_taken, default=0),
+        kda=(sum(row["kills"] + row["assists"] for row in rows) / max(1, sum(row["deaths"] for row in rows))),
+        zero_death_wins=sum(row["won"] and row["deaths"] == 0 and row["kills"] + row["assists"] >= 5 for row in rows),
+        teamplay_games=sum(row["participation"] is not None and row["participation"] >= .7 for row in rows),
+        last_stand=sum(not row["won"] and row["damage_share"] is not None and row["damage_share"] >= 35
+                       and row["complete"] and row["team_size"] == 5 for row in rows),
+        ten_death_games=sum(row["deaths"] >= 10 for row in rows),
+        winrate=100 * sum(row["won"] for row in rows) / games if games else 0,
+        damage_count=len(damage), taken_count=len(taken), participation_count=len(participation),
+        avg_participation=means["participation"],
+    )
+    for rating in ratings:
+        facts["score_" + rating["axis"]] = rating["score"]
+    return facts
+
+
+def title_catalog(facts):
+    catalog = []
+    def add(family, category, names, thresholds, metric, rule, minimum_games=0, gate=True, gate_text=""):
+        value = facts.get(metric)
+        for tier, (name, threshold) in enumerate(zip(names, thresholds), 1):
+            unlocked = gate and facts["games"] >= minimum_games and value is not None and value >= threshold
+            current = "暂无有效数据" if value is None else f"{value:.1f}" if isinstance(value, float) else str(value)
+            progress = f"{current} / {threshold:g}" + (f"；至少{minimum_games}局" if minimum_games else "")
+            if gate_text:
+                progress += "；" + gate_text
+            catalog.append(dict(id=f"{family}_{tier}", family=family, category=category, name=name,
+                                tier=tier, unlocked=bool(unlocked), rule=rule.format(threshold=threshold), progress=progress))
+
+    add("journey", "成长", ["初临峡谷", "固定班底", "内战中坚", "峡谷老友", "百战同袍"], [1,10,30,60,100], "games", "当前统计范围累计参赛至少{threshold:g}局")
+    add("victories", "成长", ["初战告捷", "破阵先锋", "凯旋常客", "胜局收藏家", "百胜旌旗"], [1,10,30,60,100], "wins", "当前统计范围累计获胜至少{threshold:g}局")
+    add("streak", "高光", ["连捷三章", "五连凯歌", "长胜八音"], [3,5,8], "streak", "当前口径下最长连胜达到{threshold:g}局")
+    add("kills", "高光", ["锋芒初现", "破阵利刃", "万军取首"], [10,15,20], "max_kill", "单场击杀达到{threshold:g}")
+    add("assists", "高光", ["并肩作战", "全图策应", "万象援手"], [15,20,30], "max_assist", "单场助攻达到{threshold:g}")
+    add("damage", "高光", ["火力焦点", "星火燎原", "烈焰主宰"], [30,38,45], "max_damage", "完整名单且本方5人的对局中，单场实测输出占比达到{threshold:g}%")
+    add("taken", "高光", ["前排支柱", "不动壁垒", "山岳之躯"], [30,38,45], "max_taken", "完整名单且本方5人的对局中，单场实测承伤占比达到{threshold:g}%")
+    add("flawless", "高光", ["无伤凯旋", "从容制胜", "完璧战将"], [1,3,8], "zero_death_wins", "累计{threshold:g}场胜局零阵亡，且每场击杀加助攻至少5")
+    add("teamplay", "风格", ["团战纽带", "战场枢纽", "并肩统御"], [3,10,25], "teamplay_games", "完整名单、有效参团率至少70%的对局累计达到{threshold:g}场")
+    add("support", "成长", ["援手常在", "千里策应", "千援同袍"], [100,500,1000], "assists", "累计助攻达到{threshold:g}")
+    add("laststand", "风格", ["逆风执炬", "孤城守望", "长夜未熄"], [1,3,8], "last_stand", "完整名单且本方5人的败局中，实测输出占比至少35%的场次达到{threshold:g}")
+    add("efficiency", "风格", ["节奏掌控者", "攻守有度", "海克斯引擎"], [3,4,5], "kda", "累计KDA达到{threshold:g}，且至少10局（总阵亡为0时分母按1计算）", minimum_games=10)
+    add("hunter", "风格", ["锋线猎手", "破锋之刃"], [70,80], "score_kills", "至少10局，击杀维度经样本修正后达到{threshold:g}分", minimum_games=10)
+    add("connector", "风格", ["战场织网者", "纵横策应"], [70,80], "score_assists", "至少10局，助攻维度经样本修正后达到{threshold:g}分", minimum_games=10)
+    active = facts["avg_participation"] is not None and facts["avg_participation"] >= .55 and facts["participation_count"] >= 5
+    add("steady", "风格", ["行稳致远", "不陨之星"], [70,80], "score_survival", "至少10局，低阵亡维度达到{threshold:g}分，且至少5场有效参团数据、平均参团率至少55%", minimum_games=10, gate=active, gate_text="需参团样本≥5且平均参团率≥55%")
+    add("fun_deaths", "趣味", ["复活点熟客", "读秒收藏家", "泉水考勤官"], [1,3,10], "ten_death_games", "单场阵亡至少10次的场次达到{threshold:g}；仅为可选趣味标签")
+    return catalog
+
+
+def generate_performance_radar(ratings):
+    cx = cy = 190
+    radius = 116
+    points, drawing = [], []
+    for fraction in (.25,.5,.75,1):
+        ring = ' '.join(f'{cx+radius*fraction*math.cos(math.pi/2-2*math.pi*i/6):.1f},{cy-radius*fraction*math.sin(math.pi/2-2*math.pi*i/6):.1f}' for i in range(6))
+        drawing.append(f'<polygon points="{ring}" fill="none" stroke="#eadfe4" stroke-width="1"/>')
+    for i, rating in enumerate(ratings):
+        angle = math.pi/2 - 2*math.pi*i/6
+        x, y = cx+radius*math.cos(angle), cy-radius*math.sin(angle)
+        drawing.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#eadfe4"/>')
+        label = escape(rating["label"])
+        note = f'{rating["score"]:.0f}' if rating["score"] is not None else '暂无'
+        color = '#881337' if rating['score'] is not None else '#9a8b94'
+        lx, ly = cx+(radius+37)*math.cos(angle), cy-(radius+27)*math.sin(angle)
+        drawing.append(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" fill="{color}" font-size="13" font-weight="600">{label}<tspan x="{lx:.1f}" dy="17" font-size="11">{note}</tspan></text>')
+        if rating['score'] is None:
+            points.append(None)
+        else:
+            scale=rating['score']/100
+            points.append((cx+radius*scale*math.cos(angle),cy-radius*scale*math.sin(angle)))
+    if all(point is not None for point in points):
+        coords=' '.join(f'{x:.1f},{y:.1f}' for x,y in points)
+        drawing.append(f'<polygon points="{coords}" fill="#88133718" stroke="#881337" stroke-width="2"/>')
+    else:
+        for i, point in enumerate(points):
+            following=points[(i+1)%6]
+            if point is not None and following is not None:
+                drawing.append(f'<line x1="{point[0]:.1f}" y1="{point[1]:.1f}" x2="{following[0]:.1f}" y2="{following[1]:.1f}" stroke="#881337" stroke-width="2"/>')
+    for point in points:
+        if point is not None:
+            drawing.append(f'<circle cx="{point[0]:.1f}" cy="{point[1]:.1f}" r="4" fill="#881337"/>')
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 390" role="img" aria-label="六维表现雷达，暂无表示数据不足，不按零分处理" style="display:block;width:100%;max-width:460px;margin:auto">'+''.join(drawing)+'</svg>'
+
+
+def render_performance_page(records, canonical_name, stats_scope):
+    st.markdown('<div class="panel-header-title">🎯 雷达与称号 V2 · 实测分位版</div>', unsafe_allow_html=True)
+    population = st.radio("档案对局人数", ["7人及以上对局", "全部人数"], horizontal=True, key="performance_population")
+    selected_records = [r for r in records if stats_scope != "仅已核验对局" or is_record_verified(r)]
+    profiles, audit = performance_rows(selected_records, canonical_name, 7 if population == "7人及以上对局" else 2)
+    st.caption(APP_VERSION)
+    st.caption(f"{stats_scope} · {population} · {audit['included_games']}场有效对局。称号和雷达均按这个范围计算。")
+    if stats_scope != "仅已核验对局":
+        st.warning("当前包含待核验战绩，雷达与称号仅供暂览。正式解锁依据建议使用仅已核验对局。")
+    if audit["invalid_games"] or audit["invalid_shares"]:
+        st.warning(f"数据检查：排除{audit['invalid_games']}局格式或玩家身份异常记录；忽略{audit['invalid_shares']}项不合法或队伍合计异常的占比。原战绩未修改。")
+    if not profiles:
+        st.info("当前范围没有有效对局。可切换全部人数，或先录入并核验战绩。")
+        return
+    summaries, ratings = performance_ratings(profiles)
+    options = sorted(profiles, key=lambda name:(-len(profiles[name]), name))
+    target = st.selectbox("选择要分析的选手档案：", options, key="performance_target")
+    rows, summary, axes = profiles[target], summaries[target], ratings[target]
+    facts = title_facts(rows, axes)
+    catalog = title_catalog(facts)
+    fun_enabled = st.checkbox("显示趣味称号（包含阵亡类调侃）", value=False, key="performance_fun")
+    shown_catalog = [title for title in catalog if fun_enabled or title["category"] != "趣味"]
+    unlocked = [title for title in shown_catalog if title["unlocked"]]
+    wear_options = ["不佩戴"] + [title["name"] for title in unlocked]
+    wear_key = "performance_wear_"+hashlib.sha256((target+population+stats_scope).encode()).hexdigest()[:12]
+    if st.session_state.get(wear_key) not in wear_options:
+        st.session_state.pop(wear_key, None)
+    worn = st.selectbox("佩戴称号（仅当前会话）", wear_options,
+                        index=len(wear_options)-1 if len(wear_options)>1 else 0, key=wear_key)
+    metrics = st.columns(4)
+    metrics[0].metric("有效对局", summary["games"])
+    metrics[1].metric("胜率", f"{100*summary['wins']/summary['games']:.1f}%")
+    metrics[2].metric("称号解锁", f"{len(unlocked)} / {len(shown_catalog)}")
+    metrics[3].metric("有效雷达维度", f"{sum(item['score'] is not None for item in axes)} / 6")
+    left, right = st.columns([1.1,1])
+    with left:
+        st.markdown(generate_performance_radar(axes), unsafe_allow_html=True)
+        st.caption("50分为同口径样本的中间参考值。缺失维度显示‘暂无’，不会补零或伪造闭合图形。")
+    with right:
+        st.markdown(f'### {escape(short_name(target))}')
+        if worn != "不佩戴":
+            st.markdown(f'<span class="badge-tag">✦ {escape(worn)}</span>',unsafe_allow_html=True)
+        st.caption(target)
+        evidence=[]
+        for item in axes:
+            raw=item["raw"]
+            actual='暂无' if raw is None else f'{raw*100:.1f}%' if item["field"]=='participation' else f'{raw:.1f}%' if item["field"] in {'damage_share','taken_share'} else f'{raw:.1f} / 局'
+            evidence.append({"维度":item["label"],"实测均值":actual,"有效场次":item["count"],
+                             "修正得分":"暂无" if item["score"] is None else f'{item["score"]:.1f}',
+                             "说明":item["reason"] or f'{item["peers"]}位同口径对照选手'})
+        st.dataframe(pd.DataFrame(evidence),hide_index=True,use_container_width=True)
+        if summary["games"] < 5:
+            st.info("当前少于5场，只展示原始统计与已达到的客观成就，暂不生成相对雷达分数。")
+    with st.expander("雷达计算规则与数据边界"):
+        st.markdown("""- 每位选手至少5场；每个维度至少3场有效数据，并至少有5位合格对照选手。
+- 按当前范围内的玩家实测均值计算分位；并列取中间分位，完全相同时均为50。低阵亡维度方向取反。
+- 得分 = 50 +（原始分位 − 50）× n /（n + 5），n为该维度有效场次，减少小样本极端值。
+- 输出与承伤只使用截图实测占比，不从击杀或死亡推算。缺失、越界和队伍合计异常的占比不计入。
+- 参团率 =（击杀 + 助攻）/ 本方总击杀。仅使用完整10人5对5名单，或管理员明确确认名单完整的记录；分母为0或结果超出0–100%时不计入。
+- 没有时长、位置、英雄及胜负过程数据，跨人数占比也不能完全等价。雷达描述当前样本中的打法特征，不是官方能力分，也不用于改动原有MMR。
+- 称号按当前统计范围即时生成，不写回历史战绩。连胜指筛选范围内的对局顺序，切换范围后称号可能改变。""")
+    st.markdown('<div class="panel-header-title">🏅 称号收藏与解锁路线</div>',unsafe_allow_html=True)
+    category=st.radio("称号类别",["全部","成长","高光","风格"]+(["趣味"] if fun_enabled else []),horizontal=True,key="performance_title_category")
+    latest_by_family={}
+    for title in shown_catalog:
+        if title["unlocked"]:
+            latest_by_family[title["family"]]=title
+    visible=[title for title in latest_by_family.values() if category=="全部" or title["category"]==category]
+    if visible:
+        for i,title in enumerate(visible):
+            if i%3==0:
+                columns=st.columns(3)
+            with columns[i%3]:
+                st.markdown(f'<div class="metric-stat-box"><div class="metric-title">{escape(title["category"])} · 第{title["tier"]}阶</div><div class="metric-val-main" style="font-size:20px">{escape(title["name"])}</div><div class="metric-badge badge-burgundy">已解锁</div></div>',unsafe_allow_html=True)
+                st.caption(title["rule"])
+    else:
+        st.info("这个类别暂未解锁称号，下面可以查看具体条件和进度。")
+    with st.expander("查看全部称号、条件与当前进度"):
+        st.dataframe(pd.DataFrame([{
+            "称号":t["name"],"类别":t["category"],"阶数":t["tier"],
+            "状态":"已解锁" if t["unlocked"] else "待解锁","解锁条件":t["rule"],"当前进度":t["progress"],
+        } for t in shown_catalog if category=="全部" or t["category"]==category]),hide_index=True,use_container_width=True)
 
 # ---------------- 明亮酒红首屏：保留大标题与领跑者 ----------------
 HERO_CSS = """
@@ -859,6 +1118,7 @@ def render_admin_settings(records):
 with st.sidebar:
     st.markdown(HERO_CSS, unsafe_allow_html=True)
     st.markdown("### 🎛️ 系统控制台")
+    st.caption("当前版本：" + APP_VERSION)
     render_admin_login()
     admin_mode = is_admin()
     key = ""
@@ -921,8 +1181,10 @@ if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
     )
 
 # ---------------- 主界面 2：Tabs 视图 ----------------
+if st.session_state.get("active_page") == "🎯 局内战术图谱与成就馆":
+    st.session_state.active_page = "🎯 雷达与称号 V2"
 active_page = st.radio("功能页面", [
-    "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 局内战术图谱与成就馆",
+    "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 雷达与称号 V2",
     "✅ 战绩核验", "📥 战绩智能录入"
 ], horizontal=True, key="active_page")
 
@@ -958,8 +1220,7 @@ def get_final_name(pname):
     return TARGET_QIANQIU if (strict_name == TARGET_QIANQIU or "千秋" in fname) else fname
 
 stats = defaultdict(lambda: {"总场次": 0, "胜场": 0, "负场": 0, "击杀": 0, "死亡": 0, "助攻": 0})
-radar_stats_pool = defaultdict(lambda: {"games_6p": 0, "kills": 0, "deaths": 0, "assists": 0, "damage_shares": [], "taken_shares": [], "kp_shares": []})
-player_history = defaultdict(lambda: {"outcomes": [], "max_kill": 0, "max_death": 0, "max_assist": 0, "max_dmg_share": 0.0, "max_taken_share": 0.0, "min_death_win": 999, "svp_cnt": 0})
+player_history = defaultdict(lambda: {"outcomes": []})
 synergy_stats = defaultdict(lambda: {"同队场次": 0, "胜场": 0, "负场": 0})
 nemesis_stats = defaultdict(lambda: {"交手场次": 0, "p1_wins": 0, "p2_wins": 0})
 
@@ -971,7 +1232,6 @@ for game_idx, r in enumerate(records):
     if not match_in_stats(r):
         continue
     players = r.get("players", [])
-    valid_6p = len(players) >= 6
     blue_k = sum(int(p.get("kills", 0)) for p in players if str(p.get("team", "")).upper() == "BLUE")
     red_k = sum(int(p.get("kills", 0)) for p in players if str(p.get("team", "")).upper() == "RED")
     blue_team, red_team = [], []
@@ -988,31 +1248,6 @@ for game_idx, r in enumerate(records):
         stats[fname]["胜场" if is_win else "负场"] += 1
         stats[fname]["击杀"] += k; stats[fname]["死亡"] += d; stats[fname]["助攻"] += a
         player_history[fname]["outcomes"].append(is_win)
-
-        dmg_s, taken_s = p.get("damage_share"), p.get("taken_share")
-        if valid_6p:
-            if k > player_history[fname]["max_kill"]: player_history[fname]["max_kill"] = k
-            if d > player_history[fname]["max_death"]: player_history[fname]["max_death"] = d
-            if a > player_history[fname]["max_assist"]: player_history[fname]["max_assist"] = a
-            if is_win and d < player_history[fname]["min_death_win"]: player_history[fname]["min_death_win"] = d
-            ds_val = float(dmg_s) if dmg_s is not None else 0.0
-            if (not is_win) and (ds_val >= 35.0 or k >= 11): player_history[fname]["svp_cnt"] += 1
-            if ds_val > player_history[fname]["max_dmg_share"]: player_history[fname]["max_dmg_share"] = ds_val
-            if taken_s is not None:
-                try:
-                    if float(taken_s) > player_history[fname]["max_taken_share"]: player_history[fname]["max_taken_share"] = float(taken_s)
-                except Exception: pass
-            
-            radar_stats_pool[fname]["games_6p"] += 1
-            radar_stats_pool[fname]["kills"] += k; radar_stats_pool[fname]["deaths"] += d; radar_stats_pool[fname]["assists"] += a
-            if dmg_s is not None:
-                try: radar_stats_pool[fname]["damage_shares"].append(float(dmg_s))
-                except Exception: pass
-            if taken_s is not None:
-                try: radar_stats_pool[fname]["taken_shares"].append(float(taken_s))
-                except Exception: pass
-            tk = blue_k if side == "BLUE" else red_k
-            if tk > 0: radar_stats_pool[fname]["kp_shares"].append((k + a) / tk)
 
         if k > max_single_kill["val"]: max_single_kill = {"player": fname, "val": k, "game_idx": game_idx + 1}
         if d > max_single_death["val"]: max_single_death = {"player": fname, "val": d, "game_idx": game_idx + 1}
@@ -1186,7 +1421,7 @@ if active_page == "📊 胜率天梯与荣誉榜":
                 name3_str = short_name(n3)
             else:
                 name3_str, badge_d_str = "虚位以待", "需满 10 局"
-            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计白给王</div><div class="metric-val-main">{name3_str}</div><div class="metric-badge badge-pink">{badge_d_str}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-stat-box"><div class="metric-title">阵亡累计纪录</div><div class="metric-val-main">{name3_str}</div><div class="metric-badge badge-pink">{badge_d_str}</div></div>', unsafe_allow_html=True)
         with m4:
             if h10:
                 n4 = cand10.sort_values(by="助攻", ascending=False).index[0]
@@ -1310,66 +1545,9 @@ if active_page == "⚔️ 赛前阵营分队系统":
             </div>
             """, unsafe_allow_html=True)
 
-# ================= Tab 3: 局内战术图谱与成就馆 =================
-if active_page == "🎯 局内战术图谱与成就馆":
-    active_p = sorted(list(df.index), key=lambda x: df.loc[x, "总场次"], reverse=True) if not df.empty else []
-    if not active_p:
-        st.info("💡 暂无选手数据。")
-    else:
-        target_p = st.selectbox("选择要分析的选手档案：", active_p, format_func=lambda x: short_name(x))
-        p_r = radar_stats_pool[target_p]
-        vg = p_r["games_6p"]
-        if vg > 0:
-            pk, pd_cnt, pa = p_r["kills"]/vg, p_r["deaths"]/vg, p_r["assists"]/vg
-            ds = sum(p_r["damage_shares"])/len(p_r["damage_shares"]) if p_r["damage_shares"] else pk * 2.3
-            ts = sum(p_r["taken_shares"])/len(p_r["taken_shares"]) if p_r["taken_shares"] else pd_cnt * 2.4
-            kp = sum(p_r["kp_shares"])/len(p_r["kp_shares"]) if p_r["kp_shares"] else 0.5
-        else:
-            pk, pd_cnt, pa = df.loc[target_p, "击杀"]/df.loc[target_p, "总场次"], df.loc[target_p, "死亡"]/df.loc[target_p, "总场次"], df.loc[target_p, "助攻"]/df.loc[target_p, "总场次"]
-            ds, ts, kp = pk * 2.3, pd_cnt * 2.4, 0.5
-
-        scores = [
-            round(max(18.0, min(96.0, 25.0 + (ds/20.0)*35.0 if ds<=20 else 60.0 + min(1.0, (ds-20)/14)*35.0)), 1),
-            round(max(18.0, min(96.0, 25.0 + (ts/20.0)*35.0 if ts<=20 else 60.0 + min(1.0, (ts-20)/14)*35.0)), 1),
-            round(max(18.0, min(96.0, 25.0 + (kp/0.55)*35.0 if kp<=0.55 else 60.0 + min(1.0, (kp-0.55)/0.22)*35.0)), 1),
-            round(max(20.0, min(95.0, 25.0 + min(1.0, pk/10.0)*45.0 + (pk/max(1.0, pk+pa))*25.0)), 1),
-            round(max(20.0, min(95.0, 25.0 + min(1.0, pa/12.0)*45.0 + (pa/max(1.0, pk+pa))*25.0)), 1),
-            round(max(20.0, min(95.0, 60.0 + ((6.0 - pd_cnt)/4.0)*32.0 if pd_cnt<=6 else 60.0 - ((pd_cnt - 6.0)/5.0)*32.0)), 1)
-        ]
-        col_rad, col_info = st.columns([1.2, 1])
-        with col_rad: st.markdown(generate_radar_svg(scores, ['伤害', '承伤', '参团', '击杀', '助攻', '保命']), unsafe_allow_html=True)
-        with col_info:
-            st.markdown(f"""
-            <div class="card-panel">
-                <div class="panel-header-title">选手战术定位</div>
-                <div style="font-size:1.45rem;font-weight:900;color:#1e293b;margin-bottom:8px;">{short_name(target_p)}</div>
-                <div style="font-size:0.90rem;color:#475569;line-height:2.0;">
-                    <div>• <b>场均伤害占比</b>: <span style="color:#72092c;font-weight:800;">{ds:.1f}%</span></div>
-                    <div>• <b>场均承伤占比</b>: <span style="color:#0284c7;font-weight:800;">{ts:.1f}%</span></div>
-                    <div>• <b>团战参团率</b>: <span style="color:#ca8a04;font-weight:800;">{kp*100:.1f}%</span></div>
-                    <div>• <b>场均KDA</b>: {pk:.1f} / {pd_cnt:.1f} / {pa:.1f}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        ph = player_history[target_p]
-        badges = []
-        if ph["max_dmg_share"] >= 38.0: badges.append("💥 血条消失术 (单场输出≥38%)")
-        if ph["max_taken_share"] >= 38.0: badges.append("🛡️ 叹息之壁 (单场承伤≥38%)")
-        if ph["max_kill"] >= 16: badges.append("🩸 绝命赏金客 (单场击杀≥16)")
-        if ph["max_death"] >= 10: badges.append("🎰 慈善赌圣 (单场阵亡≥10)")
-        if ph["min_death_win"] <= 1: badges.append("🏕️ 泉水指挥官 (胜局阵亡≤1)")
-        if ph["max_assist"] >= 18: badges.append("🚑 全图救护车 (单场助攻≥18)")
-        if ph["svp_cnt"] >= 2: badges.append("🪓 悲情孤勇者 (败局C位多次尽力)")
-        if not badges: badges.append("🌱 未来可期 (新晋选手积蓄战力)")
-
-        badge_spans = " ".join([f'<span class="badge-tag">{b}</span>' for b in badges])
-        st.markdown(f"""
-        <div class="card-panel">
-            <div class="panel-header-title">🏅 个人成就勋章</div>
-            <div>{badge_spans}</div>
-        </div>
-        """, unsafe_allow_html=True)
+# ================= Tab 3: 雷达与称号 V2 =================
+if active_page == "🎯 雷达与称号 V2":
+    render_performance_page(records, get_final_name, stats_scope)
 
 # ================= Tab 4: 历史战绩胜负核验 =================
 if active_page == "✅ 战绩核验":
@@ -1516,8 +1694,15 @@ if active_page == "✅ 战绩核验":
                     format_func=lambda side: group_labels[side],
                     key=f"review_winner_{draft_key}", disabled=not admin_mode,
                 )
+                roster_inferred_complete = len(corrected_players) == 10 and group_counts["BLUE"] == 5 and group_counts["RED"] == 5
+                roster_complete = st.checkbox(
+                    "确认已录全双方出战名单（用于参团率计算）",
+                    value=saved_draft.get("roster_complete", verify_record.get("roster_complete", roster_inferred_complete)) is True,
+                    key=f"review_roster_complete_{draft_key}", disabled=not admin_mode,
+                    help="只有全部出战玩家都已录入并核对组别时才勾选。局部截图或漏识别时请勿勾选。",
+                )
                 if admin_mode:
-                    drafts[draft_key] = {"players": corrected_players, "winner": corrected_winner}
+                    drafts[draft_key] = {"players": corrected_players, "winner": corrected_winner, "roster_complete": roster_complete}
                 st.markdown("#### ③ 保存前确认变化")
                 changes = verification_changes(verify_record, corrected_players, corrected_winner)
                 if changes:
@@ -1527,7 +1712,7 @@ if active_page == "✅ 战绩核验":
                 else:
                     st.info("组别和胜方未改变；保存后将确认这局的核验状态。")
                 confirmation_revision = hashlib.sha256(json.dumps(
-                    [corrected_players, corrected_winner], ensure_ascii=False, sort_keys=True
+                    [corrected_players, corrected_winner, roster_complete], ensure_ascii=False, sort_keys=True
                 ).encode()).hexdigest()[:12]
                 result_checked = st.checkbox(
                     "我已逐个核对玩家组别，并确认截图中的‘胜利 / 失败’结果",
@@ -1557,7 +1742,7 @@ if active_page == "✅ 战绩核验":
                         if verify_idx >= len(latest_records) or latest_records[verify_idx] != verify_record:
                             raise ValueError("历史记录已发生变化，请刷新页面后重试。")
                         latest_records[verify_idx] = correct_record_winner(
-                            latest_records[verify_idx], corrected_winner, verified=True,
+                            {**latest_records[verify_idx], "roster_complete": roster_complete}, corrected_winner, verified=True,
                             players=corrected_players,
                         )
                         synced = save_records(latest_records)
@@ -1684,4 +1869,5 @@ if active_page == "📥 战绩智能录入":
                 status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
 
