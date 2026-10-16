@@ -968,10 +968,9 @@ if active_page == "📊 胜率天梯与荣誉榜":
             medal = "🥇 " if r_idx == 0 else ("🥈 " if r_idx == 1 else ("🥉 " if r_idx == 2 else f"{r_idx+1} "))
             r_cls = "rank-1" if r_idx == 0 else ("rank-2" if r_idx == 1 else ("rank-3" if r_idx == 2 else ""))
             link_scope = "all" if stats_scope == "全部对局（含待核验）" else "verified"
-            profile_url = escape("?" + urlencode({"player": p_id, "stats": link_scope}), quote=True)
             wins_url = escape("?" + urlencode({"player": p_id, "result": "wins", "stats": link_scope}), quote=True)
             losses_url = escape("?" + urlencode({"player": p_id, "result": "losses", "stats": link_scope}), quote=True)
-            name_link = f"<a href='{profile_url}' target='_blank' rel='noopener noreferrer' style='color:inherit;text-decoration:underline;'>{medal}{escape(short_name(p_id))}</a>"
+            name_link = f"{medal}{escape(short_name(p_id))}"
             wins_link = f"<a href='{wins_url}' target='_blank' rel='noopener noreferrer' style='color:#0284c7;'>{int(row['胜场'])}</a>"
             losses_link = f"<a href='{losses_url}' target='_blank' rel='noopener noreferrer' style='color:#e11d48;'>{int(row['负场'])}</a>"
             t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{name_link}</td><td>{int(row['总场次'])}</td><td>{wins_link}</td><td>{losses_link}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td></tr>")
@@ -979,7 +978,7 @@ if active_page == "📊 胜率天梯与荣誉榜":
 
         requested_player = st.query_params.get("player", "")
         requested_result = st.query_params.get("result", "")
-        with st.expander("🔎 选手档案与逐局战绩 · 点击榜单昵称 / 胜局 / 负局查看", expanded=bool(requested_player)):
+        with st.expander("🔎 选手档案与逐局战绩 · 选择选手或点击胜局 / 负局查看", expanded=bool(requested_player)):
             profile_options = list(df_sorted.index)
             selected_profile = st.selectbox(
                 "查看选手", profile_options,
@@ -1075,33 +1074,6 @@ if active_page == "📊 胜率天梯与荣誉榜":
             else:
                 name4_str, badge_a_str = "虚位以待", "需满 10 局"
             st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计助攻王</div><div class="metric-val-main">{name4_str}</div><div class="metric-badge badge-blue">{badge_a_str}</div></div>', unsafe_allow_html=True)
-
-        st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
-        st.markdown('<div class="panel-header-title">🔗 阵营羁绊与宿敌</div>', unsafe_allow_html=True)
-        syn_list = [{"p": f"{short_name(k[0])} & {short_name(k[1])}", "w": v["胜场"], "l": v["负场"], "wr": v["胜场"]/v["同队场次"] if v["同队场次"]>0 else 0} for k, v in synergy_stats.items() if v["同队场次"] >= 5]
-        s_df = pd.DataFrame(syn_list)
-        bp = s_df.sort_values(by=["wr"], ascending=False).iloc[0] if not s_df.empty else None
-        wp = s_df.sort_values(by=["wr"], ascending=True).iloc[0] if not s_df.empty else None
-
-        nem_list = []
-        for (p1, p2), v in nemesis_stats.items():
-            if v["交手场次"] >= 5:
-                w, l = (p1, p2) if v["p1_wins"] >= v["p2_wins"] else (p2, p1)
-                nem_list.append({"d": f"{short_name(w)} ➔ {short_name(l)}", "w": max(v["p1_wins"], v["p2_wins"]), "l": min(v["p1_wins"], v["p2_wins"])})
-        n_df = pd.DataFrame(nem_list)
-        rp = n_df.iloc[0] if not n_df.empty else None
-
-        bp_txt = bp["p"] if bp is not None else "虚位以待"
-        bp_score = f"{int(bp['w'])}胜{int(bp['l'])}负" if bp is not None else "同队需满 5 局"
-        wp_txt = wp["p"] if wp is not None else "虚位以待"
-        wp_score = f"{int(wp['w'])}胜{int(wp['l'])}负" if wp is not None else "同队需满 5 局"
-        rp_txt = rp["d"] if rp is not None else "虚位以待"
-        rp_score = f"{int(rp['w'])}胜{int(rp['l'])}负" if rp is not None else "交手需满 5 局"
-
-        k1, k2, k3 = st.columns(3)
-        with k1: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">黄金搭档 (≥5局)</div><div class="metric-val-main">{bp_txt}</div><div class="metric-badge badge-blue">{bp_score}</div></div>', unsafe_allow_html=True)
-        with k2: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">难兄难弟 (≥5局)</div><div class="metric-val-main">{wp_txt}</div><div class="metric-badge badge-pink">{wp_score}</div></div>', unsafe_allow_html=True)
-        with k3: st.markdown(f'<div class="metric-stat-box"><div class="metric-title">一生之敌 (≥5局)</div><div class="metric-val-main">{rp_txt}</div><div class="metric-badge badge-gold">{rp_score}</div></div>', unsafe_allow_html=True)
 
 # ================= Tab 2: 赛前阵营分队系统 =================
 if active_page == "⚔️ 赛前阵营分队系统":
