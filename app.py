@@ -994,8 +994,15 @@ if not df.empty:
 
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
 if active_page == "📊 胜率天梯与荣誉榜":
+    if ladder_min_players == 7:
+        st.caption("上榜条件：在当前核验口径下，参与7人及以上对局累计至少10局（包含恰好10局）。")
+        if not df.empty:
+            df = df[df["总场次"] >= 10].copy()
     if df.empty:
-        st.info("💡 当前核验状态和人数筛选下没有对局。可切换榜单范围，或先录入并核验战绩。")
+        if ladder_min_players == 7:
+            st.info("💡 暂无选手在当前核验口径下参加至少10场7人及以上对局。可切换为全部对局榜单，或继续录入并核验战绩。")
+        else:
+            st.info("💡 当前核验状态和人数筛选下没有对局。可切换榜单范围，或先录入并核验战绩。")
     else:
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
         df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
