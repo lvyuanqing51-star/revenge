@@ -35,7 +35,7 @@ st.markdown("""
 <style>
 :root, [data-theme="light"], .stApp { --primary-color: #881337 !important; }
 .stApp {
-    background: linear-gradient(145deg, #fbf9f8 0%, #faf5f5 100%) !important;
+    background: radial-gradient(circle at 10% 20%, #fff1f2 0%, #fff5f5 45%, #fed7aa 100%) !important;
     background-attachment: fixed !important;
     color: #334155 !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -44,11 +44,11 @@ st.markdown("""
     display: flex; justify-content: space-between; align-items: center;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(254, 242, 242, 0.92) 100%);
     backdrop-filter: blur(14px); border: 1.5px solid #fecdd3; border-left: 6px solid #881337;
-    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
-    box-shadow: 0 3px 12px rgba(114, 9, 44, 0.04);
+    border-radius: 16px; padding: 16px 26px; margin-bottom: 22px;
+    box-shadow: 0 6px 24px rgba(114, 9, 44, 0.08);
 }
 .header-title {
-    font-size: 26px; font-weight: 800;
+    font-size: 1.70rem; font-weight: 900;
     background: linear-gradient(90deg, #881337 0%, #b91c1c 45%, #d97706 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
@@ -83,16 +83,16 @@ div[data-baseweb="tab"][aria-selected="true"] {
     color: #72092c !important; border-top: 3.5px solid #72092c !important;
 }
 .card-panel {
-    background: #ffffff; border: 1px solid #ece5e2; border-radius: 14px;
-    padding: 20px; margin-bottom: 24px; box-shadow: 0 3px 12px rgba(114, 9, 44, 0.03);
+    background: #ffffff; border: 1.2px solid #fecdd3; border-radius: 14px;
+    padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(114, 9, 44, 0.06);
 }
 .panel-header-title {
-    font-size: 18px; font-weight: 700; color: #72092c; margin: 24px 0 12px;
+    font-size: 1.15rem; font-weight: 800; color: #72092c; margin-bottom: 14px;
     border-left: 4px solid #72092c; padding-left: 10px;
 }
 .metric-stat-box {
-    background: #ffffff; border: 1px solid #ece5e2; border-radius: 14px;
-    padding: 20px; margin-bottom: 24px; box-shadow: 0 3px 10px rgba(114, 9, 44, 0.03);
+    background: #ffffff; border: 1.2px solid #fecdd3; border-radius: 14px;
+    padding: 16px 18px; box-shadow: 0 3px 10px rgba(114, 9, 44, 0.05);
 }
 .metric-title { font-size: 0.85rem; font-weight: 700; color: #881337; margin-bottom: 4px; }
 .metric-val-main { font-size: 1.45rem; font-weight: 900; color: #1e293b; }
@@ -111,24 +111,15 @@ div[data-baseweb="tab"][aria-selected="true"] {
     border-radius: 8px; margin: 3px 6px 3px 0; cursor: help;
 }
 .ladder-table-box {
-    width: 100%; overflow-x: auto; border: 1px solid #ece5e2; border-radius: 14px;
-    background: #ffffff; margin: 12px 0 24px;
+    width: 100%; overflow-x: auto; border: 1.5px solid #fecdd3; border-radius: 14px;
+    background: #ffffff; margin: 10px 0 22px 0;
 }
-.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: right; font-variant-numeric: tabular-nums; }
+.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: center; }
 .ladder-table th {
-    background: #faf5f6; color: #72092c;
-    font-weight: 700; padding: 14px 12px; border-bottom: 1px solid #e8dce0;
+    background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%); color: #72092c;
+    font-weight: 800; padding: 14px 10px; border-bottom: 2px solid #fbcfe8;
 }
-.ladder-table th, .ladder-table td { border-left: 0; border-right: 0; }
-.ladder-table td { padding: 14px 12px; border-bottom: 1px solid #f0ebeb; }
-.ladder-table tbody tr:hover { box-shadow: inset 3px 0 #881337; }
-.stApp [data-testid="stCaptionContainer"] { font-size: 13px; color: #64748b; }
-.stApp h3, .stApp h4 { font-size: 18px; line-height: 1.5; }
-@media (max-width: 640px) {
-    .app-header-bar { padding: 16px; flex-wrap: wrap; gap: 12px; }
-    .header-title { font-size: 22px; }
-    .ladder-table th, .ladder-table td { padding: 10px 8px; white-space: nowrap; }
-}
+.ladder-table td { padding: 12px 8px; border-bottom: 1px solid #fff1f2; }
 .rank-1 { background: rgba(254, 240, 138, 0.25) !important; }
 .rank-2 { background: rgba(241, 245, 249, 0.4) !important; }
 .rank-3 { background: rgba(254, 215, 170, 0.22) !important; }
@@ -409,24 +400,19 @@ def is_record_verified(record):
 
 
 def verification_changes(record, players, winner):
-    """Compare the displayed statistical result before and after a review."""
     originals = {p.get("player_name", ""): p for p in record.get("players", [])}
     changes = []
     for player in players:
         name = player.get("player_name", "")
         old = originals.get(name, {})
-        old_side = str(old.get("team", "")).upper()
-        new_side = str(player.get("team", "")).upper()
-        old_winner = str(record.get("winning_team", "")).upper()
-        old_result = ("胜" if old_side == old_winner else "负") if old_side in {"BLUE", "RED"} and old_winner in {"BLUE", "RED"} else "未知"
-        new_result = ("胜" if new_side == winner else "负") if new_side in {"BLUE", "RED"} else "未知"
+        old_side, new_side = old.get("team"), player.get("team")
+        old_result = "胜" if old_side == record.get("winning_team") else "负"
+        new_result = "胜" if new_side == winner else "负"
         if old_side != new_side or old_result != new_result:
-            changes.append({
-                "玩家 ID": name,
-                "原分组": {"BLUE": "A组", "RED": "B组"}.get(old_side, "未知"),
-                "新分组": {"BLUE": "A组", "RED": "B组"}.get(new_side, "未知"),
-                "原结果": old_result, "新结果": new_result,
-            })
+            changes.append({"玩家 ID": name,
+                "原分组": "A组" if old_side == "BLUE" else "B组",
+                "新分组": "A组" if new_side == "BLUE" else "B组",
+                "原结果": old_result, "新结果": new_result})
     return changes
 
 
@@ -730,6 +716,144 @@ def generate_radar_svg(values, categories):
     """
 
 
+# ---------------- 战情室视觉：可切回经典模式 ----------------
+WAR_ROOM_CSS = """
+<style>
+.stApp {background:#100d14!important;color:#eee8f0!important;color-scheme:dark;}
+[data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 80% 0%,#421a2a55,transparent 55%),#100d14!important;}
+[data-testid="stHeader"] {background:#100d14dc;backdrop-filter:blur(12px);}
+.block-container {max-width:1420px;padding-top:2.3rem;padding-bottom:4rem;}
+section[data-testid="stSidebar"] {background:#17121c;border-right:1px solid #362934;}
+.stApp h1,.stApp h2,.stApp h3,.stApp h4,.stApp label {color:#eee8f0;}
+.stApp [data-testid="stMarkdownContainer"] p,.stApp [data-testid="stMarkdownContainer"] li {color:#d3c8d6;}
+.stApp [data-testid="stCaptionContainer"] p {color:#a798af!important;}
+.stApp [data-baseweb="select"]>div,.stApp [data-baseweb="input"],.stApp [data-baseweb="base-input"] {background:#251c2a!important;color:#f0e8f2!important;border-color:#4b394d!important;}
+.stApp input {color:#f0e8f2!important;}
+.stApp [data-testid="stExpander"] {border-color:#3c2d40;background:#1b1521;border-radius:12px;}
+.stApp [data-testid="stAlert"] {background:#252331;border:1px solid #49516a;}
+.stApp [data-testid="stFileUploaderDropzone"] {background:#251c2a;border:1px dashed #65465d;}
+.stApp [data-testid="stMetric"] {background:#1b1521;border:1px solid #3c2d40;border-radius:12px;padding:16px;}
+.stApp [data-testid="stMetricValue"] {color:#f3edf0;}
+.stApp button[kind="secondary"],.stApp button[kind="secondaryFormSubmit"] {background:#251b2a;color:#efe5ef;border:1px solid #50364a;border-radius:9px;}
+.stApp button[kind="primary"],.stApp button[kind="primaryFormSubmit"] {background:linear-gradient(120deg,#9d294e,#6e1c3c)!important;border:1px solid #cc5878!important;color:#fff!important;box-shadow:0 5px 22px #97274533;}
+.stApp button[kind="primary"]:hover {filter:brightness(1.12);}
+.stApp button:focus-visible,.stApp a:focus-visible {outline:2px solid #d8b873;outline-offset:3px;}
+.stApp [data-baseweb="tab"] {background:#241a2a!important;color:#d9c2ce!important;border-color:#543348!important;}
+.stApp [data-baseweb="tab"][aria-selected="true"] {background:#362034!important;color:#edd39e!important;border-top-color:#a32950!important;}
+.panel-header-title {color:#e9d5b0;border-left-color:#a32950;font-size:18px;margin:24px 0 14px;}
+.card-panel,.metric-stat-box {background:#1b1521;border:1px solid #3c2d40;box-shadow:none;padding:20px;margin-bottom:20px;}
+.metric-title {color:#bca9c5;font-weight:500;}.metric-val-main {color:#f3edf0;font-size:23px;}
+.stApp div[style*="background:#fff"] {background:#211824!important;border-color:#503446!important;}
+.stApp div[style*="color:#1e293b"],.stApp div[style*="color: #1e293b"] {color:#f3edf0!important;}
+.stApp div[style*="color:#475569"],.stApp div[style*="color:#64748b"] {color:#c6bacc!important;}
+.stApp span[style*="color:#72092c"],.stApp span[style*="color: #72092c"] {color:#edb3c8!important;}
+.stApp div[style*="color:#0284c7"] {color:#78cce1!important;}
+.stApp svg[viewBox="0 0 320 320"] text {fill:#d0b896;}
+.badge-tag {background:#352035;border-color:#674454;color:#e6c5d4;}
+.ladder-table-box {background:#1a1420;border:1px solid #3f2d40;border-radius:14px;margin:12px 0 24px;}
+.ladder-table {text-align:right;font-variant-numeric:tabular-nums;}
+.ladder-table th {background:#261a29;color:#d6bd91;border-bottom:1px solid #4c3547;padding:15px 12px;font-weight:600;white-space:nowrap;}
+.ladder-table td {color:#e3d9e7;border:0;border-bottom:1px solid #302433;padding:14px 12px;}
+.ladder-table tr:hover {box-shadow:inset 3px 0 #d8b873;background:#34212e;}
+.ladder-table td:nth-child(6) {color:#efb8ca!important;}.ladder-table td:nth-child(3) a {color:#79c9e0!important;}.ladder-table td:nth-child(4) a {color:#ef94ac!important;}
+.rank-1 {background:#d8b87312!important;}.rank-2 {background:#c5c8df08!important;}.rank-3 {background:#bb866b0a!important;}
+.war-room * {box-sizing:border-box;}
+.war-room {position:relative;isolation:isolate;border:1px solid #58402e;border-radius:22px;padding:28px 32px 30px;margin:0 0 20px;overflow:hidden;background:linear-gradient(125deg,#25141f 0%,#19131d 55%,#211c24 100%);color:#f3edf0;}
+.war-room:before {content:"";position:absolute;z-index:-1;inset:-60%;background:radial-gradient(ellipse at 65% 45%,#a3295033,transparent 40%);animation:room-glow 16s ease-in-out infinite alternate;pointer-events:none;}
+.war-room:after {content:"";position:absolute;inset:0;z-index:-1;opacity:.15;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='86'%3E%3Cpath d='M25 0H75L100 43 75 86H25L0 43Z' fill='none' stroke='%23d8b873' stroke-width='.7'/%3E%3C/svg%3E");mask-image:linear-gradient(90deg,transparent,#000);pointer-events:none;}
+.war-top {display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px;}
+.war-brand {display:flex;align-items:center;gap:10px;letter-spacing:2.4px;font-size:11px;font-weight:700;color:#cdb587;}
+.war-logo {width:31px;height:35px;display:grid;place-items:center;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#d8b873;color:#21151b;font-size:22px;letter-spacing:0;}
+.war-status {font-size:11px;color:#c5bdc8;padding:7px 11px;border:1px solid #ffffff18;border-radius:30px;background:#100d144d;white-space:nowrap;}
+.war-status:before {content:"";display:inline-block;width:6px;height:6px;background:#86c7ac;border-radius:50%;margin-right:8px;box-shadow:0 0 10px #86c7ac55;}
+.war-body {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.85fr);gap:40px;align-items:center;}
+.war-kicker {font-size:13px;letter-spacing:5px;color:#b39cae;margin-bottom:14px;}
+.war-title {font-size:clamp(30px,4.1vw,58px);line-height:1.2;font-weight:800;letter-spacing:-1px;margin:0 0 14px;}
+.war-title span {color:#e2c38a;}
+.war-description {font-size:13px;line-height:1.9;color:#ae9fae;max-width:450px;}
+.war-statline {display:flex;gap:30px;flex-wrap:wrap;margin-top:27px;}
+.war-statline strong {display:block;font:600 25px/1.2 ui-monospace,SFMono-Regular,monospace;color:#f3edf0;}
+.war-statline small {display:block;color:#a898aa;font-size:11px;margin-top:7px;}
+.champion {position:relative;padding:22px 24px;overflow:hidden;border:1px solid #a4814877;border-radius:16px;background:linear-gradient(140deg,#d8b8730d,#16101c 60%);box-shadow:0 15px 45px #0003;}
+.champion:after {content:"";position:absolute;top:-80%;left:-150%;width:60%;height:260%;background:linear-gradient(90deg,transparent,#ffe6aa0c,transparent);transform:rotate(25deg);animation:champ-shine 11s ease-in-out infinite;pointer-events:none;}
+.champion-eyebrow {display:flex;justify-content:space-between;gap:10px;color:#d7b77b;letter-spacing:2px;font-size:10px;}
+.champion-name {font-size:24px;font-weight:750;margin:17px 0 5px;color:#f4e8d3;overflow-wrap:anywhere;}
+.champion-id {color:#97859a;font-size:11px;overflow-wrap:anywhere;}
+.champion-score {display:flex;align-items:baseline;gap:8px;margin:18px 0 12px;}
+.champion-score strong {font:600 53px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:-3px;color:#edd39e;}
+.champion-score span {color:#b3a2b8;font-size:12px;}
+.champion-meta {font-size:12px;color:#baabbf;line-height:1.7;}
+.champion-form {display:flex;align-items:center;gap:5px;margin-top:15px;padding-top:12px;border-top:1px solid #ffffff10;}
+.champion-form small {color:#a895ae;font-size:10px;margin-right:8px;}
+.form-win,.form-loss {display:inline-grid;place-items:center;width:25px;height:25px;border-radius:5px;font-size:11px;}
+.form-win {background:#75bda51c;color:#9ad9bd;border:1px solid #75bda53d;}.form-loss {background:#c65b7d19;color:#e5a3b7;border:1px solid #c65b7d3d;}
+.war-spotlights {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 20px;}
+.war-spotlight {padding:18px 20px;background:#1b1521;border:1px solid #3d2d3e;border-radius:13px;position:relative;overflow:hidden;}
+.war-spotlight-label {color:#a68eac;font-size:11px;letter-spacing:1px;}
+.war-spotlight-value {font-size:20px;color:#eee2ed;font-weight:650;margin-top:10px;overflow-wrap:anywhere;}
+.war-spotlight-note {font-size:11px;color:#a48eaa;margin-top:6px;}
+.war-spotlight-number {color:#d8b873;font:600 22px ui-monospace,monospace;float:right;margin-left:12px;}
+.war-progress {height:3px;background:#51364a;border-radius:3px;margin-top:6px;overflow:hidden;min-width:54px;}
+.war-progress span {display:block;height:100%;background:#d8b873;border-radius:3px;}
+.war-vs {display:grid;grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr);align-items:center;gap:14px;margin:24px 0;}
+.war-team {padding:24px;border:1px solid #43709166;border-radius:16px;background:linear-gradient(140deg,#18304499,#16121c);}
+.war-team.red {border-color:#a2537566;background:linear-gradient(140deg,#3a1b3099,#16121c);}
+.war-team-label {font-size:11px;letter-spacing:2px;color:#8cbcd5;}.war-team.red .war-team-label{color:#dea1b8;}
+.war-team-score {font:600 40px ui-monospace,monospace;color:#e1edf5;margin:10px 0 4px;}
+.war-team-note {font-size:11px;color:#a092a8;margin-bottom:16px;}
+.war-team-player {display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #ffffff0b;font-size:13px;color:#e4dbe7;}
+.war-team-player span:last-child {color:#a592ae;font:12px ui-monospace,monospace;}
+.war-vs-center {font:italic 700 32px ui-monospace,monospace;color:#d8b873;text-align:center;}
+.vs-reveal {animation:vs-reveal .45s ease-out both;}
+@keyframes vs-reveal {from {opacity:0;transform:translateY(10px);}to {opacity:1;transform:translateY(0);}}
+@keyframes room-glow {from {transform:translate3d(-3%,0,0);}to {transform:translate3d(5%,3%,0);}}
+@keyframes champ-shine {0%,70% {left:-150%;}100% {left:180%;}}
+@media(max-width:800px) {.war-room{padding:22px}.war-body{grid-template-columns:1fr;gap:24px}.war-top{margin-bottom:24px}.war-status{font-size:10px}.champion{max-width:none}.war-title{font-size:38px}.war-statline{gap:24px}.war-room:before,.champion:after,.vs-reveal{animation:none}.war-spotlights{grid-template-columns:1fr}.war-spotlight{padding:14px 18px}.war-spotlight-value{font-size:18px}.block-container{padding-top:1.5rem}.war-vs{grid-template-columns:1fr}.war-vs-center{font-size:24px}}
+@media(prefers-reduced-motion:reduce) {.war-room:before,.champion:after,.vs-reveal{animation:none!important;}*{scroll-behavior:auto!important;transition:none!important;}}
+</style>
+"""
+
+
+def build_war_room_html(standings, history, total, verified, selected_matches, kill_record, assist_record, scope):
+    """All showcased values come from the same records as the displayed ranking."""
+    e = lambda value: escape(str(value))
+    if standings.empty:
+        name, full_name, winrate, matches, rating, recent = "等待首位登顶者", "核验战绩后，榜首将在这里亮相", "—", "—", "—", ""
+        active_name, active_matches = "等待选手登场", "—"
+    else:
+        ranked = standings.sort_values(["胜率_num", "总场次", "KDA_num"], ascending=False)
+        full_name = str(ranked.index[0]); row = ranked.iloc[0]
+        name, winrate, matches, rating = short_name(full_name), f"{row['胜率_num']:.1f}%", str(int(row['总场次'])), f"{row['MMR']:.1f}"
+        recent = "".join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in history[full_name]["outcomes"][-5:])
+        active = standings.sort_values(["总场次", "胜率_num"], ascending=False).iloc[0]
+        active_name, active_matches = short_name(active.name), str(int(active["总场次"]))
+    def spotlight(label, value, number, note):
+        return f'<div class="war-spotlight"><div class="war-spotlight-label">{e(label)}</div><div class="war-spotlight-value"><span class="war-spotlight-number">{e(number)}</span>{e(value)}</div><div class="war-spotlight-note">{e(note)}</div></div>'
+    def record_spotlight(label, record, unit):
+        valid = record.get("val", -1) >= 0
+        return spotlight(label, short_name(record["player"]) if valid else "等待高光时刻", f"{record['val']} {unit}" if valid else "—", f"第 {record['game_idx']} 局 · 当前统计范围" if valid else "录入并核验战绩后展示")
+    hero = f'''<div class="war-room">
+<div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div><span class="war-status">已核验 {verified} / {total} 局</span></div>
+<div class="war-body"><div><div class="war-kicker">海 克 斯 内 战</div><div class="war-title">今夜，<br>战力<span>全开。</span></div><div class="war-description">每一场内战，都值得被记住。<br>查看天梯、组织对局，留下属于你们的高光。</div><div class="war-statline"><div><strong>{total}</strong><small>累计收录对局</small></div><div><strong>{len(standings)}</strong><small>当前上榜选手</small></div><div><strong>{selected_matches}</strong><small>当前统计对局</small></div></div></div>
+<div class="champion"><div class="champion-eyebrow"><span>当前天梯领跑者</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
+    cards = '<div class="war-spotlights">' + record_spotlight("单场击杀纪录", kill_record, "杀") + record_spotlight("单场助攻纪录", assist_record, "助攻") + spotlight("当前范围 · 参赛最多", active_name, f"{active_matches} 场" if active_matches != "—" else "—", "按当前榜单范围计算") + '</div>'
+    return hero + cards
+
+
+def navigate_page(page):
+    st.session_state.active_page = page
+
+
+def build_vs_html(blue, red, rating_func, reveal=False):
+    def team_card(players, label, color):
+        mean = sum(rating_func(p) for p in players) / len(players)
+        roster = ''.join(
+            f'<div class="war-team-player"><span title="{escape(p, quote=True)}">{escape(short_name(p))}</span><span>{rating_func(p):.1f}</span></div>' for p in players
+        )
+        return f'<div class="war-team {color}"><div class="war-team-label">{label}</div><div class="war-team-score">{mean:.1f}</div><div class="war-team-note">平均战力 · {len(players)} 位选手</div>{roster}</div>'
+    return '<div class="war-vs'+(' vs-reveal' if reveal else '')+'">'+team_card(blue, 'BLUE SIDE / 蓝色方', 'blue')+'<div class="war-vs-center">VS</div>'+team_card(red, 'RED SIDE / 红色方', 'red')+'</div>'
+
+
 def render_admin_settings(records):
     require_admin()
     admin_mode = True
@@ -814,6 +938,9 @@ def render_admin_settings(records):
 
 # ---------------- 侧边栏：控制台 ----------------
 with st.sidebar:
+    visual_mode = st.radio("界面风格", ["海克斯战情室", "明亮经典"], key="visual_mode", horizontal=True)
+    if visual_mode == "海克斯战情室":
+        st.markdown(WAR_ROOM_CSS, unsafe_allow_html=True)
     st.markdown("### 🎛️ 系统控制台")
     render_admin_login()
     admin_mode = is_admin()
@@ -863,17 +990,22 @@ with st.sidebar:
 
 # ---------------- 主界面 1：顶栏电竞控制台 ----------------
 cfg = load_config()
-st.markdown(f"""
-<div class="app-header-bar">
-    <div class="header-title">⚔️ 海克斯内战 · 战绩中心</div>
-    <span class="badge-tag" style="background:#ffffff;border-color:#72092c;color:#72092c;margin:0;">📦 已收录 <b>{total_games_all}</b> 场对局</span>
-</div>
-""", unsafe_allow_html=True)
-
-vc1, vc2, vc3 = st.columns(3)
-with vc1: st.link_button("🎙️ 大厅语音作战室", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
-with vc2: st.link_button("🔵 蓝方语音作战室", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
-with vc3: st.link_button("🔴 红方语音作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
+front_slot = st.empty()
+go1, go2, go3 = st.columns(3)
+with go1:
+    st.button("查看天梯 →", type="primary", use_container_width=True, on_click=navigate_page, args=("📊 胜率天梯与荣誉榜",))
+with go2:
+    st.button("开始分队 →", use_container_width=True, on_click=navigate_page, args=("⚔️ 赛前阵营分队系统",))
+with go3:
+    if admin_mode:
+        st.button(f"核验待办 · {total_games_all - verified_games_all} 局 →", use_container_width=True, on_click=navigate_page, args=("✅ 战绩核验",))
+    else:
+        st.button("选手档案 →", use_container_width=True, on_click=navigate_page, args=("🎯 局内战术图谱与成就馆",))
+with st.expander("语音作战室 · 大厅 / 蓝方 / 红方"):
+    vc1, vc2, vc3 = st.columns(3)
+    with vc1: st.link_button("🎙️ 大厅语音", cfg.get("main_voice", "https://kook.top/"), use_container_width=True)
+    with vc2: st.link_button("🔵 蓝方语音", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
+    with vc3: st.link_button("🔴 红方语音", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
 st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
 if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
@@ -882,7 +1014,7 @@ if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
         f"另有 {total_games_all - verified_games_all} 局待核验，请前往「战绩核验」逐局确认。"
     )
 
-# ---------------- 页面导航与榜单人数范围 ----------------
+# ---------------- 主界面 2：Tabs 视图 ----------------
 active_page = st.radio("功能页面", [
     "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 局内战术图谱与成就馆",
     "✅ 战绩核验", "📥 战绩智能录入"
@@ -891,35 +1023,18 @@ active_page = st.radio("功能页面", [
 ladder_min_players = 0
 if active_page == "📊 胜率天梯与荣誉榜":
     size_options = ["全部对局", "7人及以上对局"]
-    default_size = st.session_state.get(
-        "ladder_size_preference",
-        "7人及以上对局" if st.query_params.get("players", "") == "7" else "全部对局",
-    )
-    ladder_size = st.radio(
-        "榜单对局人数", size_options, index=size_options.index(default_size),
-        horizontal=True, key="ladder_size_widget",
-        help="按单局去重后的有效玩家数筛选，7人及以上包含恰好7人的对局。与侧栏核验口径同时生效。",
-    )
-    st.session_state.ladder_size_preference = ladder_size
-    ladder_min_players = 7 if ladder_size == "7人及以上对局" else 0
-
+    default_size = st.session_state.get("ladder_size_preference", "7人及以上对局" if st.query_params.get("players", "") == "7" else "全部对局")
+    size_choice = st.radio("榜单对局人数", size_options, index=size_options.index(default_size), horizontal=True, key="ladder_size_widget")
+    st.session_state.ladder_size_preference = size_choice
+    ladder_min_players = 7 if size_choice == "7人及以上对局" else 0
 
 def valid_player_count(record):
-    return len({
-        clean_player_name_strict(p.get("player_name", ""))
-        for p in record.get("players", [])
-        if clean_player_name_strict(p.get("player_name", ""))
-        and not is_result_banner(p.get("player_name", ""))
-        and str(p.get("team", "")).upper() in {"BLUE", "RED"}
-    })
-
+    return len({clean_player_name_strict(p.get("player_name", "")) for p in record.get("players", [])
+                if clean_player_name_strict(p.get("player_name", "")) and not is_result_banner(p.get("player_name", ""))
+                and str(p.get("team", "")).upper() in {"BLUE", "RED"}})
 
 def match_in_stats(record):
-    return (
-        (stats_scope != "仅已核验对局" or is_record_verified(record))
-        and valid_player_count(record) >= ladder_min_players
-    )
-
+    return (stats_scope != "仅已核验对局" or is_record_verified(record)) and valid_player_count(record) >= ladder_min_players
 
 # ---------------- 数据清洗与统计算法引擎 ----------------
 base_stats_records = (
@@ -928,11 +1043,6 @@ base_stats_records = (
     else records
 )
 stats_records = [r for r in base_stats_records if match_in_stats(r)]
-if active_page == "📊 胜率天梯与荣誉榜":
-    st.caption(
-        f"当前榜单：{'7人及以上对局' if ladder_min_players else '全部人数对局'} · "
-        f"{stats_scope} · 纳入 {len(stats_records)} 场。人数按已录入的不同有效玩家计算。"
-    )
 all_raw = [p.get("player_name", "") for r in base_stats_records for p in r.get("players", []) if p.get("player_name")]
 name_mapping = build_canonical_name_map(list(set(all_raw)))
 
@@ -1034,17 +1144,29 @@ if not df.empty:
         return round(tot + (5.0 if float(r["场均击杀"]) >= 7.0 and float(r["KDA_num"]) >= 2.5 else 0.0), 1)
     df["MMR"] = df.apply(calc_mmr, axis=1)
 
+front_standings = df[df["总场次"] >= 10] if ladder_min_players == 7 and not df.empty else df
+if visual_mode == "海克斯战情室":
+    front_slot.markdown(build_war_room_html(
+        front_standings, player_history, total_games_all, verified_games_all,
+        len(stats_records), max_single_kill, max_single_assist,
+        stats_scope + (" · 7人及以上 / 至少10局上榜" if ladder_min_players == 7 else " · 全部人数"),
+    ), unsafe_allow_html=True)
+else:
+    front_slot.markdown(
+        f'<div class="app-header-bar"><div class="header-title">⚔️ 海克斯内战 · 战绩中心</div>'
+        f'<span class="badge-tag">已收录 {total_games_all} 场 · 已核验 {verified_games_all} 场</span></div>',
+        unsafe_allow_html=True,
+    )
+
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
 if active_page == "📊 胜率天梯与荣誉榜":
     if ladder_min_players == 7:
-        st.caption("上榜条件：在当前核验口径下，参与7人及以上对局累计至少10局（包含恰好10局）。")
+        st.caption("上榜条件：在当前核验口径下，参加7人及以上对局累计至少10局。")
         if not df.empty:
             df = df[df["总场次"] >= 10].copy()
+    st.caption(f"当前核验口径：{stats_scope} · 纳入 {len(stats_records)} 场对局")
     if df.empty:
-        if ladder_min_players == 7:
-            st.info("💡 暂无选手在当前核验口径下参加至少10场7人及以上对局。可切换为全部对局榜单，或继续录入并核验战绩。")
-        else:
-            st.info("💡 当前核验状态和人数筛选下没有对局。可切换榜单范围，或先录入并核验战绩。")
+        st.info("当前筛选下暂无符合条件的选手。7人榜需要累计至少10局，或切换为全部对局查看。")
     else:
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
         df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
@@ -1061,8 +1183,13 @@ if active_page == "📊 胜率天梯与荣誉榜":
             name_link = f"{medal}{escape(short_name(p_id))}"
             wins_link = f"<a href='{wins_url}' target='_blank' rel='noopener noreferrer' style='color:#0284c7;'>{int(row['胜场'])}</a>"
             losses_link = f"<a href='{losses_url}' target='_blank' rel='noopener noreferrer' style='color:#e11d48;'>{int(row['负场'])}</a>"
-            t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{name_link}</td><td>{int(row['总场次'])}</td><td>{wins_link}</td><td>{losses_link}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td></tr>")
-        st.markdown(f'<div class="ladder-table-box"><table class="ladder-table"><thead><tr><th style="text-align:left;padding-left:16px;">选手排位</th><th>总场次</th><th>胜局</th><th>负局</th><th>胜率</th><th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th></tr></thead><tbody>{"".join(t_rows)}</tbody></table></div>', unsafe_allow_html=True)
+            if visual_mode == "海克斯战情室":
+                wr_b = f'<b style="color:#e5c68d">{wr:.1f}%</b><div class="war-progress"><span style="width:{max(0, min(100, wr)):.1f}%"></span></div>'
+            recent_form = ''.join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in player_history[p_id]["outcomes"][-5:])
+            if visual_mode != "海克斯战情室":
+                recent_form = ' '.join('胜' if won else '负' for won in player_history[p_id]["outcomes"][-5:])
+            t_rows.append(f"<tr class='{r_cls}'><td style='text-align:left;padding-left:16px;font-weight:800;'>{name_link}</td><td>{int(row['总场次'])}</td><td>{wins_link}</td><td>{losses_link}</td><td>{wr_b}</td><td style='color:#72092c;font-weight:900;'>{row['MMR']:.1f}</td><td>{row['场均击杀']:.1f}</td><td>{row['KD']:.2f}</td><td>{kda_b}</td><td>{int(row['击杀'])}</td><td>{int(row['死亡'])}</td><td>{int(row['助攻'])}</td><td style='white-space:nowrap;'>{recent_form}</td></tr>")
+        st.markdown(f'<div class="ladder-table-box"><table class="ladder-table"><thead><tr><th style="text-align:left;padding-left:16px;">选手排位</th><th>总场次</th><th>胜局</th><th>负局</th><th>胜率</th><th>MMR战力</th><th>场均击杀</th><th>KD</th><th>KDA</th><th>总击杀</th><th>总死亡</th><th>总助攻</th><th>近5局</th></tr></thead><tbody>{"".join(t_rows)}</tbody></table></div>', unsafe_allow_html=True)
 
         requested_player = st.query_params.get("player", "")
         requested_result = st.query_params.get("result", "")
@@ -1097,29 +1224,23 @@ if active_page == "📊 胜率天梯与荣誉榜":
                         continue
                     personal_matches.append((original_index, match, player, won))
             if personal_matches:
-                ordered_personal_matches = list(reversed(personal_matches))
                 personal_table = pd.DataFrame([{
                     "对局": f"第 {i+1} 局", "结果": "胜" if won else "负",
                     "分组": "A组" if player.get("team") == "BLUE" else "B组",
                     "KDA": f"{player.get('kills', 0)}/{player.get('deaths', 0)}/{player.get('assists', 0)}",
                     "核验": "已核验" if is_record_verified(match) else "待核验",
-                } for i, match, player, won in ordered_personal_matches])
-                selection_revision = hashlib.sha256(json.dumps([
+                } for i, match, player, won in reversed(personal_matches)])
+                ordered_matches = list(reversed(personal_matches))
+                selection_key = hashlib.sha256(json.dumps([
                     selected_profile, history_filter, stats_scope, ladder_min_players,
-                    [(i, match.get("md5"), match.get("winning_team"), player.get("team"))
-                     for i, match, player, _ in ordered_personal_matches],
+                    [(i, m.get("md5"), m.get("winning_team"), p.get("team")) for i,m,p,_ in ordered_matches],
                 ], ensure_ascii=False).encode()).hexdigest()[:16]
-                st.caption("点击下面任意一行，即可展开该局截图和双方玩家；再次点击可取消选择。")
-                personal_selection = st.dataframe(
-                    personal_table, hide_index=True, use_container_width=True,
-                    on_select="rerun", selection_mode="single-row",
-                    key=f"personal_match_rows_{selection_revision}",
-                )
-                selected_rows = personal_selection.selection.rows
-                if selected_rows and 0 <= selected_rows[0] < len(ordered_personal_matches):
-                    personal_game, detail, _, _ = ordered_personal_matches[selected_rows[0]]
+                st.caption("点击任意一行，直接查看该局截图与双方玩家。")
+                event = st.dataframe(personal_table, hide_index=True, use_container_width=True,
+                    on_select="rerun", selection_mode="single-row", key="personal_match_rows_"+selection_key)
+                if event.selection.rows and 0 <= event.selection.rows[0] < len(ordered_matches):
+                    personal_game, detail, _, _ = ordered_matches[event.selection.rows[0]]
                     st.markdown(f"#### 第 {personal_game+1} 局 · 对局详情")
-                    st.caption("已核验" if is_record_verified(detail) else "待核验 · 结果仅供参考")
                     if detail.get("image_thumb"):
                         with st.container(height=520, border=True):
                             st.image(f"data:image/jpeg;base64,{detail['image_thumb']}", use_container_width=True)
@@ -1284,13 +1405,17 @@ if active_page == "⚔️ 赛前阵营分队系统":
             tb, tr = st.session_state["assigned_b"], st.session_state["assigned_r"]
             avg_b, avg_r = round(sum(get_mmr(p) for p in tb)/len(tb), 1), round(sum(get_mmr(p) for p in tr)/len(tr), 1)
             b_str, r_str = "、".join([short_name(p) for p in tb]), "、".join([short_name(p) for p in tr])
-            st.markdown(f"""
-            <div style="background:#fff;border:1.5px solid #fecdd3;border-radius:14px;padding:16px;margin:12px 0;">
-                <div style="color:#0284c7;font-weight:800;margin-bottom:6px;">🔵 蓝色方 ({len(tb)}人 | 均分 {avg_b}): {b_str}</div>
-                <div style="color:#72092c;font-weight:800;margin-bottom:6px;">🔴 红色方 ({len(tr)}人 | 均分 {avg_r}): {r_str}</div>
-                <div style="color:#64748b;font-size:0.85rem;">⚡ 人均分差: {abs(avg_b - avg_r):.1f} 分</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if visual_mode == "海克斯战情室":
+                st.markdown(build_vs_html(tb, tr, get_mmr, reveal=btn_bal or btn_car or btn_rnd), unsafe_allow_html=True)
+                st.caption(f"人均战力差 {abs(avg_b-avg_r):.1f} 分 · 评分来自当前统计口径")
+            else:
+                st.markdown(f"""
+                <div style="background:#fff;border:1.5px solid #fecdd3;border-radius:14px;padding:16px;margin:12px 0;">
+                    <div style="color:#0284c7;font-weight:800;margin-bottom:6px;">🔵 蓝色方 ({len(tb)}人 | 均分 {avg_b}): {b_str}</div>
+                    <div style="color:#72092c;font-weight:800;margin-bottom:6px;">🔴 红色方 ({len(tr)}人 | 均分 {avg_r}): {r_str}</div>
+                    <div style="color:#64748b;font-size:0.85rem;">⚡ 人均分差: {abs(avg_b - avg_r):.1f} 分</div>
+                </div>
+                """, unsafe_allow_html=True)
 
 # ================= Tab 3: 局内战术图谱与成就馆 =================
 if active_page == "🎯 局内战术图谱与成就馆":
@@ -1420,10 +1545,7 @@ if active_page == "✅ 战绩核验":
             st.progress((len(verified_indices) / len(records)), text=f"已完成 {len(verified_indices)} / {len(records)} 局")
             if saved_draft:
                 st.caption("已恢复本次会话中的未保存草稿。关闭页面后草稿可能丢失。")
-            review_layout = st.radio(
-                "核验布局", ["左右对照", "上下排列"], horizontal=True,
-                key="review_layout", help="电脑建议左右对照；手机或窄窗口可选上下排列。",
-            )
+            review_layout = st.radio("核验布局", ["左右对照", "上下排列"], horizontal=True, key="review_layout")
             if review_layout == "左右对照":
                 image_col, editing_col = st.columns([1.05, 1.2], gap="large")
             else:
@@ -1431,19 +1553,14 @@ if active_page == "✅ 战绩核验":
             with image_col:
                 st.markdown("#### ① 对照结算截图")
                 if verify_record.get("image_thumb"):
-                    st.caption("长图可在下方区域独立滚动；图片工具栏支持全屏查看。")
+                    st.caption("长图可独立滚动，工具栏支持全屏查看。")
                     with st.container(height=720, border=True):
-                        st.image(
-                            f"data:image/jpeg;base64,{verify_record['image_thumb']}",
-                            caption=f"第 {verify_idx+1} 局 · 已保存的结算截图",
-                            use_container_width=True,
-                        )
+                        st.image(f"data:image/jpeg;base64,{verify_record['image_thumb']}", use_container_width=True)
                 else:
-                    st.warning("⚠️ 这局没有保存截图，请根据原始记录确认；无法确认时不要标记为已核验。")
-                st.caption("历史图片是压缩预览。若小字无法辨认，请对照原始截图，不要猜测。")
+                    st.warning("这局没有保存截图，请根据原始记录确认；无法确认时不要核验。")
+                st.caption("历史截图是压缩预览，看不清时请对照原始图片。")
 
             with editing_col:
-
                 st.markdown("#### ② 核对组别和胜方")
                 st.caption("点击分组单元格可把误分的玩家移回 A组 / B组。请核对完整游戏 ID；下方名单会随修改更新。")
                 review_players = saved_draft.get("players", verify_record.get("players", []))
@@ -1471,10 +1588,26 @@ if active_page == "✅ 战绩核验":
                 if abs(group_counts["BLUE"] - group_counts["RED"]) > 1:
                     st.warning("两组人数差距较大，可能存在误分或漏识别；请对照截图逐个检查。人数提示不会自动改分组。")
 
-                verify_groups = {
-                    side: [p for p in corrected_players if str(p.get("team", "")).upper() == side]
-                    for side in ("BLUE", "RED")
-                }
+                verify_groups = {}
+                group_cols = st.columns(2)
+                for group_pos, group_side in enumerate(("BLUE", "RED")):
+                    group_players = [
+                        p for p in corrected_players
+                        if str(p.get("team", "")).upper() == group_side
+                    ]
+                    verify_groups[group_side] = group_players
+                    group_label = "A组" if group_side == "BLUE" else "B组"
+                    current_mark = " · 当前记录为获胜" if verify_record.get("winning_team") == group_side else ""
+                    with group_cols[group_pos]:
+                        st.markdown(f"#### {group_label}{current_mark}")
+                        group_rows = [{
+                            "玩家": p.get("player_name", ""),
+                            "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
+                        } for p in group_players]
+                        if group_rows:
+                            st.dataframe(pd.DataFrame(group_rows), hide_index=True, use_container_width=True)
+                        else:
+                            st.warning(f"未识别到{group_label}玩家。")
 
                 group_labels = {
                     side: (
@@ -1494,17 +1627,12 @@ if active_page == "✅ 战绩核验":
                     drafts[draft_key] = {"players": corrected_players, "winner": corrected_winner}
                 st.markdown("#### ③ 保存前确认变化")
                 changes = verification_changes(verify_record, corrected_players, corrected_winner)
-                old_winner = {"BLUE": "A组", "RED": "B组"}.get(verify_record.get("winning_team"), "未知")
-                new_winner = "A组" if corrected_winner == "BLUE" else "B组"
-                if old_winner != new_winner:
-                    st.warning(f"胜方将从 {old_winner} 改为 {new_winner}。")
                 if changes:
                     result_changes = sum(row["原结果"] != row["新结果"] for row in changes)
                     st.caption(f"{len(changes)} 位玩家的记录将改变，其中 {result_changes} 位胜负改变。尚未保存。")
                     st.dataframe(pd.DataFrame(changes), hide_index=True, use_container_width=True)
                 else:
                     st.info("组别和胜方未改变；保存后将确认这局的核验状态。")
-                st.caption("保存后会据此重算胜负与胜率；满足相应人数和场次门槛的记录才进入榜单。")
                 confirmation_revision = hashlib.sha256(json.dumps(
                     [corrected_players, corrected_winner], ensure_ascii=False, sort_keys=True
                 ).encode()).hexdigest()[:12]
