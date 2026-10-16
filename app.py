@@ -735,6 +735,7 @@ HERO_CSS = """
 .war-status {font-size:11px;color:#64748b;border:1px solid #e9dfe2;border-radius:20px;background:#fff;padding:6px 10px;white-space:nowrap;}
 .war-body {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.85fr);gap:36px;align-items:center;}
 .war-kicker {color:#947c86;font-size:12px;letter-spacing:4px;margin-bottom:12px;}
+.war-kicker {color:#881337;font-size:26px;font-weight:800;line-height:1.4;letter-spacing:2px;margin-bottom:14px;}
 .war-title {font-size:clamp(30px,4vw,50px);line-height:1.2;font-weight:800;letter-spacing:-1px;margin:0 0 14px;color:#72092c;}
 .war-title span {color:#ac7d36;}.war-description {font-size:13px;color:#7c6c77;line-height:1.9;max-width:450px;}
 .war-statline {display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;}
@@ -742,6 +743,8 @@ HERO_CSS = """
 .war-statline small {display:block;font-size:11px;color:#8b7c85;margin-top:6px;}
 .champion {padding:22px 24px;border:1px solid #e2cfaa;border-radius:14px;background:linear-gradient(130deg,#fffdf8,#fff);box-shadow:0 4px 16px #72092c05;}
 .champion-eyebrow {display:flex;justify-content:space-between;gap:10px;color:#a47e3f;font-size:10px;letter-spacing:1.5px;}
+.champion-eyebrow {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;color:#8c672b;font-size:12px;letter-spacing:1px;}
+.champion-eyebrow span:first-child {font-size:20px;font-weight:800;line-height:1.4;}
 .champion-name {font-size:24px;font-weight:750;color:#72092c;margin:16px 0 5px;overflow-wrap:anywhere;}
 .champion-id {color:#9b8c94;font-size:11px;overflow-wrap:anywhere;}
 .champion-score {display:flex;align-items:baseline;gap:9px;margin:18px 0 10px;}
@@ -752,6 +755,7 @@ HERO_CSS = """
 .form-win,.form-loss {display:inline-grid;place-items:center;width:24px;height:24px;font-size:11px;border-radius:5px;}
 .form-win {color:#287858;background:#e9f5ee;}.form-loss {color:#a94364;background:#fbeef2;}
 @media(max-width:760px) {.war-room{padding:20px}.war-top{gap:10px;flex-wrap:wrap}.war-body{grid-template-columns:1fr;gap:22px}.war-title{font-size:36px}.war-statline{gap:22px}.champion{padding:20px}}
+@media(max-width:760px) {.war-room{padding:20px}.war-top{gap:10px;flex-wrap:wrap}.war-body{grid-template-columns:1fr;gap:22px}.war-title{font-size:36px}.war-kicker{font-size:22px}.champion-eyebrow span:first-child{font-size:18px}.war-statline{gap:22px}.champion{padding:20px}}
 </style>
 """
 
@@ -1684,4 +1688,3 @@ if active_page == "📥 战绩智能录入":
                 status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-
