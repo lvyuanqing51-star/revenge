@@ -19,7 +19,7 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 
-APP_VERSION = "radar-titles-v2.0 · 2026-10-16"
+APP_VERSION = "ui-titles-v3.0 · 2026-10-16"
 DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
@@ -749,7 +749,7 @@ def performance_rows(records, canonical_name, minimum_players=7):
             if participation is not None and not 0 <= participation <= 1:
                 participation = None
             row = dict(
-                index=original_index, won=side == winner,
+                index=record.get("_source_index", original_index), won=side == winner,
                 kills=player["kills"], deaths=player["deaths"], assists=player["assists"],
                 damage_share=shares[(name, "damage_share")], taken_share=shares[(name, "taken_share")],
                 participation=participation, complete=complete, team_size=len(teams[side]),
@@ -817,7 +817,7 @@ def title_facts(rows, ratings):
         max_kill=max((row["kills"] for row in rows), default=0),
         max_assist=max((row["assists"] for row in rows), default=0),
         assists=sum(row["assists"] for row in rows),
-        max_damage=max(five_player_damage, default=0), max_taken=max(five_player_taken, default=0),
+        max_damage=max(five_player_damage, default=None), max_taken=max(five_player_taken, default=None),
         kda=(sum(row["kills"] + row["assists"] for row in rows) / max(1, sum(row["deaths"] for row in rows))),
         zero_death_wins=sum(row["won"] and row["deaths"] == 0 and row["kills"] + row["assists"] >= 5 for row in rows),
         teamplay_games=sum(row["participation"] is not None and row["participation"] >= .7 for row in rows),
@@ -835,7 +835,7 @@ def title_facts(rows, ratings):
 
 def title_catalog(facts):
     catalog = []
-    def add(family, category, names, thresholds, metric, rule, minimum_games=0, gate=True, gate_text=""):
+    def add(family, category, names, thresholds, metric, rule, minimum_games=0, gate=True, gate_text="", gate_progress=1.0):
         value = facts.get(metric)
         for tier, (name, threshold) in enumerate(zip(names, thresholds), 1):
             unlocked = gate and facts["games"] >= minimum_games and value is not None and value >= threshold
@@ -843,8 +843,24 @@ def title_catalog(facts):
             progress = f"{current} / {threshold:g}" + (f"；至少{minimum_games}局" if minimum_games else "")
             if gate_text:
                 progress += "；" + gate_text
+            metric_ratio = max(0.0, min(1.0, value / threshold)) if value is not None else 0.0
+            games_ratio = min(1.0, facts["games"] / minimum_games) if minimum_games else 1.0
+            progress_ratio = min(metric_ratio, games_ratio, max(0.0, min(1.0, gate_progress)))
+            progress_percent = 100 if unlocked else min(99, int(progress_ratio * 100))
+            blockers = []
+            if value is None:
+                blockers.append("需要有效数据或足够对照样本")
+            elif value < threshold:
+                blockers.append(f"指标还差 {threshold-value:g}")
+            if facts["games"] < minimum_games:
+                blockers.append(f"有效对局还差 {minimum_games-facts['games']} 场")
+            if not gate:
+                blockers.append(gate_text or "附加条件未满足")
             catalog.append(dict(id=f"{family}_{tier}", family=family, category=category, name=name,
-                                tier=tier, unlocked=bool(unlocked), rule=rule.format(threshold=threshold), progress=progress))
+                                tier=tier, total_tiers=len(names), unlocked=bool(unlocked),
+                                rule=rule.format(threshold=threshold), progress=progress,
+                                value=value, threshold=threshold, metric=metric, minimum_games=minimum_games,
+                                progress_percent=progress_percent, blockers=blockers, needs_data=value is None))
 
     add("journey", "成长", ["初临峡谷", "固定班底", "内战中坚", "峡谷老友", "百战同袍"], [1,10,30,60,100], "games", "当前统计范围累计参赛至少{threshold:g}局")
     add("victories", "成长", ["初战告捷", "破阵先锋", "凯旋常客", "胜局收藏家", "百胜旌旗"], [1,10,30,60,100], "wins", "当前统计范围累计获胜至少{threshold:g}局")
@@ -853,7 +869,7 @@ def title_catalog(facts):
     add("assists", "高光", ["并肩作战", "全图策应", "万象援手"], [15,20,30], "max_assist", "单场助攻达到{threshold:g}")
     add("damage", "高光", ["火力焦点", "星火燎原", "烈焰主宰"], [30,38,45], "max_damage", "完整名单且本方5人的对局中，单场实测输出占比达到{threshold:g}%")
     add("taken", "高光", ["前排支柱", "不动壁垒", "山岳之躯"], [30,38,45], "max_taken", "完整名单且本方5人的对局中，单场实测承伤占比达到{threshold:g}%")
-    add("flawless", "高光", ["无伤凯旋", "从容制胜", "完璧战将"], [1,3,8], "zero_death_wins", "累计{threshold:g}场胜局零阵亡，且每场击杀加助攻至少5")
+    add("flawless", "高光", ["不陨凯旋", "从容制胜", "不倒战将"], [1,3,8], "zero_death_wins", "累计{threshold:g}场胜局零阵亡，且每场击杀加助攻至少5")
     add("teamplay", "风格", ["团战纽带", "战场枢纽", "并肩统御"], [3,10,25], "teamplay_games", "完整名单、有效参团率至少70%的对局累计达到{threshold:g}场")
     add("support", "成长", ["援手常在", "千里策应", "千援同袍"], [100,500,1000], "assists", "累计助攻达到{threshold:g}")
     add("laststand", "风格", ["逆风执炬", "孤城守望", "长夜未熄"], [1,3,8], "last_stand", "完整名单且本方5人的败局中，实测输出占比至少35%的场次达到{threshold:g}")
@@ -861,128 +877,335 @@ def title_catalog(facts):
     add("hunter", "风格", ["锋线猎手", "破锋之刃"], [70,80], "score_kills", "至少10局，击杀维度经样本修正后达到{threshold:g}分", minimum_games=10)
     add("connector", "风格", ["战场织网者", "纵横策应"], [70,80], "score_assists", "至少10局，助攻维度经样本修正后达到{threshold:g}分", minimum_games=10)
     active = facts["avg_participation"] is not None and facts["avg_participation"] >= .55 and facts["participation_count"] >= 5
-    add("steady", "风格", ["行稳致远", "不陨之星"], [70,80], "score_survival", "至少10局，低阵亡维度达到{threshold:g}分，且至少5场有效参团数据、平均参团率至少55%", minimum_games=10, gate=active, gate_text="需参团样本≥5且平均参团率≥55%")
+    active_progress = min(1.0, facts["participation_count"]/5, (facts["avg_participation"] or 0)/.55)
+    add("steady", "风格", ["行稳致远", "不陨之星"], [70,80], "score_survival", "至少10局，低阵亡维度达到{threshold:g}分，且至少5场有效参团数据、平均参团率至少55%", minimum_games=10, gate=active, gate_text="需参团样本≥5且平均参团率≥55%", gate_progress=active_progress)
     add("fun_deaths", "趣味", ["复活点熟客", "读秒收藏家", "泉水考勤官"], [1,3,10], "ten_death_games", "单场阵亡至少10次的场次达到{threshold:g}；仅为可选趣味标签")
     return catalog
 
 
+TITLE_FAMILIES = {
+    "journey": "参赛历程", "victories": "胜场积累", "streak": "连胜纪录",
+    "kills": "单局击杀", "assists": "单局助攻", "damage": "输出高光",
+    "taken": "承伤高光", "flawless": "零阵亡胜局", "teamplay": "团队参与",
+    "support": "助攻积累", "laststand": "逆风输出", "efficiency": "KDA效率",
+    "hunter": "击杀风格", "connector": "策应风格", "steady": "稳健参与",
+    "fun_deaths": "复活趣闻",
+}
+
+PROFILE_V3_CSS = """
+<style>
+.pv-profile {display:flex;justify-content:space-between;gap:24px;align-items:center;padding:24px;margin:16px 0 20px;border:1px solid #eadde2;border-radius:18px;background:linear-gradient(115deg,#fff,#fcf7f8);}
+.pv-identity {display:flex;gap:16px;align-items:center;min-width:0;}
+.pv-avatar {display:grid;place-items:center;flex:none;width:58px;height:64px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:linear-gradient(145deg,#9c2b4e,#72092c);color:#f8e7c5;font-size:25px;font-weight:700;}
+.pv-name {font-size:24px;font-weight:750;line-height:1.4;color:#4b2033;overflow-wrap:anywhere;}
+.pv-id {font-size:12px;color:#847985;margin-top:4px;overflow-wrap:anywhere;}
+.pv-worn {display:inline-block;border:1px solid #e0cba6;border-radius:6px;background:#fffaf0;padding:5px 9px;color:#886529;font-size:12px;margin-top:10px;}
+.pv-overview {display:grid;grid-template-columns:repeat(3,minmax(70px,1fr));gap:24px;flex-shrink:0;}
+.pv-number {font:650 24px/1.2 ui-monospace,SFMono-Regular,monospace;color:#5a2038;}
+.pv-number-label {font-size:11px;color:#877b86;margin-top:6px;}
+.pv-panel-heading {display:flex;align-items:center;justify-content:space-between;gap:10px;color:#502239;font-size:17px;font-weight:700;margin:0 0 14px;}
+.pv-panel-heading small {font-size:11px;color:#877b86;font-weight:400;}
+.pv-axis {padding:10px 0;border-bottom:1px solid #f1eaee;}.pv-axis:last-child{border-bottom:0;}
+.pv-axis-head {display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#47323f;}
+.pv-axis-head strong {font:650 17px ui-monospace,SFMono-Regular,monospace;color:#881337;}
+.pv-axis-head small {font-size:10px;color:#9b8c96;font-weight:400;}
+.pv-axis-meta {font-size:11px;color:#8c7f8a;margin-top:4px;line-height:1.7;}
+.pv-axis-bar {height:4px;background:#f1e8ed;border-radius:5px;overflow:hidden;margin-top:7px;}
+.pv-axis-bar i {display:block;height:100%;background:linear-gradient(90deg,#b56a82,#881337);border-radius:5px;}
+.pv-axis-missing {background:repeating-linear-gradient(90deg,#e9e3e7 0 6px,#f9f6f8 6px 10px);}
+.pv-collection-summary {display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 18px;color:#877b86;font-size:12px;}
+.pv-collection-summary strong {color:#881337;font-size:18px;}
+.pv-title-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:12px 0 20px;}
+.pv-title-card {position:relative;border:1px solid #e9dfe4;border-radius:14px;background:#fff;padding:20px 18px;min-width:0;}
+.pv-title-card.equipped {border-color:#c5a15e;background:linear-gradient(150deg,#fffaf0,#fff);}
+.pv-title-card.locked {background:#fcfafb;border-style:dashed;}
+.pv-card-top {display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#91828e;line-height:1.6;}
+.pv-card-status {font-size:10px;color:#886529;background:#f8efd9;border-radius:4px;padding:1px 6px;white-space:nowrap;}
+.pv-emblem {width:52px;height:52px;display:grid;place-items:center;margin:15px auto 11px;border:1px solid #ead8df;border-radius:50%;background:#fcf4f7;color:#881337;}
+.pv-title-card.equipped .pv-emblem {background:#faf1dd;border-color:#dfc892;color:#987130;}
+.pv-title-card.locked .pv-emblem {color:#92818d;background:#f5f0f3;border-color:#e4dbe1;}
+.pv-card-name {font-size:19px;line-height:1.5;text-align:center;font-weight:700;color:#542539;margin-bottom:6px;}
+.pv-card-family {font-size:11px;color:#95818e;text-align:center;}
+.pv-card-rule {font-size:12px;color:#786675;line-height:1.9;margin:16px 0 12px;}
+.pv-stages {display:flex;gap:5px;margin:12px 0 6px;}.pv-stages i {height:4px;flex:1;border-radius:5px;background:#eee7eb;}.pv-stages i.done{background:#a4516c;}
+.pv-card-footer {display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#91818c;line-height:1.7;}
+.pv-goal-progress {height:5px;border-radius:6px;background:#eee7eb;overflow:hidden;margin:12px 0 8px;}
+.pv-goal-progress i {display:block;height:100%;background:linear-gradient(90deg,#ba8194,#881337);border-radius:6px;}
+.pv-goal-gap {font-size:11px;color:#986343;line-height:1.8;}
+.pv-series-route {font-size:11px;color:#927d8c;line-height:2;margin-top:12px;padding-top:10px;border-top:1px solid #f0e8ed;}
+.pv-notice {padding:12px 15px;border-left:3px solid #c5a15e;background:#fcf8ef;color:#85724c;font-size:12px;line-height:1.9;border-radius:0 8px 8px 0;margin:10px 0 16px;}
+@media(max-width:1000px){.pv-title-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pv-profile{align-items:flex-start}.pv-overview{gap:14px}.pv-number{font-size:21px}}
+@media(max-width:680px){.pv-profile{display:block;padding:20px}.pv-overview{margin-top:22px;padding-top:16px;border-top:1px solid #eee4e9}.pv-title-grid{grid-template-columns:1fr}.pv-name{font-size:22px}.pv-title-card{padding:18px}.pv-card-rule{margin-top:12px}.pv-overview{grid-template-columns:repeat(3,1fr)}}
+</style>
+"""
+
+
+def title_series(catalog):
+    series = {}
+    for title in catalog:
+        series.setdefault(title['family'], []).append(title)
+    return {
+        family: dict(
+            family=family, name=TITLE_FAMILIES[family], titles=tiers,
+            earned=next((title for title in reversed(tiers) if title['unlocked']), None),
+            next=next((title for title in tiers if not title['unlocked']), None),
+        ) for family, tiers in series.items()
+    }
+
+
+def recommended_title(catalog):
+    earned = [item['earned'] for item in title_series(catalog).values()
+              if item['earned'] is not None and item['earned']['category'] != '趣味']
+    priority = {'风格': 3, '高光': 2, '成长': 1}
+    return max(earned, key=lambda t:(priority.get(t['category'], 0), t['tier']/t['total_tiers'], t['tier'], t['id']), default=None)
+
+
+def next_title_goals(catalog):
+    goals = [item['next'] for item in title_series(catalog).values() if item['next'] is not None]
+    return sorted(goals, key=lambda t:(t['needs_data'], -t['progress_percent'], -t['tier'], t['id']))
+
+
+def title_emblem(family):
+    # SVG icons are native vectors; no remote images or fabricated player avatars.
+    paths = {
+        'growth': '<path d="M9 26h18M13 26V16h10v10M16 16V9h4v7M10 12l8-7 8 7"/>',
+        'flame': '<path d="M20 5c1 8-5 8-3 14 2-1 3-3 3-5 7 5 9 13 2 17-8 5-17-3-12-10 0 4 3 5 4 4-4-8 3-12 6-20Z"/>',
+        'shield': '<path d="m18 5 11 4v9c0 7-7 12-11 14-4-2-11-7-11-14V9Z"/><path d="m12 18 4 4 8-9"/>',
+        'star': '<path d="m18 5 4 8 9 1-6 7 1 10-8-5-8 5 1-10-6-7 9-1Z"/>',
+        'link': '<path d="M13 12h-2a7 7 0 0 0 0 14h5M23 24h2a7 7 0 0 0 0-14h-5M11 18h14"/>',
+    }
+    kind = 'growth' if family in {'journey','victories','support'} else 'shield' if family in {'taken','flawless','steady'} else 'link' if family in {'assists','teamplay','connector'} else 'flame' if family in {'kills','damage','hunter','laststand'} else 'star'
+    return '<svg width="34" height="34" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[kind]+'</svg>'
+
+
+def title_card_html(title, series, equipped=False, goal=False, provisional=False):
+    e=lambda value:escape(str(value))
+    status='已佩戴' if equipped else '待解锁' if goal else '暂览达成' if provisional else '已解锁'
+    css=' locked' if goal else ' equipped' if equipped else ''
+    stages=''.join('<i class="done"></i>' if step<=title['tier'] and not goal else '<i></i>' for step in range(1,title['total_tiers']+1))
+    route=' → '.join(e(item['name']) for item in series['titles'])
+    footer=f'<div class="pv-stages">{stages}</div><div class="pv-card-footer"><span>系列最高已达</span><span>{title["tier"]} / {title["total_tiers"]} 阶</span></div>'
+    if goal:
+        blockers='；'.join(title['blockers']) or '继续积累有效战绩'
+        footer=f'<div class="pv-goal-progress"><i style="width:{title["progress_percent"]}%"></i></div><div class="pv-card-footer"><span>综合解锁进度</span><span>{title["progress_percent"]}%</span></div><div class="pv-goal-gap">{e(blockers)}</div>'
+    return f'<article class="pv-title-card{css}"><div class="pv-card-top"><span>{e(title["category"])} · 第{title["tier"]}阶</span><span class="pv-card-status">{status}</span></div><div class="pv-emblem">{title_emblem(title["family"])}</div><div class="pv-card-name">{e(title["name"])}</div><div class="pv-card-family">{e(series["name"])}</div><div class="pv-card-rule">{e(title["rule"])}</div>{footer}<div class="pv-series-route">{route}</div></article>'
+
+
+def title_evidence_rows(title, rows):
+    family=title['family']
+    def matches(row):
+        if family=='victories': return row['won']
+        if family=='kills': return row['kills']>=title['threshold']
+        if family=='assists': return row['assists']>=title['threshold']
+        if family in {'damage','taken'}:
+            field='damage_share' if family=='damage' else 'taken_share'
+            return row['complete'] and row['team_size']==5 and row[field] is not None and row[field]>=title['threshold']
+        if family=='flawless': return row['won'] and row['deaths']==0 and row['kills']+row['assists']>=5
+        if family=='teamplay': return row['participation'] is not None and row['participation']>=.7
+        if family=='laststand': return not row['won'] and row['complete'] and row['team_size']==5 and row['damage_share'] is not None and row['damage_share']>=35
+        if family=='fun_deaths': return row['deaths']>=10
+        return True
+    return [dict(
+        对局=f"第 {row['index']+1} 局", 结果='胜' if row['won'] else '负',
+        KDA=f"{row['kills']}/{row['deaths']}/{row['assists']}",
+        输出占比='—' if row['damage_share'] is None else f"{row['damage_share']:.1f}%",
+        承伤占比='—' if row['taken_share'] is None else f"{row['taken_share']:.1f}%",
+        参团率='—' if row['participation'] is None else f"{row['participation']*100:.1f}%",
+    ) for row in reversed(rows) if matches(row)]
+
+
 def generate_performance_radar(ratings):
-    cx = cy = 190
-    radius = 116
-    points, drawing = [], []
+    cx=cy=190
+    radius=112
+    points=[]
+    drawing=['<defs><linearGradient id="pvRadarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#881337" stop-opacity=".22"/><stop offset="100%" stop-color="#b98d47" stop-opacity=".07"/></linearGradient></defs>']
     for fraction in (.25,.5,.75,1):
-        ring = ' '.join(f'{cx+radius*fraction*math.cos(math.pi/2-2*math.pi*i/6):.1f},{cy-radius*fraction*math.sin(math.pi/2-2*math.pi*i/6):.1f}' for i in range(6))
-        drawing.append(f'<polygon points="{ring}" fill="none" stroke="#eadfe4" stroke-width="1"/>')
-    for i, rating in enumerate(ratings):
-        angle = math.pi/2 - 2*math.pi*i/6
-        x, y = cx+radius*math.cos(angle), cy-radius*math.sin(angle)
-        drawing.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#eadfe4"/>')
-        label = escape(rating["label"])
-        note = f'{rating["score"]:.0f}' if rating["score"] is not None else '暂无'
-        color = '#881337' if rating['score'] is not None else '#9a8b94'
-        lx, ly = cx+(radius+37)*math.cos(angle), cy-(radius+27)*math.sin(angle)
-        drawing.append(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" fill="{color}" font-size="13" font-weight="600">{label}<tspan x="{lx:.1f}" dy="17" font-size="11">{note}</tspan></text>')
-        if rating['score'] is None:
-            points.append(None)
-        else:
-            scale=rating['score']/100
-            points.append((cx+radius*scale*math.cos(angle),cy-radius*scale*math.sin(angle)))
+        ring=' '.join(f'{cx+radius*fraction*math.cos(math.pi/2-2*math.pi*i/6):.1f},{cy-radius*fraction*math.sin(math.pi/2-2*math.pi*i/6):.1f}' for i in range(6))
+        stroke='#d4aab9' if fraction==.5 else '#eee5e9'
+        dash=' stroke-dasharray="4 4"' if fraction==.5 else ''
+        drawing.append(f'<polygon points="{ring}" fill="none" stroke="{stroke}" stroke-width="1"{dash}/>')
+    for i,item in enumerate(ratings):
+        angle=math.pi/2-2*math.pi*i/6
+        x,y=cx+radius*math.cos(angle),cy-radius*math.sin(angle)
+        drawing.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#eee5e9"/>')
+        lx,ly=cx+(radius+37)*math.cos(angle),cy-(radius+27)*math.sin(angle)
+        valid=item['score'] is not None
+        color='#75203f' if valid else '#a1919c'
+        note=f"{item['score']:.0f} 分" if valid else '未评分'
+        drawing.append(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" fill="{color}" font-size="13" font-weight="600">{escape(item["label"])}<tspan x="{lx:.1f}" dy="18" font-size="11" font-weight="400">{note}</tspan></text>')
+        scale=item['score']/100 if valid else None
+        points.append(None if scale is None else (cx+radius*scale*math.cos(angle),cy-radius*scale*math.sin(angle)))
     if all(point is not None for point in points):
         coords=' '.join(f'{x:.1f},{y:.1f}' for x,y in points)
-        drawing.append(f'<polygon points="{coords}" fill="#88133718" stroke="#881337" stroke-width="2"/>')
+        drawing.append(f'<polygon points="{coords}" fill="url(#pvRadarFill)" stroke="#881337" stroke-width="2.3" stroke-linejoin="round"/>')
     else:
-        for i, point in enumerate(points):
+        for i,point in enumerate(points):
             following=points[(i+1)%6]
             if point is not None and following is not None:
-                drawing.append(f'<line x1="{point[0]:.1f}" y1="{point[1]:.1f}" x2="{following[0]:.1f}" y2="{following[1]:.1f}" stroke="#881337" stroke-width="2"/>')
+                drawing.append(f'<line x1="{point[0]:.1f}" y1="{point[1]:.1f}" x2="{following[0]:.1f}" y2="{following[1]:.1f}" stroke="#881337" stroke-width="2.3"/>')
     for point in points:
         if point is not None:
-            drawing.append(f'<circle cx="{point[0]:.1f}" cy="{point[1]:.1f}" r="4" fill="#881337"/>')
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 390" role="img" aria-label="六维表现雷达，暂无表示数据不足，不按零分处理" style="display:block;width:100%;max-width:460px;margin:auto">'+''.join(drawing)+'</svg>'
+            drawing.append(f'<circle cx="{point[0]:.1f}" cy="{point[1]:.1f}" r="4.2" fill="#fff" stroke="#881337" stroke-width="2"/>')
+    drawing.append(f'<circle cx="{cx}" cy="{cy}" r="2" fill="#c5b4bd"/>')
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 380" role="img" aria-label="六维表现雷达，虚线为50分参考，未评分维度不补值" style="display:block;width:100%;max-width:440px;margin:auto">'+''.join(drawing)+'</svg>'
 
 
 def render_performance_page(records, canonical_name, stats_scope):
-    st.markdown('<div class="panel-header-title">🎯 雷达与称号 V2 · 实测分位版</div>', unsafe_allow_html=True)
-    population = st.radio("档案对局人数", ["7人及以上对局", "全部人数"], horizontal=True, key="performance_population")
-    selected_records = [r for r in records if stats_scope != "仅已核验对局" or is_record_verified(r)]
-    profiles, audit = performance_rows(selected_records, canonical_name, 7 if population == "7人及以上对局" else 2)
-    st.caption(APP_VERSION)
-    st.caption(f"{stats_scope} · {population} · {audit['included_games']}场有效对局。称号和雷达均按这个范围计算。")
-    if stats_scope != "仅已核验对局":
-        st.warning("当前包含待核验战绩，雷达与称号仅供暂览。正式解锁依据建议使用仅已核验对局。")
-    if audit["invalid_games"] or audit["invalid_shares"]:
-        st.warning(f"数据检查：排除{audit['invalid_games']}局格式或玩家身份异常记录；忽略{audit['invalid_shares']}项不合法或队伍合计异常的占比。原战绩未修改。")
+    st.markdown(PROFILE_V3_CSS,unsafe_allow_html=True)
+    st.markdown('<div class="panel-header-title">选手档案</div>',unsafe_allow_html=True)
+    preferences=st.session_state.setdefault('profile_preferences',{})
+    scope_col,player_col=st.columns([1.1,1.4])
+    with scope_col:
+        populations=['7人及以上对局','全部人数']
+        if 'performance_population' not in st.session_state:
+            st.session_state.performance_population=preferences.get('population',populations[0])
+        population=st.radio('对局范围',populations,
+                            horizontal=True,key='performance_population')
+        preferences['population']=population
+    selected_records=[{**record,'_source_index':i} for i,record in enumerate(records)
+                      if stats_scope!='仅已核验对局' or is_record_verified(record)]
+    profiles,audit=performance_rows(selected_records,canonical_name,7 if population=='7人及以上对局' else 2)
     if not profiles:
-        st.info("当前范围没有有效对局。可切换全部人数，或先录入并核验战绩。")
+        st.info('当前范围暂无有效战绩。可以切换全部人数，或先录入并核验对局。')
         return
-    summaries, ratings = performance_ratings(profiles)
-    options = sorted(profiles, key=lambda name:(-len(profiles[name]), name))
-    target = st.selectbox("选择要分析的选手档案：", options, key="performance_target")
-    rows, summary, axes = profiles[target], summaries[target], ratings[target]
-    facts = title_facts(rows, axes)
-    catalog = title_catalog(facts)
-    fun_enabled = st.checkbox("显示趣味称号（包含阵亡类调侃）", value=False, key="performance_fun")
-    shown_catalog = [title for title in catalog if fun_enabled or title["category"] != "趣味"]
-    unlocked = [title for title in shown_catalog if title["unlocked"]]
-    wear_options = ["不佩戴"] + [title["name"] for title in unlocked]
-    wear_key = "performance_wear_"+hashlib.sha256((target+population+stats_scope).encode()).hexdigest()[:12]
-    if st.session_state.get(wear_key) not in wear_options:
-        st.session_state.pop(wear_key, None)
-    worn = st.selectbox("佩戴称号（仅当前会话）", wear_options,
-                        index=len(wear_options)-1 if len(wear_options)>1 else 0, key=wear_key)
-    metrics = st.columns(4)
-    metrics[0].metric("有效对局", summary["games"])
-    metrics[1].metric("胜率", f"{100*summary['wins']/summary['games']:.1f}%")
-    metrics[2].metric("称号解锁", f"{len(unlocked)} / {len(shown_catalog)}")
-    metrics[3].metric("有效雷达维度", f"{sum(item['score'] is not None for item in axes)} / 6")
-    left, right = st.columns([1.1,1])
-    with left:
-        st.markdown(generate_performance_radar(axes), unsafe_allow_html=True)
-        st.caption("50分为同口径样本的中间参考值。缺失维度显示‘暂无’，不会补零或伪造闭合图形。")
-    with right:
-        st.markdown(f'### {escape(short_name(target))}')
-        if worn != "不佩戴":
-            st.markdown(f'<span class="badge-tag">✦ {escape(worn)}</span>',unsafe_allow_html=True)
-        st.caption(target)
-        evidence=[]
-        for item in axes:
-            raw=item["raw"]
-            actual='暂无' if raw is None else f'{raw*100:.1f}%' if item["field"]=='participation' else f'{raw:.1f}%' if item["field"] in {'damage_share','taken_share'} else f'{raw:.1f} / 局'
-            evidence.append({"维度":item["label"],"实测均值":actual,"有效场次":item["count"],
-                             "修正得分":"暂无" if item["score"] is None else f'{item["score"]:.1f}',
-                             "说明":item["reason"] or f'{item["peers"]}位同口径对照选手'})
-        st.dataframe(pd.DataFrame(evidence),hide_index=True,use_container_width=True)
-        if summary["games"] < 5:
-            st.info("当前少于5场，只展示原始统计与已达到的客观成就，暂不生成相对雷达分数。")
-    with st.expander("雷达计算规则与数据边界"):
-        st.markdown("""- 每位选手至少5场；每个维度至少3场有效数据，并至少有5位合格对照选手。
-- 按当前范围内的玩家实测均值计算分位；并列取中间分位，完全相同时均为50。低阵亡维度方向取反。
-- 得分 = 50 +（原始分位 − 50）× n /（n + 5），n为该维度有效场次，减少小样本极端值。
-- 输出与承伤只使用截图实测占比，不从击杀或死亡推算。缺失、越界和队伍合计异常的占比不计入。
-- 参团率 =（击杀 + 助攻）/ 本方总击杀。仅使用完整10人5对5名单，或管理员明确确认名单完整的记录；分母为0或结果超出0–100%时不计入。
-- 没有时长、位置、英雄及胜负过程数据，跨人数占比也不能完全等价。雷达描述当前样本中的打法特征，不是官方能力分，也不用于改动原有MMR。
-- 称号按当前统计范围即时生成，不写回历史战绩。连胜指筛选范围内的对局顺序，切换范围后称号可能改变。""")
-    st.markdown('<div class="panel-header-title">🏅 称号收藏与解锁路线</div>',unsafe_allow_html=True)
-    category=st.radio("称号类别",["全部","成长","高光","风格"]+(["趣味"] if fun_enabled else []),horizontal=True,key="performance_title_category")
-    latest_by_family={}
-    for title in shown_catalog:
-        if title["unlocked"]:
-            latest_by_family[title["family"]]=title
-    visible=[title for title in latest_by_family.values() if category=="全部" or title["category"]==category]
-    if visible:
-        for i,title in enumerate(visible):
-            if i%3==0:
-                columns=st.columns(3)
-            with columns[i%3]:
-                st.markdown(f'<div class="metric-stat-box"><div class="metric-title">{escape(title["category"])} · 第{title["tier"]}阶</div><div class="metric-val-main" style="font-size:20px">{escape(title["name"])}</div><div class="metric-badge badge-burgundy">已解锁</div></div>',unsafe_allow_html=True)
-                st.caption(title["rule"])
-    else:
-        st.info("这个类别暂未解锁称号，下面可以查看具体条件和进度。")
-    with st.expander("查看全部称号、条件与当前进度"):
-        st.dataframe(pd.DataFrame([{
-            "称号":t["name"],"类别":t["category"],"阶数":t["tier"],
-            "状态":"已解锁" if t["unlocked"] else "待解锁","解锁条件":t["rule"],"当前进度":t["progress"],
-        } for t in shown_catalog if category=="全部" or t["category"]==category]),hide_index=True,use_container_width=True)
+    with player_col:
+        player_options=sorted(profiles,key=lambda p:(-len(profiles[p]),p))
+        saved_target=preferences.get('target')
+        if st.session_state.get('performance_target') not in player_options:
+            st.session_state.performance_target=saved_target if saved_target in player_options else player_options[0]
+        target=st.selectbox('查看选手',player_options,
+                            key='performance_target')
+        preferences['target']=target
+    st.caption(f"{stats_scope} · {population} · 共{audit['included_games']}场有效对局 · 称号按当前范围即时计算")
+    provisional=stats_scope!='仅已核验对局'
+    if provisional:
+        st.warning('当前包含待核验对局，所有称号与评分仅供暂览。')
+    if audit['invalid_games'] or audit['invalid_shares']:
+        st.warning(f"已排除{audit['invalid_games']}局格式或身份异常记录，忽略{audit['invalid_shares']}项异常占比。原战绩未改动。")
+    summaries,all_ratings=performance_ratings(profiles)
+    rows,summary,axes=profiles[target],summaries[target],all_ratings[target]
+    facts=title_facts(rows,axes)
+    catalog=title_catalog(facts)
+    profile_slot=st.empty()
+    with st.expander('称号设置',expanded=False):
+        if 'performance_fun' not in st.session_state:
+            st.session_state.performance_fun=preferences.get('fun',False)
+        fun_enabled=st.checkbox('显示趣味称号（包含阵亡类调侃）',key='performance_fun')
+        preferences['fun']=fun_enabled
+        shown=[title for title in catalog if fun_enabled or title['category']!='趣味']
+        series=title_series(shown)
+        unlocked=[title for title in shown if title['unlocked']]
+        earned=[item['earned'] for item in series.values() if item['earned'] is not None]
+        recommendation=recommended_title(shown)
+        scope_key=hashlib.sha256(json.dumps([target,population,stats_scope],ensure_ascii=False).encode()).hexdigest()[:16]
+        book=st.session_state.setdefault('equipped_titles',{})
+        wear_options=['none']+[title['family'] for title in earned]
+        if scope_key not in book:
+            book[scope_key]=recommendation['family'] if recommendation else 'none'
+        elif book[scope_key] not in wear_options:
+            book[scope_key]='none'
+            st.info('原佩戴系列在当前数据中不再满足条件，已取消佩戴。')
+        widget_revision=hashlib.sha256(json.dumps([scope_key,[(t['id'],t['name']) for t in earned]],ensure_ascii=False).encode()).hexdigest()[:16]
+        def format_wear(family):
+            if family=='none': return '不佩戴'
+            title=series[family]['earned']
+            return title['name']+' · '+TITLE_FAMILIES[family]+('（推荐）' if recommendation and family==recommendation['family'] else '')
+        wear_key='performance_wear_'+widget_revision
+        if wear_key not in st.session_state:
+            st.session_state[wear_key]=book[scope_key]
+        worn_family=st.selectbox('佩戴系列（自动展示该系列最高阶）',wear_options,
+                                format_func=format_wear,key=wear_key)
+        book[scope_key]=worn_family
+        st.caption('选择保留在当前会话中，切换页面不会重置；不同人数与核验范围分别记录。关闭页面后不保证保留。')
+        if recommendation:
+            st.caption('推荐依据：'+recommendation['rule'])
+    worn=series[worn_family]['earned'] if worn_family!='none' else None
+    e=lambda value:escape(str(value))
+    worn_html=f'<span class="pv-worn">✦ {e(worn["name"])} · 第{worn["tier"]}阶</span>' if worn else '<span class="pv-worn">未佩戴称号</span>'
+    profile_slot.markdown(f'<div class="pv-profile"><div class="pv-identity"><div class="pv-avatar">{e(short_name(target)[:1])}</div><div><div class="pv-name">{e(short_name(target))}</div><div class="pv-id">{e(target)}</div>{worn_html}</div></div><div class="pv-overview"><div><div class="pv-number">{summary["games"]}</div><div class="pv-number-label">有效对局</div></div><div><div class="pv-number">{100*summary["wins"]/summary["games"]:.1f}%</div><div class="pv-number-label">胜率</div></div><div><div class="pv-number">{facts["kda"]:.2f}</div><div class="pv-number-label">累计 KDA</div></div></div></div>',unsafe_allow_html=True)
+    radar_col,axes_col=st.columns([1.1,1])
+    with radar_col:
+        with st.container(border=True):
+            valid=sum(axis['score'] is not None for axis in axes)
+            st.markdown(f'<div class="pv-panel-heading">表现雷达<small>{valid} / 6 项可比较</small></div>',unsafe_allow_html=True)
+            st.markdown(generate_performance_radar(axes),unsafe_allow_html=True)
+            st.caption('虚线为50分参考线。缺失维度不补值、不闭合连线。')
+            if summary['games']<5:
+                st.info('尚不足5场：先展示实测统计，积累样本后再生成相对分数。')
+    with axes_col:
+        with st.container(border=True):
+            st.markdown('<div class="pv-panel-heading">六维实测<small>分数 + 原始依据</small></div>',unsafe_allow_html=True)
+            axis_html=[]
+            for axis in axes:
+                raw=axis['raw']
+                actual='未采集' if raw is None else f'{raw*100:.1f}%' if axis['field']=='participation' else f'{raw:.1f}%' if axis['field'] in {'damage_share','taken_share'} else f'{raw:.1f} / 局'
+                valid=axis['score'] is not None
+                value=f'{axis["score"]:.1f}<small> / 100</small>' if valid else '<small>未评分</small>'
+                bar=f'<div class="pv-axis-bar"><i style="width:{axis["score"]:.1f}%"></i></div>' if valid else '<div class="pv-axis-bar pv-axis-missing"></div>'
+                note=f'实测 {actual} · {axis["count"]} 场有效数据'
+                if axis['reason']: note+=' · '+axis['reason']
+                axis_html.append(f'<div class="pv-axis"><div class="pv-axis-head"><span>{e(axis["label"])}</span><strong>{value}</strong></div><div class="pv-axis-meta">{e(note)}</div>{bar}</div>')
+            st.markdown(''.join(axis_html),unsafe_allow_html=True)
+    with st.expander('数据明细与算法说明'):
+        st.dataframe(pd.DataFrame([{'维度':a['label'],'实测均值':a['raw'],'有效场次':a['count'],
+                                   '修正得分':a['score'],'对照选手':a['peers'],'未评分原因':a['reason']} for a in axes]),hide_index=True,use_container_width=True)
+        st.markdown('''至少5场对局、每维至少3场有效数据、至少5位合格对照选手，才产生分数。先计算同口径玩家的实测均值分位，并列取中位，再使用 **50 +（分位−50）× n /（n+5）** 修正小样本。
+
+伤害和承伤只采纳实测百分比。参团率为（击杀+助攻）/本方总击杀，仅使用完整10人5对5或管理员确认名单完整的记录；零分母和超过100%的结果不计入。
+
+未采集、越界或队伍合计异常的占比不补值。低阵亡是风格描述，承伤占比不等于坦度；缺少时长、位置和英雄信息，跨人数表现仍不能完全等价。雷达不改动现有MMR。''')
+    st.markdown('<div class="panel-header-title">称号收藏</div>',unsafe_allow_html=True)
+    st.markdown(f'<div class="pv-collection-summary"><span><strong>{len(unlocked)}</strong> / {len(shown)} 个称号已达成</span><span>·</span><span>{len(earned)} 个系列已解锁</span><span>·</span><span>每个系列展示最高阶</span></div>',unsafe_allow_html=True)
+    categories=['全部','成长','高光','风格']+(['趣味'] if fun_enabled else [])
+    saved_category=preferences.get('category','全部')
+    if st.session_state.get('performance_title_category') not in categories:
+        st.session_state.performance_title_category=saved_category if saved_category in categories else '全部'
+    category=st.radio('称号类别',categories,
+                       horizontal=True,key='performance_title_category')
+    preferences['category']=category
+    visible_catalog=[t for t in shown if category=='全部' or t['category']==category]
+    collection,goals,guide=st.tabs(['已获称号','下一目标','全部图鉴'])
+    with collection:
+        cards=[t for t in earned if category=='全部' or t['category']==category]
+        if cards:
+            st.markdown('<div class="pv-title-grid">'+''.join(title_card_html(t,series[t['family']],worn is not None and t['id']==worn['id'],provisional=provisional) for t in cards)+'</div>',unsafe_allow_html=True)
+        else:
+            st.info('这个类别还没有解锁称号，可以到“下一目标”查看最接近的目标。')
+    with goals:
+        candidates=next_title_goals(visible_catalog)
+        achievable=[t for t in candidates if not t['needs_data']]
+        missing=[t for t in candidates if t['needs_data']]
+        if achievable:
+            st.caption('按综合进度优先展示最接近的3个目标。进度同时考虑指标、场次与附加条件。')
+            st.markdown('<div class="pv-title-grid">'+''.join(title_card_html(t,series[t['family']],goal=True) for t in achievable[:3])+'</div>',unsafe_allow_html=True)
+        elif candidates:
+            st.info('当前目标需要补充数据或对照样本，详见下方待补齐列表。')
+        else:
+            st.success('这个类别的所有系列均已达最高阶。')
+        if missing:
+            with st.expander(f'待补齐数据的目标 · {len(missing)} 个'):
+                st.dataframe(pd.DataFrame([{'称号':t['name'],'系列':TITLE_FAMILIES[t['family']],
+                                           '条件':t['rule'],'尚缺条件':'；'.join(t['blockers'])} for t in missing]),hide_index=True,use_container_width=True)
+        if len(achievable)>3:
+            with st.expander('查看其他系列的下一阶目标'):
+                st.dataframe(pd.DataFrame([{'称号':t['name'],'进度':f"{t['progress_percent']}%",'尚缺条件':'；'.join(t['blockers'])} for t in achievable[3:]]),hide_index=True,use_container_width=True)
+    with guide:
+        st.caption('称号随当前统计口径即时计算。成长记录积累，高光记录单场表现，风格需要持续样本；趣味默认隐藏。')
+        st.dataframe(pd.DataFrame([{'系列':TITLE_FAMILIES[t['family']],'称号':t['name'],'阶数':f"{t['tier']}/{t['total_tiers']}",
+                                   '状态':'已解锁' if t['unlocked'] and not provisional else '暂览达成' if t['unlocked'] else '待解锁',
+                                   '解锁条件':t['rule'],'进度':f"{t['progress_percent']}%",'尚缺条件':'；'.join(t['blockers'])} for t in visible_catalog]),hide_index=True,use_container_width=True)
+    with st.expander('称号依据 · 查看对应对局'):
+        evidence_options=[t['family'] for t in earned]
+        if evidence_options:
+            selected_family=st.selectbox('查看称号依据',evidence_options,format_func=lambda family:series[family]['earned']['name'],key='performance_evidence_family')
+            evidence_title=series[selected_family]['earned']
+            st.caption(evidence_title['rule'])
+            if evidence_title['family'] in {'journey','support','efficiency','hunter','connector','steady','streak'}:
+                st.caption('这是累计或相对表现称号，需要结合整个当前样本判断；下表列出参与计算的对局。')
+            st.dataframe(pd.DataFrame(title_evidence_rows(evidence_title,rows)),hide_index=True,use_container_width=True)
+        else:
+            st.caption('解锁后可在这里追溯对局依据。')
+
 
 # ---------------- 明亮酒红首屏：保留大标题与领跑者 ----------------
 HERO_CSS = """
@@ -993,14 +1216,15 @@ HERO_CSS = """
 .war-logo {display:grid;place-items:center;width:28px;height:32px;background:#881337;color:#f1dfb6;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);font-size:20px;letter-spacing:0;}
 .war-status {font-size:11px;color:#64748b;border:1px solid #e9dfe2;border-radius:20px;background:#fff;padding:6px 10px;white-space:nowrap;}
 .war-body {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(290px,.85fr);gap:36px;align-items:center;}
-.war-kicker {color:#947c86;font-size:12px;letter-spacing:4px;margin-bottom:12px;}
+.war-kicker {color:#881337;font-size:26px;font-weight:800;line-height:1.4;letter-spacing:2px;margin-bottom:14px;}
 .war-title {font-size:clamp(30px,4vw,50px);line-height:1.2;font-weight:800;letter-spacing:-1px;margin:0 0 14px;color:#72092c;}
 .war-title span {color:#ac7d36;}.war-description {font-size:13px;color:#7c6c77;line-height:1.9;max-width:450px;}
 .war-statline {display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;}
 .war-statline strong {display:block;color:#334155;font:600 24px/1.2 ui-monospace,SFMono-Regular,monospace;}
 .war-statline small {display:block;font-size:11px;color:#8b7c85;margin-top:6px;}
 .champion {padding:22px 24px;border:1px solid #e2cfaa;border-radius:14px;background:linear-gradient(130deg,#fffdf8,#fff);box-shadow:0 4px 16px #72092c05;}
-.champion-eyebrow {display:flex;justify-content:space-between;gap:10px;color:#a47e3f;font-size:10px;letter-spacing:1.5px;}
+.champion-eyebrow {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;color:#8c672b;font-size:12px;letter-spacing:1px;}
+.champion-eyebrow span:first-child {font-size:20px;font-weight:800;line-height:1.4;}
 .champion-name {font-size:24px;font-weight:750;color:#72092c;margin:16px 0 5px;overflow-wrap:anywhere;}
 .champion-id {color:#9b8c94;font-size:11px;overflow-wrap:anywhere;}
 .champion-score {display:flex;align-items:baseline;gap:9px;margin:18px 0 10px;}
@@ -1010,7 +1234,7 @@ HERO_CSS = """
 .champion-form small {font-size:10px;color:#9b8c94;margin-right:7px;}
 .form-win,.form-loss {display:inline-grid;place-items:center;width:24px;height:24px;font-size:11px;border-radius:5px;}
 .form-win {color:#287858;background:#e9f5ee;}.form-loss {color:#a94364;background:#fbeef2;}
-@media(max-width:760px) {.war-room{padding:20px}.war-top{gap:10px;flex-wrap:wrap}.war-body{grid-template-columns:1fr;gap:22px}.war-title{font-size:36px}.war-statline{gap:22px}.champion{padding:20px}}
+@media(max-width:760px) {.war-room{padding:20px}.war-top{gap:10px;flex-wrap:wrap}.war-body{grid-template-columns:1fr;gap:22px}.war-title{font-size:36px}.war-kicker{font-size:22px}.champion-eyebrow span:first-child{font-size:18px}.war-statline{gap:22px}.champion{padding:20px}}
 </style>
 """
 
@@ -1181,15 +1405,28 @@ if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
     )
 
 # ---------------- 主界面 2：Tabs 视图 ----------------
-if st.session_state.get("active_page") == "🎯 局内战术图谱与成就馆":
-    st.session_state.active_page = "🎯 雷达与称号 V2"
-active_page = st.radio("功能页面", [
-    "📊 胜率天梯与荣誉榜", "⚔️ 赛前阵营分队系统", "🎯 雷达与称号 V2",
-    "✅ 战绩核验", "📥 战绩智能录入"
-], horizontal=True, key="active_page")
+PAGES = {
+    "ladder": "📊 胜率榜",
+    "teams": "⚔️ 赛前分队",
+    "profile": "🎯 选手档案",
+    "review": "✅ 战绩核验",
+    "upload": "📥 战绩录入",
+}
+legacy_pages = {
+    "📊 胜率天梯与荣誉榜": "ladder", "📊 胜率榜": "ladder",
+    "⚔️ 赛前阵营分队系统": "teams", "⚔️ 赛前分队": "teams",
+    "🎯 局内战术图谱与成就馆": "profile", "🎯 雷达与称号 V2": "profile", "🎯 选手档案": "profile",
+    "✅ 战绩核验": "review", "📥 战绩智能录入": "upload", "📥 战绩录入": "upload",
+}
+previous_page = st.session_state.get("active_page", "ladder")
+if previous_page in legacy_pages:
+    st.session_state.active_page = legacy_pages[previous_page]
+elif previous_page not in PAGES:
+    st.session_state.active_page = "ladder"
+active_page = st.radio("功能导航", list(PAGES), format_func=lambda page:PAGES[page], horizontal=True, key="active_page")
 
 ladder_min_players = 0
-if active_page == "📊 胜率天梯与荣誉榜":
+if active_page == "ladder":
     size_options = ["全部对局", "7人及以上对局"]
     default_size = st.session_state.get("ladder_size_preference", "7人及以上对局" if st.query_params.get("players", "") == "7" else "全部对局")
     size_choice = st.radio("榜单对局人数", size_options, index=size_options.index(default_size), horizontal=True, key="ladder_size_widget")
@@ -1293,7 +1530,7 @@ front_slot.markdown(build_war_room_html(
 ), unsafe_allow_html=True)
 
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
-if active_page == "📊 胜率天梯与荣誉榜":
+if active_page == "ladder":
     if ladder_min_players == 7:
         st.caption("上榜条件：在当前核验口径下，参加7人及以上对局累计至少10局。")
         if not df.empty:
@@ -1432,7 +1669,7 @@ if active_page == "📊 胜率天梯与荣誉榜":
             st.markdown(f'<div class="metric-stat-box"><div class="metric-title">累计助攻王</div><div class="metric-val-main">{name4_str}</div><div class="metric-badge badge-blue">{badge_a_str}</div></div>', unsafe_allow_html=True)
 
 # ================= Tab 2: 赛前阵营分队系统 =================
-if active_page == "⚔️ 赛前阵营分队系统":
+if active_page == "teams":
     if df.empty:
         st.info("💡 暂无选手历史数据，请先录入对局战绩。")
     else:
@@ -1546,11 +1783,11 @@ if active_page == "⚔️ 赛前阵营分队系统":
             """, unsafe_allow_html=True)
 
 # ================= Tab 3: 雷达与称号 V2 =================
-if active_page == "🎯 雷达与称号 V2":
+if active_page == "profile":
     render_performance_page(records, get_final_name, stats_scope)
 
 # ================= Tab 4: 历史战绩胜负核验 =================
-if active_page == "✅ 战绩核验":
+if active_page == "review":
     st.markdown('<div class="card-panel"><div class="panel-header-title">✅ 历史战绩胜负核验</div>', unsafe_allow_html=True)
     st.caption("A组 / B组只代表截图中的两块玩家列表，不代表游戏里的真实蓝方或红方。请以截图上的‘胜利 / 失败’文字为准。")
     if not admin_mode:
@@ -1775,7 +2012,7 @@ if active_page == "✅ 战绩核验":
 
 
 # ================= Tab 5: 战绩智能录入 =================
-if active_page == "📥 战绩智能录入":
+if active_page == "upload":
     st.markdown('<div class="card-panel"><div class="panel-header-title">📸 战绩截图智能分析录入</div>', unsafe_allow_html=True)
     with st.form("upload_box", clear_on_submit=False):
         files = st.file_uploader("选择截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True, disabled=not admin_mode)
@@ -1869,5 +2106,6 @@ if active_page == "📥 战绩智能录入":
                 status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
