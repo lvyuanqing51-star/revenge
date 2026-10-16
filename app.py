@@ -35,7 +35,7 @@ st.markdown("""
 <style>
 :root, [data-theme="light"], .stApp { --primary-color: #881337 !important; }
 .stApp {
-    background: radial-gradient(circle at 10% 20%, #fff1f2 0%, #fff5f5 45%, #fed7aa 100%) !important;
+    background: linear-gradient(145deg, #fbf9f8 0%, #faf5f5 100%) !important;
     background-attachment: fixed !important;
     color: #334155 !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -44,11 +44,11 @@ st.markdown("""
     display: flex; justify-content: space-between; align-items: center;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(254, 242, 242, 0.92) 100%);
     backdrop-filter: blur(14px); border: 1.5px solid #fecdd3; border-left: 6px solid #881337;
-    border-radius: 16px; padding: 16px 26px; margin-bottom: 22px;
-    box-shadow: 0 6px 24px rgba(114, 9, 44, 0.08);
+    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
+    box-shadow: 0 3px 12px rgba(114, 9, 44, 0.04);
 }
 .header-title {
-    font-size: 1.70rem; font-weight: 900;
+    font-size: 26px; font-weight: 800;
     background: linear-gradient(90deg, #881337 0%, #b91c1c 45%, #d97706 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
@@ -83,16 +83,16 @@ div[data-baseweb="tab"][aria-selected="true"] {
     color: #72092c !important; border-top: 3.5px solid #72092c !important;
 }
 .card-panel {
-    background: #ffffff; border: 1.2px solid #fecdd3; border-radius: 14px;
-    padding: 20px 24px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(114, 9, 44, 0.06);
+    background: #ffffff; border: 1px solid #ece5e2; border-radius: 14px;
+    padding: 20px; margin-bottom: 24px; box-shadow: 0 3px 12px rgba(114, 9, 44, 0.03);
 }
 .panel-header-title {
-    font-size: 1.15rem; font-weight: 800; color: #72092c; margin-bottom: 14px;
+    font-size: 18px; font-weight: 700; color: #72092c; margin: 24px 0 12px;
     border-left: 4px solid #72092c; padding-left: 10px;
 }
 .metric-stat-box {
-    background: #ffffff; border: 1.2px solid #fecdd3; border-radius: 14px;
-    padding: 16px 18px; box-shadow: 0 3px 10px rgba(114, 9, 44, 0.05);
+    background: #ffffff; border: 1px solid #ece5e2; border-radius: 14px;
+    padding: 20px; margin-bottom: 24px; box-shadow: 0 3px 10px rgba(114, 9, 44, 0.03);
 }
 .metric-title { font-size: 0.85rem; font-weight: 700; color: #881337; margin-bottom: 4px; }
 .metric-val-main { font-size: 1.45rem; font-weight: 900; color: #1e293b; }
@@ -111,15 +111,24 @@ div[data-baseweb="tab"][aria-selected="true"] {
     border-radius: 8px; margin: 3px 6px 3px 0; cursor: help;
 }
 .ladder-table-box {
-    width: 100%; overflow-x: auto; border: 1.5px solid #fecdd3; border-radius: 14px;
-    background: #ffffff; margin: 10px 0 22px 0;
+    width: 100%; overflow-x: auto; border: 1px solid #ece5e2; border-radius: 14px;
+    background: #ffffff; margin: 12px 0 24px;
 }
-.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: center; }
+.ladder-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: right; font-variant-numeric: tabular-nums; }
 .ladder-table th {
-    background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%); color: #72092c;
-    font-weight: 800; padding: 14px 10px; border-bottom: 2px solid #fbcfe8;
+    background: #faf5f6; color: #72092c;
+    font-weight: 700; padding: 14px 12px; border-bottom: 1px solid #e8dce0;
 }
-.ladder-table td { padding: 12px 8px; border-bottom: 1px solid #fff1f2; }
+.ladder-table th, .ladder-table td { border-left: 0; border-right: 0; }
+.ladder-table td { padding: 14px 12px; border-bottom: 1px solid #f0ebeb; }
+.ladder-table tbody tr:hover { box-shadow: inset 3px 0 #881337; }
+.stApp [data-testid="stCaptionContainer"] { font-size: 13px; color: #64748b; }
+.stApp h3, .stApp h4 { font-size: 18px; line-height: 1.5; }
+@media (max-width: 640px) {
+    .app-header-bar { padding: 16px; flex-wrap: wrap; gap: 12px; }
+    .header-title { font-size: 22px; }
+    .ladder-table th, .ladder-table td { padding: 10px 8px; white-space: nowrap; }
+}
 .rank-1 { background: rgba(254, 240, 138, 0.25) !important; }
 .rank-2 { background: rgba(241, 245, 249, 0.4) !important; }
 .rank-3 { background: rgba(254, 215, 170, 0.22) !important; }
@@ -397,6 +406,28 @@ def correct_record_winner(record, winning_team, verified=True, players=None):
 
 def is_record_verified(record):
     return record.get("result_verified") is True and record.get("groups_verified") is True
+
+
+def verification_changes(record, players, winner):
+    """Compare the displayed statistical result before and after a review."""
+    originals = {p.get("player_name", ""): p for p in record.get("players", [])}
+    changes = []
+    for player in players:
+        name = player.get("player_name", "")
+        old = originals.get(name, {})
+        old_side = str(old.get("team", "")).upper()
+        new_side = str(player.get("team", "")).upper()
+        old_winner = str(record.get("winning_team", "")).upper()
+        old_result = ("胜" if old_side == old_winner else "负") if old_side in {"BLUE", "RED"} and old_winner in {"BLUE", "RED"} else "未知"
+        new_result = ("胜" if new_side == winner else "负") if new_side in {"BLUE", "RED"} else "未知"
+        if old_side != new_side or old_result != new_result:
+            changes.append({
+                "玩家 ID": name,
+                "原分组": {"BLUE": "A组", "RED": "B组"}.get(old_side, "未知"),
+                "新分组": {"BLUE": "A组", "RED": "B组"}.get(new_side, "未知"),
+                "原结果": old_result, "新结果": new_result,
+            })
+    return changes
 
 
 def verification_digest(value):
@@ -699,17 +730,14 @@ def generate_radar_svg(values, categories):
     """
 
 
-# ---------------- 侧边栏：控制台 ----------------
-with st.sidebar:
-    st.markdown("### 🎛️ 系统控制台")
-    render_admin_login()
-    admin_mode = is_admin()
-    key = ""
-    if admin_mode:
+def render_admin_settings(records):
+    require_admin()
+    admin_mode = True
+    model_tab, maintenance_tab, backup_tab, voice_tab = st.tabs(["模型接口", "重新识别", "备份恢复", "语音配置"])
+    with model_tab:
         default_key = get_secret("DASHSCOPE_API_KEY")
         key = st.text_input("DashScope API Key", value=default_key, type="password", placeholder="sk-...", key="vision_key_input")
 
-    with st.expander("⚙️ 模型接口设置"):
         st.text_input(
             "视觉模型 ID",
             value=get_secret("DASHSCOPE_MODEL", "qwen3-vl-plus"),
@@ -729,6 +757,67 @@ with st.sidebar:
         st.checkbox("压缩识别大图", value=True, key="optimize_image",
                     help="图片宽度最多 1920 像素；昵称较小时可关闭后重试。", disabled=not admin_mode)
 
+    with maintenance_tab:
+        st.markdown("---")
+        if records and st.button("🔄 重新扫描历史截图", help="提取输出与承伤占比并补齐数据库", use_container_width=True, disabled=not admin_mode):
+            require_admin()
+            if not key:
+                st.warning("请先填入 DashScope API Key！")
+            else:
+                p_bar = st.progress(0)
+                success_n = 0
+                for idx, r in enumerate(records):
+                    thumb_b64 = r.get("image_thumb", "")
+                    if thumb_b64:
+                        try:
+                            new_res = analyze_image(base64.b64decode(thumb_b64), key)
+                            p_map = {clean_player_name_strict(p["player_name"]): p for p in new_res.get("players", [])}
+                            for old_p in r.get("players", []):
+                                c_name = clean_player_name_strict(old_p.get("player_name", ""))
+                                if c_name in p_map:
+                                    old_p["damage_share"] = p_map[c_name].get("damage_share")
+                                    old_p["taken_share"] = p_map[c_name].get("taken_share")
+                            success_n += 1
+                        except Exception as e:
+                            st.error(f"第 {idx+1} 局失败: {e}")
+                    p_bar.progress((idx + 1) / len(records))
+                save_records(records)
+                st.success(f"成功更新 {success_n} 局并同步！")
+                time.sleep(0.5)
+                st.rerun()
+
+    with backup_tab:
+        if records:
+            if admin_mode and st.checkbox("生成完整 JSON 备份（包含截图）", key="prepare_json_backup"):
+                st.download_button("📤 导出完整数据 (JSON)", json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8'), "lol_records_backup.json", "application/json", use_container_width=True)
+        uploaded_backup = st.file_uploader("导入备份文件", type=["json"], key="backup_uploader", disabled=not admin_mode)
+        restore_checked = st.checkbox("确认用备份替换当前所有战绩", disabled=not admin_mode)
+        if uploaded_backup is not None and st.button("📥 恢复数据", type="primary", use_container_width=True, disabled=not admin_mode or not restore_checked):
+            try:
+                save_records(json.load(uploaded_backup))
+                st.success("恢复成功并已同步！")
+                time.sleep(0.5); st.rerun()
+            except Exception as e:
+                st.error(f"导入失败: {e}")
+
+    with voice_tab:
+        cfg = load_config()
+        new_main = st.text_input("大厅主语音", value=cfg.get("main_voice", ""))
+        new_blue = st.text_input("🔵 蓝方语音", value=cfg.get("blue_voice", ""))
+        new_red = st.text_input("🔴 红方语音", value=cfg.get("red_voice", ""))
+        if st.button("💾 保存链接", use_container_width=True, disabled=not admin_mode):
+            save_config({"main_voice": new_main, "blue_voice": new_blue, "red_voice": new_red})
+            st.success("已保存！"); time.sleep(0.3); st.rerun()
+
+    return key
+
+
+# ---------------- 侧边栏：控制台 ----------------
+with st.sidebar:
+    st.markdown("### 🎛️ 系统控制台")
+    render_admin_login()
+    admin_mode = is_admin()
+    key = ""
     records = load_records()
     total_games_all = len(records)
     verified_games_all = sum(is_record_verified(r) for r in records)
@@ -742,47 +831,9 @@ with st.sidebar:
         help="为保证胜率可信，默认排除尚未人工确认胜负的对局。",
     )
 
-    st.markdown("---")
-    if records and st.button("🔄 重新扫描历史截图", help="提取输出与承伤占比并补齐数据库", use_container_width=True, disabled=not admin_mode):
-        require_admin()
-        if not key:
-            st.warning("请先填入 DashScope API Key！")
-        else:
-            p_bar = st.progress(0)
-            success_n = 0
-            for idx, r in enumerate(records):
-                thumb_b64 = r.get("image_thumb", "")
-                if thumb_b64:
-                    try:
-                        new_res = analyze_image(base64.b64decode(thumb_b64), key)
-                        p_map = {clean_player_name_strict(p["player_name"]): p for p in new_res.get("players", [])}
-                        for old_p in r.get("players", []):
-                            c_name = clean_player_name_strict(old_p.get("player_name", ""))
-                            if c_name in p_map:
-                                old_p["damage_share"] = p_map[c_name].get("damage_share")
-                                old_p["taken_share"] = p_map[c_name].get("taken_share")
-                        success_n += 1
-                    except Exception as e:
-                        st.error(f"第 {idx+1} 局失败: {e}")
-                p_bar.progress((idx + 1) / len(records))
-            save_records(records)
-            st.success(f"成功更新 {success_n} 局并同步！")
-            time.sleep(0.5)
-            st.rerun()
-
-    with st.expander("💾 数据备份与恢复"):
-        if records:
-            if admin_mode and st.checkbox("生成完整 JSON 备份（包含截图）", key="prepare_json_backup"):
-                st.download_button("📤 导出完整数据 (JSON)", json.dumps(records, ensure_ascii=False, indent=2).encode('utf-8'), "lol_records_backup.json", "application/json", use_container_width=True)
-        uploaded_backup = st.file_uploader("导入备份文件", type=["json"], key="backup_uploader", disabled=not admin_mode)
-        restore_checked = st.checkbox("确认用备份替换当前所有战绩", disabled=not admin_mode)
-        if uploaded_backup is not None and st.button("📥 恢复数据", type="primary", use_container_width=True, disabled=not admin_mode or not restore_checked):
-            try:
-                save_records(json.load(uploaded_backup))
-                st.success("恢复成功并已同步！")
-                time.sleep(0.5); st.rerun()
-            except Exception as e:
-                st.error(f"导入失败: {e}")
+    if admin_mode:
+        with st.expander("⚙️ 管理员设置", expanded=False):
+            key = render_admin_settings(records)
 
     if records:
         with st.expander("🔍 历史对局图文复盘"):
@@ -809,15 +860,6 @@ with st.sidebar:
                 records.pop(selected_idx)
                 save_records(records)
                 st.success("已删除该局！"); time.sleep(0.3); st.rerun()
-
-    with st.expander("🎙️ 语音房链接配置"):
-        cfg = load_config()
-        new_main = st.text_input("大厅主语音", value=cfg.get("main_voice", ""))
-        new_blue = st.text_input("🔵 蓝方语音", value=cfg.get("blue_voice", ""))
-        new_red = st.text_input("🔴 红方语音", value=cfg.get("red_voice", ""))
-        if st.button("💾 保存链接", use_container_width=True, disabled=not admin_mode):
-            save_config({"main_voice": new_main, "blue_voice": new_blue, "red_voice": new_red})
-            st.success("已保存！"); time.sleep(0.3); st.rerun()
 
 # ---------------- 主界面 1：顶栏电竞控制台 ----------------
 cfg = load_config()
@@ -1055,25 +1097,40 @@ if active_page == "📊 胜率天梯与荣誉榜":
                         continue
                     personal_matches.append((original_index, match, player, won))
             if personal_matches:
+                ordered_personal_matches = list(reversed(personal_matches))
                 personal_table = pd.DataFrame([{
                     "对局": f"第 {i+1} 局", "结果": "胜" if won else "负",
                     "分组": "A组" if player.get("team") == "BLUE" else "B组",
                     "KDA": f"{player.get('kills', 0)}/{player.get('deaths', 0)}/{player.get('assists', 0)}",
                     "核验": "已核验" if is_record_verified(match) else "待核验",
-                } for i, match, player, won in reversed(personal_matches)])
-                st.dataframe(personal_table, hide_index=True, use_container_width=True)
-                match_lookup = {i: match for i, match, _, _ in personal_matches}
-                personal_game = st.selectbox("查看对局详情", list(reversed(match_lookup)),
-                    format_func=lambda i: f"第 {i+1} 局", key=f"profile_game_{selected_profile}_{history_filter}")
-                detail = match_lookup[personal_game]
-                if detail.get("image_thumb") and st.checkbox("加载该局截图", key="show_profile_image"):
-                    st.image(f"data:image/jpeg;base64,{detail['image_thumb']}", use_container_width=True)
-                st.dataframe(pd.DataFrame([{
-                    "玩家 ID": p.get("player_name", ""),
-                    "分组": "A组" if p.get("team") == "BLUE" else "B组",
-                    "结果": "胜" if p.get("team") == detail.get("winning_team") else "负",
-                    "KDA": f"{p.get('kills', 0)}/{p.get('deaths', 0)}/{p.get('assists', 0)}",
-                } for p in detail.get("players", [])]), hide_index=True, use_container_width=True)
+                } for i, match, player, won in ordered_personal_matches])
+                selection_revision = hashlib.sha256(json.dumps([
+                    selected_profile, history_filter, stats_scope, ladder_min_players,
+                    [(i, match.get("md5"), match.get("winning_team"), player.get("team"))
+                     for i, match, player, _ in ordered_personal_matches],
+                ], ensure_ascii=False).encode()).hexdigest()[:16]
+                st.caption("点击下面任意一行，即可展开该局截图和双方玩家；再次点击可取消选择。")
+                personal_selection = st.dataframe(
+                    personal_table, hide_index=True, use_container_width=True,
+                    on_select="rerun", selection_mode="single-row",
+                    key=f"personal_match_rows_{selection_revision}",
+                )
+                selected_rows = personal_selection.selection.rows
+                if selected_rows and 0 <= selected_rows[0] < len(ordered_personal_matches):
+                    personal_game, detail, _, _ = ordered_personal_matches[selected_rows[0]]
+                    st.markdown(f"#### 第 {personal_game+1} 局 · 对局详情")
+                    st.caption("已核验" if is_record_verified(detail) else "待核验 · 结果仅供参考")
+                    if detail.get("image_thumb"):
+                        with st.container(height=520, border=True):
+                            st.image(f"data:image/jpeg;base64,{detail['image_thumb']}", use_container_width=True)
+                    else:
+                        st.caption("这局没有保存结算截图。")
+                    st.dataframe(pd.DataFrame([{
+                        "玩家 ID": p.get("player_name", ""),
+                        "分组": "A组" if p.get("team") == "BLUE" else "B组",
+                        "结果": "胜" if p.get("team") == detail.get("winning_team") else "负",
+                        "KDA": f"{p.get('kills', 0)}/{p.get('deaths', 0)}/{p.get('assists', 0)}",
+                    } for p in detail.get("players", [])]), hide_index=True, use_container_width=True)
             else:
                 st.info("当前筛选下没有对局。")
 
@@ -1363,98 +1420,109 @@ if active_page == "✅ 战绩核验":
             st.progress((len(verified_indices) / len(records)), text=f"已完成 {len(verified_indices)} / {len(records)} 局")
             if saved_draft:
                 st.caption("已恢复本次会话中的未保存草稿。关闭页面后草稿可能丢失。")
-            if verify_record.get("image_thumb"):
-                if st.checkbox("加载本局核验截图", key="show_verify_image"):
-                    st.image(
-                        f"data:image/jpeg;base64,{verify_record['image_thumb']}",
-                        caption=f"第 {verify_idx+1} 局原始结算截图",
-                        use_container_width=True,
-                    )
+            review_layout = st.radio(
+                "核验布局", ["左右对照", "上下排列"], horizontal=True,
+                key="review_layout", help="电脑建议左右对照；手机或窄窗口可选上下排列。",
+            )
+            if review_layout == "左右对照":
+                image_col, editing_col = st.columns([1.05, 1.2], gap="large")
             else:
-                st.warning("⚠️ 这局没有保存截图，请根据你掌握的原始记录确认；无法确认时不要标记为已核验。")
+                image_col, editing_col = st.container(), st.container()
+            with image_col:
+                st.markdown("#### ① 对照结算截图")
+                if verify_record.get("image_thumb"):
+                    st.caption("长图可在下方区域独立滚动；图片工具栏支持全屏查看。")
+                    with st.container(height=720, border=True):
+                        st.image(
+                            f"data:image/jpeg;base64,{verify_record['image_thumb']}",
+                            caption=f"第 {verify_idx+1} 局 · 已保存的结算截图",
+                            use_container_width=True,
+                        )
+                else:
+                    st.warning("⚠️ 这局没有保存截图，请根据原始记录确认；无法确认时不要标记为已核验。")
+                st.caption("历史图片是压缩预览。若小字无法辨认，请对照原始截图，不要猜测。")
 
-            st.markdown("#### 逐个核对玩家组别")
-            st.caption("点击分组单元格可把误分的玩家移回 A组 / B组。请核对完整游戏 ID；下方名单会随修改更新。")
-            review_players = saved_draft.get("players", verify_record.get("players", []))
-            editor_rows = [{
-                "玩家 ID": p.get("player_name", ""),
-                "分组": "A组" if str(p.get("team", "")).upper() == "BLUE" else "B组",
-                "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
-            } for p in review_players]
-            edited_groups = st.data_editor(
-                pd.DataFrame(editor_rows), hide_index=True, use_container_width=True,
-                key=f"group_editor_{verify_idx}_{editor_revision}",
-                disabled=["玩家 ID", "KDA"] if admin_mode else True,
-                column_config={"分组": st.column_config.SelectboxColumn(
-                    "分组", options=["A组", "B组"], required=True,
-                )},
-            )
-            corrected_players = []
-            for position, player in enumerate(review_players):
-                copy = dict(player)
-                label = edited_groups.iloc[position]["分组"]
-                copy["team"] = {"A组": "BLUE", "B组": "RED"}.get(label, "")
-                corrected_players.append(copy)
-            group_counts = {side: sum(p["team"] == side for p in corrected_players) for side in ("BLUE", "RED")}
-            st.caption(f"当前分组：A组 {group_counts['BLUE']} 人 / B组 {group_counts['RED']} 人")
-            if abs(group_counts["BLUE"] - group_counts["RED"]) > 1:
-                st.warning("两组人数差距较大，可能存在误分或漏识别；请对照截图逐个检查。人数提示不会自动改分组。")
+            with editing_col:
 
-            verify_groups = {}
-            group_cols = st.columns(2)
-            for group_pos, group_side in enumerate(("BLUE", "RED")):
-                group_players = [
-                    p for p in corrected_players
-                    if str(p.get("team", "")).upper() == group_side
-                ]
-                verify_groups[group_side] = group_players
-                group_label = "A组" if group_side == "BLUE" else "B组"
-                current_mark = " · 当前记录为获胜" if verify_record.get("winning_team") == group_side else ""
-                with group_cols[group_pos]:
-                    st.markdown(f"#### {group_label}{current_mark}")
-                    group_rows = [{
-                        "玩家": p.get("player_name", ""),
-                        "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
-                    } for p in group_players]
-                    if group_rows:
-                        st.dataframe(pd.DataFrame(group_rows), hide_index=True, use_container_width=True)
-                    else:
-                        st.warning(f"未识别到{group_label}玩家。")
+                st.markdown("#### ② 核对组别和胜方")
+                st.caption("点击分组单元格可把误分的玩家移回 A组 / B组。请核对完整游戏 ID；下方名单会随修改更新。")
+                review_players = saved_draft.get("players", verify_record.get("players", []))
+                editor_rows = [{
+                    "玩家 ID": p.get("player_name", ""),
+                    "分组": "A组" if str(p.get("team", "")).upper() == "BLUE" else "B组",
+                    "KDA": f"{int(p.get('kills', 0))}/{int(p.get('deaths', 0))}/{int(p.get('assists', 0))}",
+                } for p in review_players]
+                edited_groups = st.data_editor(
+                    pd.DataFrame(editor_rows), hide_index=True, use_container_width=True,
+                    key=f"group_editor_{verify_idx}_{editor_revision}",
+                    disabled=["玩家 ID", "KDA"] if admin_mode else True,
+                    column_config={"分组": st.column_config.SelectboxColumn(
+                        "分组", options=["A组", "B组"], required=True,
+                    )},
+                )
+                corrected_players = []
+                for position, player in enumerate(review_players):
+                    copy = dict(player)
+                    label = edited_groups.iloc[position]["分组"]
+                    copy["team"] = {"A组": "BLUE", "B组": "RED"}.get(label, "")
+                    corrected_players.append(copy)
+                group_counts = {side: sum(p["team"] == side for p in corrected_players) for side in ("BLUE", "RED")}
+                st.caption(f"当前分组：A组 {group_counts['BLUE']} 人 / B组 {group_counts['RED']} 人")
+                if abs(group_counts["BLUE"] - group_counts["RED"]) > 1:
+                    st.warning("两组人数差距较大，可能存在误分或漏识别；请对照截图逐个检查。人数提示不会自动改分组。")
 
-            group_labels = {
-                side: (
-                    f"{'A组' if side == 'BLUE' else 'B组'}（"
-                    + "、".join(short_name(p.get("player_name", "")) for p in verify_groups[side])[:100]
-                    + "）"
+                verify_groups = {
+                    side: [p for p in corrected_players if str(p.get("team", "")).upper() == side]
+                    for side in ("BLUE", "RED")
+                }
+
+                group_labels = {
+                    side: (
+                        f"{'A组' if side == 'BLUE' else 'B组'}（"
+                        + "、".join(short_name(p.get("player_name", "")) for p in verify_groups[side])[:100]
+                        + "）"
+                    )
+                    for side in ("BLUE", "RED")
+                }
+                corrected_winner = st.radio(
+                    "对照截图，哪一组获胜？", ["BLUE", "RED"],
+                    index=0 if saved_draft.get("winner", verify_record.get("winning_team")) == "BLUE" else 1,
+                    format_func=lambda side: group_labels[side],
+                    key=f"review_winner_{draft_key}", disabled=not admin_mode,
                 )
-                for side in ("BLUE", "RED")
-            }
-            corrected_winner = st.radio(
-                "对照截图，哪一组获胜？", ["BLUE", "RED"],
-                index=0 if saved_draft.get("winner", verify_record.get("winning_team")) == "BLUE" else 1,
-                format_func=lambda side: group_labels[side],
-                key=f"review_winner_{draft_key}", disabled=not admin_mode,
-            )
-            if admin_mode:
-                drafts[draft_key] = {"players": corrected_players, "winner": corrected_winner}
-            confirmation_revision = hashlib.sha256(json.dumps(
-                [corrected_players, corrected_winner], ensure_ascii=False, sort_keys=True
-            ).encode()).hexdigest()[:12]
-            result_checked = st.checkbox(
-                "我已逐个核对玩家组别，并确认截图中的‘胜利 / 失败’结果",
-                key=f"review_confirm_{draft_key}_{confirmation_revision}", disabled=not admin_mode,
-            )
-            save_col, next_col = st.columns(2)
-            with save_col:
-                save_verification = st.button(
-                    "💾 保存核验结果", type="primary", use_container_width=True,
-                    disabled=not admin_mode, key=f"review_save_{draft_key}",
+                if admin_mode:
+                    drafts[draft_key] = {"players": corrected_players, "winner": corrected_winner}
+                st.markdown("#### ③ 保存前确认变化")
+                changes = verification_changes(verify_record, corrected_players, corrected_winner)
+                old_winner = {"BLUE": "A组", "RED": "B组"}.get(verify_record.get("winning_team"), "未知")
+                new_winner = "A组" if corrected_winner == "BLUE" else "B组"
+                if old_winner != new_winner:
+                    st.warning(f"胜方将从 {old_winner} 改为 {new_winner}。")
+                if changes:
+                    result_changes = sum(row["原结果"] != row["新结果"] for row in changes)
+                    st.caption(f"{len(changes)} 位玩家的记录将改变，其中 {result_changes} 位胜负改变。尚未保存。")
+                    st.dataframe(pd.DataFrame(changes), hide_index=True, use_container_width=True)
+                else:
+                    st.info("组别和胜方未改变；保存后将确认这局的核验状态。")
+                st.caption("保存后会据此重算胜负与胜率；满足相应人数和场次门槛的记录才进入榜单。")
+                confirmation_revision = hashlib.sha256(json.dumps(
+                    [corrected_players, corrected_winner], ensure_ascii=False, sort_keys=True
+                ).encode()).hexdigest()[:12]
+                result_checked = st.checkbox(
+                    "我已逐个核对玩家组别，并确认截图中的‘胜利 / 失败’结果",
+                    key=f"review_confirm_{draft_key}_{confirmation_revision}", disabled=not admin_mode,
                 )
-            with next_col:
-                save_and_next = st.button(
-                    "✅ 保存并核验下一局", use_container_width=True,
-                    disabled=not admin_mode, key=f"review_next_{draft_key}",
-                )
+                save_col, next_col = st.columns(2)
+                with save_col:
+                    save_verification = st.button(
+                        "💾 保存核验结果", type="primary", use_container_width=True,
+                        disabled=not admin_mode, key=f"review_save_{draft_key}",
+                    )
+                with next_col:
+                    save_and_next = st.button(
+                        "✅ 保存并核验下一局", use_container_width=True,
+                        disabled=not admin_mode, key=f"review_next_{draft_key}",
+                    )
 
             if save_verification or save_and_next:
                 if not result_checked:
