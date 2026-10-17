@@ -19,7 +19,7 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 
-APP_VERSION = "ui-titles-v3.0 · 2026-10-16"
+APP_VERSION = "radar-v4.0 · 2026-10-17"
 DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
@@ -730,6 +730,8 @@ def performance_rows(records, canonical_name, minimum_players=7):
         inferred_full = len(clean) == 10 and all(len(t) == 5 for t in teams.values())
         complete = record.get("roster_complete", inferred_full) is True
         team_kills = {side: sum(p["kills"] for p in team) for side, team in teams.items()}
+        team_assists = {side: sum(p["assists"] for p in team) for side, team in teams.items()}
+        team_deaths = {side: sum(p["deaths"] for p in team) for side, team in teams.items()}
         shares = {}
         for side, team in teams.items():
             for field in ("damage_share", "taken_share"):
@@ -753,6 +755,15 @@ def performance_rows(records, canonical_name, minimum_players=7):
                 kills=player["kills"], deaths=player["deaths"], assists=player["assists"],
                 damage_share=shares[(name, "damage_share")], taken_share=shares[(name, "taken_share")],
                 participation=participation, complete=complete, team_size=len(teams[side]),
+                opponent_size=len(teams['RED' if side=='BLUE' else 'BLUE']),
+                rating_values={
+                    'damage_share': shares[(name,'damage_share')],
+                    'taken_share': shares[(name,'taken_share')],
+                    'participation': participation,
+                    'kills': player['kills']/team_kills[side] if team_kills[side]>0 else None,
+                    'assists': player['assists']/team_assists[side] if team_assists[side]>0 else None,
+                    'deaths': player['deaths']/team_deaths[side] if team_deaths[side]>0 else None,
+                },
             )
             profiles.setdefault(name, []).append(row)
     return profiles, audit
@@ -768,35 +779,62 @@ def summarize_performance(rows):
     return {"games": len(rows), "wins": sum(row["won"] for row in rows), "means": values, "counts": counts}
 
 
-def performance_ratings(profiles, minimum_games=5, minimum_peers=5, prior_games=5):
+def performance_ratings(profiles, minimum_games=5, minimum_peers=5, prior_games=10):
+    """Transparent contextual percentiles, not Riot/OP.GG/TrueSkill replication.
+
+    Equal weight per player in each exact team-size cohort. Missing contexts are
+    excluded, never silently replaced by a broader population. Prior=10 is an
+    explicit product setting, not an empirically fitted uncertainty model.
+    """
     summaries = {name: summarize_performance(rows) for name, rows in profiles.items()}
+    cohorts = {}
+    for name, rows in profiles.items():
+        for row in rows:
+            if not row.get('complete'):
+                continue
+            context = (row.get('team_size'), row.get('opponent_size'))
+            if None in context:
+                continue
+            for _, _, field, _ in PERFORMANCE_AXES:
+                value = row.get('rating_values', {}).get(field)
+                if value is not None and math.isfinite(value):
+                    cohorts.setdefault((context, field), {}).setdefault(name, []).append(value)
     rated = {}
     for name, summary in summaries.items():
         rated[name] = []
         for axis, label, field, inverse in PERFORMANCE_AXES:
-            count, raw = summary["counts"][field], summary["means"][field]
-            peers = [item["means"][field] for item in summaries.values()
-                     if item["games"] >= minimum_games and item["counts"][field] >= 3]
-            score, percentile, reason = None, None, ""
-            if summary["games"] < minimum_games:
-                reason = f"至少需要{minimum_games}场有效对局"
-            elif raw is None or count < 3:
-                reason = "该维度至少需要3场有效实测数据"
-            elif len(peers) < minimum_peers:
-                reason = f"该维度至少需要{minimum_peers}位合格对照选手"
-            else:
-                less = sum(value < raw - 1e-9 for value in peers)
-                equal = sum(abs(value - raw) <= 1e-9 for value in peers)
-                percentile = 100 * (less + (equal - 1) / 2) / (len(peers) - 1)
+            parts, peer_names, comparisons = [], set(), []
+            for (context, metric), players in cohorts.items():
+                if metric != field or name not in players:
+                    continue
+                eligible = {p:sum(v)/len(v) for p,v in players.items()
+                            if len(v)>=3 and summaries[p]['games']>=minimum_games}
+                if name not in eligible or len(eligible)<max(2,minimum_peers):
+                    continue
+                raw_context = eligible[name]
+                others = [v for p,v in eligible.items() if p!=name]
+                # Leave self out of reference; ties earn half credit.
+                percentile = 100*sum(1 if v<raw_context-1e-9 else .5 if abs(v-raw_context)<=1e-9 else 0 for v in others)/len(others)
                 if inverse:
-                    percentile = 100 - percentile
-                # Sample-size adjustment: n=5 keeps half the distance from the neutral 50.
-                confidence = count / (count + prior_games)
-                score = round(50 + (percentile - 50) * confidence, 1)
-            rated[name].append(dict(axis=axis, label=label, field=field, score=score,
-                                    percentile=percentile, raw=raw, count=count,
-                                    peers=len(peers), reason=reason))
-    return summaries, rated
+                    percentile=100-percentile
+                parts.append((percentile,len(players[name])))
+                peer_names.update(p for p in eligible if p!=name)
+                comparisons.append({'维度':label,'人数条件':f'{context[0]} 对 {context[1]}',
+                    '本人标准化均值':raw_context,'其他选手均值':sum(others)/len(others),
+                    '其他选手最低值':min(others),'其他选手最高值':max(others),
+                    '本人评分场次':len(players[name]),'其他对照人数':len(others),'修正前分位':percentile})
+            count=sum(n for _,n in parts)
+            percentile=sum(p*n for p,n in parts)/count if count else None
+            confidence=count/(count+prior_games) if count else 0
+            score=round(50+(percentile-50)*confidence,1) if count>=3 and summary['games']>=minimum_games else None
+            reason='' if score is not None else (
+                f'至少需要{minimum_games}场有效对局' if summary['games']<minimum_games else
+                f'需完整名单，同人数分组每维至少3场、至少{minimum_peers}位合格选手；当前无足够对照')
+            rated[name].append(dict(axis=axis,label=label,field=field,score=score,
+                percentile=percentile,raw=summary['means'][field],count=count,
+                observed_count=summary['counts'][field],peers=len(peer_names),reason=reason,
+                confidence=confidence,contexts=len(parts),comparisons=comparisons))
+    return summaries,rated
 
 
 def title_facts(rows, ratings):
@@ -1142,18 +1180,26 @@ def render_performance_page(records, canonical_name, stats_scope):
                 valid=axis['score'] is not None
                 value=f'{axis["score"]:.1f}<small> / 100</small>' if valid else '<small>未评分</small>'
                 bar=f'<div class="pv-axis-bar"><i style="width:{axis["score"]:.1f}%"></i></div>' if valid else '<div class="pv-axis-bar pv-axis-missing"></div>'
-                note=f'实测 {actual} · {axis["count"]} 场有效数据'
+                note=f'实测 {actual} · {axis["count"]} 场评分样本 / {axis["observed_count"]} 场实测'
+                if valid: note+=f' · 修正前分位 {axis["percentile"]:.1f} · 样本权重 {axis["confidence"]:.0%}'
                 if axis['reason']: note+=' · '+axis['reason']
                 axis_html.append(f'<div class="pv-axis"><div class="pv-axis-head"><span>{e(axis["label"])}</span><strong>{value}</strong></div><div class="pv-axis-meta">{e(note)}</div>{bar}</div>')
             st.markdown(''.join(axis_html),unsafe_allow_html=True)
     with st.expander('数据明细与算法说明'):
+        st.dataframe(pd.DataFrame([
+            {'维度':'输出 / 承伤','评分指标':'个人占全队实测百分比','方向':'越高越突出；承伤只描述风格'},
+            {'维度':'参团','评分指标':'（击杀+助攻）/全队击杀','方向':'越高越突出'},
+            {'维度':'击杀','评分指标':'个人击杀/全队击杀','方向':'越高越突出'},
+            {'维度':'助攻','评分指标':'个人助攻/全队助攻','方向':'越高越突出'},
+            {'维度':'低阵亡','评分指标':'个人阵亡/全队阵亡','方向':'占比越低分位越高；不能据此判断避战'},
+        ]),hide_index=True,use_container_width=True)
+        comparison_rows=[row for axis in axes for row in axis['comparisons']]
+        if comparison_rows:
+            st.caption('分组对照明细：输出承伤为0–100百分数，其余指标为0–1比例。')
+            st.dataframe(pd.DataFrame(comparison_rows),hide_index=True,use_container_width=True)
         st.dataframe(pd.DataFrame([{'维度':a['label'],'实测均值':a['raw'],'有效场次':a['count'],
-                                   '修正得分':a['score'],'对照选手':a['peers'],'未评分原因':a['reason']} for a in axes]),hide_index=True,use_container_width=True)
-        st.markdown('''至少5场对局、每维至少3场有效数据、至少5位合格对照选手，才产生分数。先计算同口径玩家的实测均值分位，并列取中位，再使用 **50 +（分位−50）× n /（n+5）** 修正小样本。
-
-伤害和承伤只采纳实测百分比。参团率为（击杀+助攻）/本方总击杀，仅使用完整10人5对5或管理员确认名单完整的记录；零分母和超过100%的结果不计入。
-
-未采集、越界或队伍合计异常的占比不补值。低阵亡是风格描述，承伤占比不等于坦度；缺少时长、位置和英雄信息，跨人数表现仍不能完全等价。雷达不改动现有MMR。''')
+                                   '修正得分':a['score'],'修正前分位':a['percentile'],'样本权重':a['confidence'],'实测场次':a['observed_count'],'其他对照选手':a['peers'],'人数分组':a['contexts'],'未评分原因':a['reason']} for a in axes]),hide_index=True,use_container_width=True)
+        st.markdown('**评分 V4：同人数条件分位 + 样本修正**\n\n只用完整名单评分，按“本方人数、对方人数”精确分组，4对5与5对4不混比。每组每位选手至少3场该维度有效数据、总计至少5场对局，且至少5位合格选手；不足则该组不评分，不回退到混合人群。\n\n输出、承伤使用实测队内占比；参团使用（击杀+助攻）/本方击杀；击杀、助攻、低阵亡分别用个人数量/全队对应总量，减少长局和高击杀局的天然优势。分母为0记缺失。低阵亡占比越低，分位越高；承伤仅代表承担伤害的风格。\n\n每组先算个人逐场指标均值，再与其他合格选手比较：低于自己的比例 + 并列比例的一半。各选手在组内等权，避免场次多的人支配基准；跨组按本人有效场次加权。最终 **50 +（分位−50）× n/（n+10）**，n为实际可评分场次。10场先验是透明的保守参数，尚未用历史预测效果拟合；样本权重不是置信概率。\n\n50是中性参考，越高代表该维度相对更突出，不是胜率，也不是超过多少百分比的玩家（修正前分位才有此含义）。例如原始分位90，5/10/30场分别约63.3/70/80分。不加六维总分，避免击杀、助攻、参团重复计分，也不鼓励刷承伤。\n\n缺少可靠的时长、英雄、位置、经济、视野和目标数据，尚不能做到同位置能力评级。低阵亡不能证明没有消极避战。新增数据或修改核验范围会改变对照基准与相关风格称号。算法不改胜率、原始战绩或分队MMR。\n\n设计参考：[Riot 分位与英雄位置分组](https://support.riotgames.com/en-us/league-of-legends/rewards/champion-mastery-guide)、[TrueSkill 不确定性思想](https://www.microsoft.com/en-us/research/project/trueskill-ranking-system/)、[OP.GG 多维表现说明](https://help.op.gg/hc/en-us/articles/31088715328665-OP-Score-explained)。这是本项目的透明实现，不是这些产品的算法复刻。\n')
     st.markdown('<div class="panel-header-title">称号收藏</div>',unsafe_allow_html=True)
     st.markdown(f'<div class="pv-collection-summary"><span><strong>{len(unlocked)}</strong> / {len(shown)} 个称号已达成</span><span>·</span><span>{len(earned)} 个系列已解锁</span><span>·</span><span>每个系列展示最高阶</span></div>',unsafe_allow_html=True)
     categories=['全部','成长','高光','风格']+(['趣味'] if fun_enabled else [])
