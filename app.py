@@ -58,6 +58,7 @@ def record_matches_scope(record, season, match_type, verification_scope):
 
 def leader_candidates(standings):
     return standings[standings["总场次"] >= 10] if not standings.empty else standings
+    return standings[standings["总场次"] >= 5] if not standings.empty else standings
 
 
 def ranking_candidates(standings):
@@ -2240,6 +2241,5 @@ if active_page == "upload":
                 status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-
 
 
