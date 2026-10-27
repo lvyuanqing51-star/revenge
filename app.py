@@ -19,10 +19,80 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 
-APP_VERSION = "radar-v4.0 · 2026-10-17"
+APP_VERSION = "season-v4.0 · 2026-10-27"
+SEASONS = ("海斗3.0", "海斗4.0")
+CURRENT_SEASON = "海斗4.0"
+LEGACY_SEASON = "海斗3.0"
 DATA_FILE = "records.json"
 CONFIG_FILE = "config.json"
 TARGET_QIANQIU = "千秋种我一栗卿#52652"
+
+def record_season(record):
+    # 旧记录不按日期猜测赛季；显式标签优先。
+    return record.get("season") or LEGACY_SEASON
+
+
+def is_5v5_record(record):
+    counts, seen = {"BLUE": 0, "RED": 0}, set()
+    for player in record.get("players", []):
+        if not isinstance(player, dict):
+            return False
+        if is_result_banner(player.get("player_name", "")):
+            continue
+        name = clean_player_name_strict(player.get("player_name", ""))
+        side = str(player.get("team", "")).strip().upper()
+        if not name or name in seen or side not in counts:
+            return False
+        seen.add(name)
+        counts[side] += 1
+    return counts == {"BLUE": 5, "RED": 5} and record.get("roster_complete") is not False
+
+
+def record_matches_scope(record, season, match_type, verification_scope):
+    return (
+        (season is None or record_season(record) == season)
+        and (match_type != "5v5对局" or is_5v5_record(record))
+        and (verification_scope != "仅已核验对局" or is_record_verified(record))
+    )
+
+
+def leader_candidates(standings):
+    return standings[standings["总场次"] >= 10] if not standings.empty else standings
+
+
+def render_season_management(records):
+    with st.expander("🗂️ 历史对局赛季调整"):
+        st.caption("未标注赛季的旧记录按海斗3.0统计。若已有4.0战绩，请在此重新归类。仅修改赛季，不修改胜负和核验状态。")
+        with st.form("season_assignment"):
+            selected = st.multiselect(
+                "选择需要调整赛季的对局", list(reversed(range(len(records)))),
+                format_func=lambda i: f"第 {i + 1} 局 · {record_season(records[i])}",
+            )
+            target = st.selectbox("改为赛季", SEASONS, index=1)
+            submit = st.form_submit_button("保存所选对局的赛季")
+        if submit:
+            try:
+                require_admin()
+                if not selected:
+                    st.warning("请先选择需要调整的对局。")
+                    return
+                latest = load_records()
+                if latest != records:
+                    raise ValueError("历史记录已变化，请刷新后重试。")
+                for index in selected:
+                    latest[index] = {**latest[index], "season": target}
+                synced = save_records(latest)
+                token, repo = get_github_auth()
+                failed = bool(token and repo and synced is False)
+                st.session_state["season_flash"] = {
+                    "warning": failed,
+                    "text": f"已将 {len(selected)} 局归入{target}。" + (
+                        "本地已保存，云端同步失败，请导出备份。" if failed else "赛季已保存。"
+                    ),
+                }
+                st.rerun()
+            except Exception as exc:
+                st.error(f"赛季调整未完成：{exc}")
 
 st.set_page_config(
     page_title="海克斯内战",
@@ -690,7 +760,7 @@ def safe_percentage(value):
     return value if math.isfinite(value) and 0 <= value <= 100 else None
 
 
-def performance_rows(records, canonical_name, minimum_players=7):
+def performance_rows(records, canonical_name, minimum_players=2):
     """Keep measured values and trustworthy denominators; never infer damage from KDA."""
     profiles, audit = {}, {"invalid_games": 0, "invalid_shares": 0, "included_games": 0}
     for original_index, record in enumerate(records):
@@ -1088,23 +1158,17 @@ def generate_performance_radar(ratings):
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 380" role="img" aria-label="六维表现雷达，虚线为50分参考，未评分维度不补值" style="display:block;width:100%;max-width:440px;margin:auto">'+''.join(drawing)+'</svg>'
 
 
-def render_performance_page(records, canonical_name, stats_scope):
+def render_performance_page(records, canonical_name, stats_scope, season=None, match_type="全部对局"):
     st.markdown(PROFILE_V3_CSS,unsafe_allow_html=True)
     st.markdown('<div class="panel-header-title">选手档案</div>',unsafe_allow_html=True)
     preferences=st.session_state.setdefault('profile_preferences',{})
-    scope_col,player_col=st.columns([1.1,1.4])
-    with scope_col:
-        populations=['7人及以上对局','全部人数']
-        if 'performance_population' not in st.session_state:
-            st.session_state.performance_population=preferences.get('population',populations[0])
-        population=st.radio('对局范围',populations,
-                            horizontal=True,key='performance_population')
-        preferences['population']=population
+    player_col=st.container()
+    population=(season or '总对局（跨赛季）')+' · '+match_type
     selected_records=[{**record,'_source_index':i} for i,record in enumerate(records)
-                      if stats_scope!='仅已核验对局' or is_record_verified(record)]
-    profiles,audit=performance_rows(selected_records,canonical_name,7 if population=='7人及以上对局' else 2)
+                      if record_matches_scope(record, season, match_type, stats_scope)]
+    profiles,audit=performance_rows(selected_records,canonical_name,2)
     if not profiles:
-        st.info('当前范围暂无有效战绩。可以切换全部人数，或先录入并核验对局。')
+        st.info('当前范围暂无有效战绩。可以切换赛季或全部对局，或先录入并核验对局。')
         return
     with player_col:
         player_options=sorted(profiles,key=lambda p:(-len(profiles[p]),p))
@@ -1288,17 +1352,18 @@ HERO_CSS = """
 def build_war_room_html(standings, history, total, verified, selected_matches, scope):
     """All showcased values come from the same records as the displayed ranking."""
     e = lambda value: escape(str(value))
-    if standings.empty:
-        name, full_name, winrate, matches, rating, recent = "等待首位登顶者", "核验战绩后，榜首将在这里亮相", "—", "—", "—", ""
+    eligible = leader_candidates(standings)
+    if eligible.empty:
+        name, full_name, winrate, matches, rating, recent = "等待首位登顶者", "当前范围暂无累计至少10场的选手", "—", "—", "—", ""
     else:
-        ranked = standings.sort_values(["胜率_num", "总场次", "KDA_num"], ascending=False)
+        ranked = eligible.sort_values(["胜率_num", "总场次", "KDA_num"], ascending=False)
         full_name = str(ranked.index[0]); row = ranked.iloc[0]
         name, winrate, matches, rating = short_name(full_name), f"{row['胜率_num']:.1f}%", str(int(row['总场次'])), f"{row['MMR']:.1f}"
         recent = "".join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in history[full_name]["outcomes"][-5:])
     hero = f'''<div class="war-room">
 <div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div><span class="war-status">已核验 {verified} / {total} 局</span></div>
 <div class="war-body"><div><div class="war-kicker">海 克 斯 内 战</div><div class="war-title">今夜，<br>战力<span>全开。</span></div><div class="war-description">每一场内战，都值得被记住。<br>查看天梯、组织对局，留下属于你们的高光。</div><div class="war-statline"><div><strong>{total}</strong><small>累计收录对局</small></div><div><strong>{len(standings)}</strong><small>当前上榜选手</small></div><div><strong>{selected_matches}</strong><small>当前统计对局</small></div></div></div>
-<div class="champion"><div class="champion-eyebrow"><span>当前天梯领跑者</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
+<div class="champion"><div class="champion-eyebrow"><span>胜率领跑者 · 至少10场</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
     return hero
 
 
@@ -1404,8 +1469,32 @@ with st.sidebar:
         index=1 if st.query_params.get("stats", "") == "all" else 0,
         help="为保证胜率可信，默认排除尚未人工确认胜负的对局。",
     )
+    stats_group = st.radio(
+        "统计范围", ["总对局", "赛季对局"], horizontal=True,
+        index=1 if st.query_params.get("season", "") in SEASONS else 0,
+        key="season_stats_group",
+    )
+    selected_season = None
+    if stats_group == "赛季对局":
+        requested_season = st.query_params.get("season", CURRENT_SEASON)
+        selected_season = st.radio(
+            "选择赛季", SEASONS, horizontal=True,
+            index=SEASONS.index(requested_season) if requested_season in SEASONS else 1,
+            key="season_stats_season",
+        )
+    selected_match_type = st.radio(
+        "对局类型", ["全部对局", "5v5对局"], horizontal=True,
+        index=1 if st.query_params.get("format", "") == "5v5" else 0,
+        key="season_stats_format",
+        help="5v5要求双方各5名有效且不重复的玩家；缺少完整名单的对局不计入。",
+    )
+    selected_scope_label = (selected_season or "总对局（跨赛季）") + " · " + selected_match_type
+    st.caption("当前统计：" + selected_scope_label)
+    if season_flash := st.session_state.pop("season_flash", None):
+        (st.warning if season_flash["warning"] else st.success)(season_flash["text"])
 
     if admin_mode:
+        render_season_management(records)
         with st.expander("⚙️ 管理员设置", expanded=False):
             key = render_admin_settings(records)
 
@@ -1471,21 +1560,8 @@ elif previous_page not in PAGES:
     st.session_state.active_page = "ladder"
 active_page = st.radio("功能导航", list(PAGES), format_func=lambda page:PAGES[page], horizontal=True, key="active_page")
 
-ladder_min_players = 0
-if active_page == "ladder":
-    size_options = ["全部对局", "7人及以上对局"]
-    default_size = st.session_state.get("ladder_size_preference", "7人及以上对局" if st.query_params.get("players", "") == "7" else "全部对局")
-    size_choice = st.radio("榜单对局人数", size_options, index=size_options.index(default_size), horizontal=True, key="ladder_size_widget")
-    st.session_state.ladder_size_preference = size_choice
-    ladder_min_players = 7 if size_choice == "7人及以上对局" else 0
-
-def valid_player_count(record):
-    return len({clean_player_name_strict(p.get("player_name", "")) for p in record.get("players", [])
-                if clean_player_name_strict(p.get("player_name", "")) and not is_result_banner(p.get("player_name", ""))
-                and str(p.get("team", "")).upper() in {"BLUE", "RED"}})
-
 def match_in_stats(record):
-    return (stats_scope != "仅已核验对局" or is_record_verified(record)) and valid_player_count(record) >= ladder_min_players
+    return record_matches_scope(record, selected_season, selected_match_type, stats_scope)
 
 # ---------------- 数据清洗与统计算法引擎 ----------------
 base_stats_records = (
@@ -1568,25 +1644,18 @@ if not df.empty:
         return round(tot + (5.0 if float(r["场均击杀"]) >= 7.0 and float(r["KDA_num"]) >= 2.5 else 0.0), 1)
     df["MMR"] = df.apply(calc_mmr, axis=1)
 
-front_standings = df[df["总场次"] >= 10] if ladder_min_players == 7 and not df.empty else df
+front_standings = df
 front_slot.markdown(build_war_room_html(
     front_standings, player_history, total_games_all, verified_games_all,
-    len(stats_records),
-    stats_scope + (" · 7人及以上 / 至少10局上榜" if ladder_min_players == 7 else " · 全部人数"),
+    len(stats_records), stats_scope + " · " + selected_scope_label,
 ), unsafe_allow_html=True)
 
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
 if active_page == "ladder":
-    if ladder_min_players == 7:
-        st.caption("上榜条件：在当前核验口径下，参加7人及以上对局累计至少10局。")
-        if not df.empty:
-            df = df[df["总场次"] >= 10].copy()
-    st.caption(f"当前核验口径：{stats_scope} · 纳入 {len(stats_records)} 场对局")
+    st.caption("胜率领跑者条件：当前筛选范围内累计至少10场；下方完整榜单展示所有参赛选手。")
+    st.caption(f"{selected_scope_label} · {stats_scope} · 纳入 {len(stats_records)} 场对局")
     if df.empty:
-        if ladder_min_players == 7:
-            st.info("💡 暂无选手在当前核验口径下参加至少10场7人及以上对局。可切换为全部对局榜单，或继续录入并核验战绩。")
-        else:
-            st.info("💡 当前核验状态下没有对局。请先录入并核验战绩。")
+        st.info("💡 当前赛季、对局类型及核验范围下暂无战绩。请切换筛选，或录入并核验该赛季对局。")
     else:
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
         df_sorted = df.sort_values(by=["胜率_num", "总场次", "KDA_num"], ascending=[False, False, False])
@@ -1598,8 +1667,8 @@ if active_page == "ladder":
             medal = "🥇 " if r_idx == 0 else ("🥈 " if r_idx == 1 else ("🥉 " if r_idx == 2 else f"{r_idx+1} "))
             r_cls = "rank-1" if r_idx == 0 else ("rank-2" if r_idx == 1 else ("rank-3" if r_idx == 2 else ""))
             link_scope = "all" if stats_scope == "全部对局（含待核验）" else "verified"
-            wins_url = escape("?" + urlencode({"player": p_id, "result": "wins", "stats": link_scope, "players": ladder_min_players}), quote=True)
-            losses_url = escape("?" + urlencode({"player": p_id, "result": "losses", "stats": link_scope, "players": ladder_min_players}), quote=True)
+            wins_url = escape("?" + urlencode({"player": p_id, "result": "wins", "stats": link_scope, "season": selected_season or "all", "format": "5v5" if selected_match_type == "5v5对局" else "all"}), quote=True)
+            losses_url = escape("?" + urlencode({"player": p_id, "result": "losses", "stats": link_scope, "season": selected_season or "all", "format": "5v5" if selected_match_type == "5v5对局" else "all"}), quote=True)
             name_link = f"{medal}{escape(short_name(p_id))}"
             wins_link = f"<a href='{wins_url}' target='_blank' rel='noopener noreferrer' style='color:#0284c7;'>{int(row['胜场'])}</a>"
             losses_link = f"<a href='{losses_url}' target='_blank' rel='noopener noreferrer' style='color:#e11d48;'>{int(row['负场'])}</a>"
@@ -1640,14 +1709,14 @@ if active_page == "ladder":
                     personal_matches.append((original_index, match, player, won))
             if personal_matches:
                 personal_table = pd.DataFrame([{
-                    "对局": f"第 {i+1} 局", "结果": "胜" if won else "负",
+                    "对局": f"第 {i+1} 局", "赛季": record_season(match), "结果": "胜" if won else "负",
                     "分组": "A组" if player.get("team") == "BLUE" else "B组",
                     "KDA": f"{player.get('kills', 0)}/{player.get('deaths', 0)}/{player.get('assists', 0)}",
                     "核验": "已核验" if is_record_verified(match) else "待核验",
                 } for i, match, player, won in reversed(personal_matches)])
                 ordered_matches = list(reversed(personal_matches))
                 selection_key = hashlib.sha256(json.dumps([
-                    selected_profile, history_filter, stats_scope, ladder_min_players,
+                    selected_profile, history_filter, stats_scope, selected_season, selected_match_type,
                     [(i, m.get("md5"), m.get("winning_team"), p.get("team")) for i,m,p,_ in ordered_matches],
                 ], ensure_ascii=False).encode()).hexdigest()[:16]
                 st.caption("点击任意一行，直接查看该局截图与双方玩家。")
@@ -1830,7 +1899,7 @@ if active_page == "teams":
 
 # ================= Tab 3: 雷达与称号 V2 =================
 if active_page == "profile":
-    render_performance_page(records, get_final_name, stats_scope)
+    render_performance_page(records, get_final_name, stats_scope, selected_season, selected_match_type)
 
 # ================= Tab 4: 历史战绩胜负核验 =================
 if active_page == "review":
@@ -2061,6 +2130,8 @@ if active_page == "review":
 if active_page == "upload":
     st.markdown('<div class="card-panel"><div class="panel-header-title">📸 战绩截图智能分析录入</div>', unsafe_allow_html=True)
     with st.form("upload_box", clear_on_submit=False):
+        upload_season = st.selectbox("本批截图所属赛季", SEASONS, index=1, disabled=not admin_mode,
+                                     help="新对局默认海斗4.0；补录旧赛季截图请选择海斗3.0。")
         files = st.file_uploader("选择截图（支持批量多选）", type=["png", "jpg", "jpeg"], accept_multiple_files=True, disabled=not admin_mode)
         sub = st.form_submit_button("🚀 开始解析并录入", type="primary", use_container_width=True, disabled=not admin_mode)
 
@@ -2117,6 +2188,7 @@ if active_page == "upload":
                         if error:
                             errors.append(f"❌ {name} 录入失败：{error}")
                         else:
+                            result["season"] = upload_season
                             successes[index] = result
                             records = base_records + [successes[i] for i in sorted(successes)]
                             save_records(records, sync_cloud=False)
