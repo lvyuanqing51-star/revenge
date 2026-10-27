@@ -1182,7 +1182,6 @@ def render_performance_page(records, canonical_name, stats_scope, season=None, m
         target=st.selectbox('查看选手',player_options,
                             key='performance_target')
         preferences['target']=target
-    st.caption(f"{stats_scope} · {population} · 共{audit['included_games']}场有效对局 · 称号按当前范围即时计算")
     st.caption(f"{population} · {audit['included_games']}场对局")
     provisional=stats_scope!='仅已核验对局'
     if provisional:
@@ -1359,18 +1358,11 @@ def build_war_room_html(standings, history, total, verified, selected_matches, s
     e = lambda value: escape(str(value))
     eligible = leader_candidates(standings)
     if eligible.empty:
-        name, full_name, winrate, matches, rating, recent = "等待首位登顶者", "当前范围暂无累计至少10场的选手", "—", "—", "—", ""
         name, full_name, winrate, matches, rating, recent = "暂无领跑者", "", "—", "—", "—", ""
     else:
         ranked = eligible.sort_values(["胜率_num", "总场次", "KDA_num"], ascending=False)
         full_name = str(ranked.index[0]); row = ranked.iloc[0]
         name, winrate, matches, rating = short_name(full_name), f"{row['胜率_num']:.1f}%", str(int(row['总场次'])), f"{row['MMR']:.1f}"
-        recent = "".join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in history[full_name]["outcomes"][-5:])
-    hero = f'''<div class="war-room">
-<div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div><span class="war-status">已核验 {verified} / {total} 局</span></div>
-<div class="war-body"><div><div class="war-kicker">海 克 斯 内 战</div><div class="war-title">今夜，<br>战力<span>全开。</span></div><div class="war-description">每一场内战，都值得被记住。<br>查看天梯、组织对局，留下属于你们的高光。</div><div class="war-statline"><div><strong>{total}</strong><small>累计收录对局</small></div><div><strong>{len(standings)}</strong><small>当前上榜选手</small></div><div><strong>{selected_matches}</strong><small>当前统计对局</small></div></div></div>
-<div class="champion"><div class="champion-eyebrow"><span>胜率领跑者 · 至少10场</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
-    return hero
         badges = []
         for won in history[full_name]["outcomes"][-5:]:
             badge_class = "form-win" if won else "form-loss"
@@ -1493,14 +1485,11 @@ with st.sidebar:
     verified_games_all = sum(is_record_verified(r) for r in records)
     gh_t, gh_r = get_github_auth()
     st.caption("🟢 **云端自动同步**: 已启用 (GitHub)" if gh_t and gh_r else "⚪ **云端自动同步**: 未配置 Token")
-    st.caption(f"✅ **胜负已核验**: {verified_games_all}/{total_games_all} 局")
     stats_scope = st.radio(
-        "胜率统计口径",
         "战绩范围",
         ["仅已核验对局", "全部对局（含待核验）"],
         format_func=lambda scope: "正式战绩" if scope == "仅已核验对局" else "全部战绩",
         index=1 if st.query_params.get("stats", "") == "all" else 0,
-        help="为保证胜率可信，默认排除尚未人工确认胜负的对局。",
         help="正式战绩只使用已确认结果的对局。",
     )
     stats_group = st.radio(
@@ -1566,12 +1555,6 @@ with vc1: st.link_button("🎙️ 大厅语音作战室", cfg.get("main_voice", 
 with vc2: st.link_button("🔵 蓝方语音作战室", cfg.get("blue_voice", "https://kook.top/"), use_container_width=True)
 with vc3: st.link_button("🔴 红方语音作战室", cfg.get("red_voice", "https://kook.top/"), use_container_width=True)
 st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-
-if stats_scope == "仅已核验对局" and verified_games_all < total_games_all:
-    st.info(
-        f"当前胜率只统计 {verified_games_all} 局已核验对局；"
-        f"另有 {total_games_all - verified_games_all} 局待核验，请前往「战绩核验」逐局确认。"
-    )
 
 # ---------------- 主界面 2：Tabs 视图 ----------------
 PAGES = {
@@ -1678,22 +1661,17 @@ if not df.empty:
         return round(tot + (5.0 if float(r["场均击杀"]) >= 7.0 and float(r["KDA_num"]) >= 2.5 else 0.0), 1)
     df["MMR"] = df.apply(calc_mmr, axis=1)
 
-front_standings = df
 front_standings = ranking_candidates(df)
 front_slot.markdown(build_war_room_html(
     front_standings, player_history, total_games_all, verified_games_all,
-    len(stats_records), stats_scope + " · " + selected_scope_label,
     len(stats_records), selected_scope_label,
 ), unsafe_allow_html=True)
 
 # ================= Tab 1: 胜率天梯与荣誉榜 =================
 if active_page == "ladder":
-    st.caption("胜率领跑者条件：当前筛选范围内累计至少10场；下方完整榜单展示所有参赛选手。")
-    st.caption(f"{selected_scope_label} · {stats_scope} · 纳入 {len(stats_records)} 场对局")
     df = ranking_candidates(df).copy()
     st.caption(f"{selected_scope_label} · {len(stats_records)} 场对局")
     if df.empty:
-        st.info("💡 当前赛季、对局类型及核验范围下暂无战绩。请切换筛选，或录入并核验该赛季对局。")
         st.info("当前范围暂无上榜选手。")
     else:
         st.markdown('<div class="panel-header-title">🏆 选手全胜率天梯榜单</div>', unsafe_allow_html=True)
@@ -1751,7 +1729,6 @@ if active_page == "ladder":
                     "对局": f"第 {i+1} 局", "赛季": record_season(match), "结果": "胜" if won else "负",
                     "分组": "A组" if player.get("team") == "BLUE" else "B组",
                     "KDA": f"{player.get('kills', 0)}/{player.get('deaths', 0)}/{player.get('assists', 0)}",
-                    "核验": "已核验" if is_record_verified(match) else "待核验",
                 } for i, match, player, won in reversed(personal_matches)])
                 ordered_matches = list(reversed(personal_matches))
                 selection_key = hashlib.sha256(json.dumps([
@@ -2263,5 +2240,6 @@ if active_page == "upload":
                 status_box.empty()
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
