@@ -1368,11 +1368,34 @@ def build_war_room_html(standings, history, total, verified, selected_matches, s
         recent = "".join(f'<span class="form-{"win" if won else "loss"}">{"胜" if won else "负"}</span>' for won in history[full_name]["outcomes"][-5:])
     hero = f'''<div class="war-room">
 <div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div><span class="war-status">已核验 {verified} / {total} 局</span></div>
-<div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div><span class="war-status">累计 {total} 局</span></div>
 <div class="war-body"><div><div class="war-kicker">海 克 斯 内 战</div><div class="war-title">今夜，<br>战力<span>全开。</span></div><div class="war-description">每一场内战，都值得被记住。<br>查看天梯、组织对局，留下属于你们的高光。</div><div class="war-statline"><div><strong>{total}</strong><small>累计收录对局</small></div><div><strong>{len(standings)}</strong><small>当前上榜选手</small></div><div><strong>{selected_matches}</strong><small>当前统计对局</small></div></div></div>
 <div class="champion"><div class="champion-eyebrow"><span>胜率领跑者 · 至少10场</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
-<div class="champion"><div class="champion-eyebrow"><span>胜率领跑者</span><span>RANK / 01</span></div><div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div><div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div><div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div><div class="champion-form"><small>近5局 · 右侧最新</small>{recent or '<small>暂无记录</small>'}</div></div></div></div>'''
     return hero
+        badges = []
+        for won in history[full_name]["outcomes"][-5:]:
+            badge_class = "form-win" if won else "form-loss"
+            badge_text = "胜" if won else "负"
+            badges.append(f'<span class="{badge_class}">{badge_text}</span>')
+        recent = "".join(badges)
+    recent_html = recent or "<small>暂无记录</small>"
+    return "".join((
+        '<div class="war-room">',
+        '<div class="war-top"><div class="war-brand"><span class="war-logo">✦</span>HEX LEAGUE / 战情室</div>',
+        f'<span class="war-status">累计 {total} 局</span></div>',
+        '<div class="war-body"><div><div class="war-kicker">海 克 斯 内 战</div>',
+        '<div class="war-title">今夜，<br>战力<span>全开。</span></div>',
+        '<div class="war-description">每一场内战，都值得被记住。<br>查看天梯、组织对局，留下属于你们的高光。</div>',
+        '<div class="war-statline">',
+        f'<div><strong>{total}</strong><small>累计收录对局</small></div>',
+        f'<div><strong>{len(standings)}</strong><small>当前上榜选手</small></div>',
+        f'<div><strong>{selected_matches}</strong><small>当前统计对局</small></div></div></div>',
+        '<div class="champion"><div class="champion-eyebrow"><span>胜率领跑者</span><span>RANK / 01</span></div>',
+        f'<div class="champion-name">{e(name)}</div><div class="champion-id">{e(full_name)}</div>',
+        f'<div class="champion-score"><strong>{e(winrate)}</strong><span>胜率</span></div>',
+        f'<div class="champion-meta">{e(matches)} 场对局 · MMR {e(rating)}<br>{e(scope)}</div>',
+        f'<div class="champion-form"><small>近5局 · 右侧最新</small>{recent_html}</div>',
+        '</div></div></div>',
+    ))
 
 
 def render_admin_settings(records):
